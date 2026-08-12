@@ -1601,6 +1601,7 @@ function App() {
                 onAutoFix={handleAutoFix}
                 userProfile={userProfile}
                 jobDescription={jobDescription}
+                targetLength={targetLength}
               />
             )}
           </div>

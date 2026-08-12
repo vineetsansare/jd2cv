@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, FileEdit, BarChart3, Sparkles, Printer, Copy, Check, Mail } from 'lucide-react';
-import type { CVGenerationResult } from '../utils/llm';
+import type { CVGenerationResult, TargetLength } from '../utils/llm';
 import { parseMarkdownToHtml, stripMarkdown } from '../utils/mdParser';
 import { LiquidCard } from './ui/LiquidCard';
 import { CVThemeSelector } from './CVThemeSelector';
@@ -12,6 +12,7 @@ interface CVDisplayProps {
   onAutoFix?: () => void;
   userProfile?: any;
   jobDescription?: string;
+  targetLength?: TargetLength;
 }
 
 type TabType = 'preview' | 'editor' | 'ats' | 'tweaks' | 'cover';
@@ -21,7 +22,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   onUpdateMarkdown, 
   onAutoFix,
   userProfile,
-  jobDescription
+  jobDescription,
+  targetLength
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('preview');
   const [copied, setCopied] = useState<'markdown' | 'text' | 'cover' | null>(null);
@@ -29,7 +31,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     accentColor: '#475569',
     themeName: 'Slate Charcoal',
     showPhoto: false,
-    photoUrl: userProfile?.avatar_url || ''
+    photoUrl: userProfile?.avatar_url || '',
+    layoutDensity: targetLength === '1-page' ? 'compact' : 'standard'
   });
 
   const handleCopyMarkdown = () => {
@@ -245,7 +248,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
             />
             <div className="print-pane" style={{ background: 'var(--bg-primary)', padding: '2rem 1rem', borderRadius: 'var(--border-radius-md)', display: 'flex', justifyContent: 'center', overflowX: 'auto', border: '1px solid var(--card-border)' }}>
               <div 
-                className="resume-preview-sheet" 
+                className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''}`} 
                 dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
               />
             </div>

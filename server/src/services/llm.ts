@@ -15,9 +15,17 @@ export async function generateCustomizedCVServer(
 ): Promise<CVGenerationResult> {
   let lengthConstraint = "";
   if (targetLength === '1-page') {
-    lengthConstraint = "3. **CRITICAL 1-PAGE PHYSICAL PRINT BUDGET**: The generated resume MUST fit onto EXACTLY 1 A4 PAGE when printed or exported as a PDF. Enforce a strict word limit ceiling of **320 to 380 words TOTAL**. Limit the Executive Profile to 2-3 concise sentences. Include ONLY the top 3-4 most relevant positions. For each role, provide a maximum of 2-3 high-impact bullet points. Limit Technical Skills to 5-6 category lines. DO NOT EXCEED 380 WORDS TOTAL, or the rendered PDF will spill onto Page 2 and ruin the layout!";
+    lengthConstraint = "3. **STRICT 1-PAGE PHYSICAL PRINT CEILING (MAX 280-320 WORDS TOTAL)**:\n" +
+      "   - The generated resume MUST physically fit onto EXACTLY 1 SINGLE A4 PAGE without spilling onto Page 2.\n" +
+      "   - EXECUTIVE PROFILE: Exactly 2 concise sentences (max 40 words).\n" +
+      "   - PROFESSIONAL EXPERIENCE: Include ONLY the top 2-3 most recent/relevant roles. Provide EXACTLY 2 high-impact bullet points per role.\n" +
+      "   - CONSOLIDATE OLDER ROLES: For roles older than 6 years, combine them into a single 1-line career note (e.g. '*Prior Experience: Senior iOS Engineer at Hexaware (2010-2016)*'). DO NOT write full bullet lists for more than 3 roles.\n" +
+      "   - TECHNICAL SKILLS: Maximum 4 category bullet lines.\n" +
+      "   - DO NOT EXCEED 320 WORDS TOTAL OR IT WILL SPILL ONTO PAGE 2!";
   } else if (targetLength === '2-page') {
-    lengthConstraint = "3. **CRITICAL 2-PAGE PHYSICAL PRINT BUDGET**: The generated resume MUST fit onto EXACTLY 2 A4 PAGES when printed or exported as a PDF. Enforce a strict word limit ceiling of **650 to 750 words TOTAL**. Filter out minor details, include roles from the last 10-12 years, providing 3-4 bullets per major role. DO NOT EXCEED 750 WORDS TOTAL, or the rendered PDF will spill onto Page 3!";
+    lengthConstraint = "3. **STRICT 2-PAGE PHYSICAL PRINT CEILING (MAX 600-720 WORDS TOTAL)**:\n" +
+      "   - The generated resume MUST fit onto EXACTLY 2 A4 PAGES without spilling onto Page 3.\n" +
+      "   - Include roles from the last 10-12 years, providing 3 bullets per major role. Do not exceed 720 words total!";
   } else {
     lengthConstraint = "3. **Comprehensive CV Format**: Provide a detailed, multi-page Curriculum Vitae. Include all relevant past roles, comprehensive bullet points for each, and maintain an exhaustive list of achievements and responsibilities that match the JD keywords. Do not overly truncate the history.";
   }

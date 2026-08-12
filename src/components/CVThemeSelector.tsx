@@ -1,11 +1,12 @@
 import React from 'react';
-import { Palette, User, Check } from 'lucide-react';
+import { Palette, User, Check, Layers } from 'lucide-react';
 
 export interface CVThemeConfig {
   accentColor: string;
   themeName: string;
   showPhoto: boolean;
   photoUrl?: string;
+  layoutDensity?: 'compact' | 'standard';
 }
 
 export const ACCENT_THEMES = [
@@ -55,6 +56,13 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
         photoUrl: url
       });
     }
+  };
+
+  const handleToggleDensity = (density: 'compact' | 'standard') => {
+    onChangeThemeConfig({
+      ...themeConfig,
+      layoutDensity: density
+    });
   };
 
   return (
@@ -107,6 +115,43 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
             );
           })}
         </div>
+      </div>
+
+      {/* Middle: 1-Page Fit vs Standard Layout Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.2rem 0.35rem', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+        <Layers size={14} style={{ color: 'var(--text-muted)', marginLeft: '0.35rem' }} />
+        <button
+          type="button"
+          onClick={() => handleToggleDensity('compact')}
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            background: themeConfig.layoutDensity === 'compact' ? 'var(--accent-primary)' : 'transparent',
+            color: themeConfig.layoutDensity === 'compact' ? '#ffffff' : 'var(--text-secondary)'
+          }}
+        >
+          1-Page Compact Fit
+        </button>
+        <button
+          type="button"
+          onClick={() => handleToggleDensity('standard')}
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            background: themeConfig.layoutDensity === 'standard' ? 'var(--accent-primary)' : 'transparent',
+            color: themeConfig.layoutDensity === 'standard' ? '#ffffff' : 'var(--text-secondary)'
+          }}
+        >
+          Standard Spacing
+        </button>
       </div>
 
       {/* Right: Candidate Photo Toggle */}

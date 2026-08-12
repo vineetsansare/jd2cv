@@ -589,6 +589,64 @@ textarea {
   box-sizing: border-box;
 }
 
+/* Compact 1-Page Layout Mode (Prevents Page 2 overflow) */
+.resume-preview-sheet.compact-1page {
+  padding: 8mm 12mm !important;
+  font-size: 9pt !important;
+  line-height: 1.28 !important;
+}
+
+.resume-preview-sheet.compact-1page h1 {
+  font-size: 20pt !important;
+  margin-bottom: 0.15rem !important;
+}
+
+.resume-preview-sheet.compact-1page h2 {
+  font-size: 9.8pt !important;
+  padding: 1.5px 0 !important;
+  margin-top: 0.65rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.resume-preview-sheet.compact-1page .role-row,
+.resume-preview-sheet.compact-1page .school-row {
+  margin-top: 0.4rem !important;
+  margin-bottom: 0.1rem !important;
+}
+
+.resume-preview-sheet.compact-1page .company-row {
+  margin-bottom: 0.35rem !important;
+}
+
+.resume-preview-sheet.compact-1page p {
+  margin-bottom: 0.25rem !important;
+}
+
+.resume-preview-sheet.compact-1page ul {
+  margin-bottom: 0.35rem !important;
+  padding-left: 1.1rem !important;
+}
+
+.resume-preview-sheet.compact-1page li {
+  margin-bottom: 0.15rem !important;
+}
+
+.resume-preview-sheet.compact-1page .skills-list {
+  row-gap: 0.3rem !important;
+  column-gap: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.resume-preview-sheet.compact-1page .cv-header-photo-wrapper {
+  margin-bottom: 0.35rem !important;
+  gap: 1.1rem !important;
+}
+
+.resume-preview-sheet.compact-1page .cv-avatar-headshot {
+  width: 82px !important;
+  height: 82px !important;
+}
+
 .resume-preview-sheet h1, 
 .resume-preview-sheet h2, 
 .resume-preview-sheet h3 {
