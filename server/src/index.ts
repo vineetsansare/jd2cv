@@ -15,7 +15,10 @@ const fastify = Fastify({
 // Configure CORS
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://vineetsansare.github.io'
+  'http://localhost:3000',
+  'https://vineetsansare.github.io',
+  'https://toolsby.vineetsansare.com',
+  'https://vineetsansare.com'
 ];
 
 await fastify.register(cors, {
