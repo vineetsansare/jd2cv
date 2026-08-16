@@ -42,7 +42,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
     try {
       if (isForgotPassword) {
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin
+          redirectTo: window.location.href
         });
         if (resetError) throw resetError;
         setSuccess('Password recovery email sent! Please check your inbox.');
@@ -96,7 +96,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       const { error: socialError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.origin
+          redirectTo: window.location.href
         }
       });
       if (socialError) throw socialError;
