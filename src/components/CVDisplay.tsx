@@ -35,6 +35,27 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     layoutDensity: targetLength === '1-page' ? 'compact' : 'standard'
   });
 
+  const [mobileScale, setMobileScale] = useState<number>(1);
+  const sheetContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const updateScale = () => {
+      if (sheetContainerRef.current) {
+        const containerWidth = sheetContainerRef.current.clientWidth - 32;
+        const sheetWidthPx = 794;
+        if (containerWidth < sheetWidthPx && containerWidth > 0) {
+          setMobileScale(containerWidth / sheetWidthPx);
+        } else {
+          setMobileScale(1);
+        }
+      }
+    };
+
+    updateScale();
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, []);
+
   const handleCopyMarkdown = () => {
     navigator.clipboard.writeText(result.cvMarkdown);
     setCopied('markdown');
@@ -246,11 +267,22 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               onChangeThemeConfig={setThemeConfig} 
               userAvatarUrl={userProfile?.avatar_url} 
             />
-            <div className="print-pane" style={{ background: 'var(--bg-primary)', padding: '2rem 1rem', borderRadius: 'var(--border-radius-md)', display: 'flex', justifyContent: 'center', overflowX: 'auto', border: '1px solid var(--card-border)' }}>
+            <div className="print-pane" ref={sheetContainerRef} style={{ background: 'var(--bg-primary)', padding: mobileScale < 1 ? '1rem 0' : '2rem 1rem', borderRadius: 'var(--border-radius-md)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowX: 'auto', border: '1px solid var(--card-border)' }}>
               <div 
-                className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''}`} 
-                dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
-              />
+                className="mobile-sheet-scaler"
+                style={{
+                  transform: mobileScale < 1 ? `scale(${mobileScale})` : 'none',
+                  transformOrigin: 'top center',
+                  width: '794px',
+                  height: 'auto',
+                  flexShrink: 0
+                }}
+              >
+                <div 
+                  className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''}`} 
+                  dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
+                />
+              </div>
             </div>
           </>
         )}

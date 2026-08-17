@@ -1794,9 +1794,45 @@ function App() {
             )}
           </div>
         </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <div className="mobile-bottom-nav no-print">
+          <button
+            type="button"
+            className={`mobile-nav-item ${activeTab === 'quick-optimize' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('quick-optimize'); setIsCustomizing(false); }}
+          >
+            <Sparkles size={18} />
+            <span>AI Workspace</span>
+          </button>
+          <button
+            type="button"
+            className={`mobile-nav-item ${activeTab === 'resumes' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('resumes'); setIsCustomizing(false); }}
+          >
+            <FileText size={18} />
+            <span>My Resumes</span>
+          </button>
+          <button
+            type="button"
+            className={`mobile-nav-item ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('history'); setIsCustomizing(false); }}
+          >
+            <History size={18} />
+            <span>CV History</span>
+          </button>
+          <button
+            type="button"
+            className={`mobile-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('settings'); setIsCustomizing(false); }}
+          >
+            <Settings size={18} />
+            <span>Settings</span>
+          </button>
+        </div>
       </div>
     </AuroraBackground>
   );
-}
+};
 
 export default App;
