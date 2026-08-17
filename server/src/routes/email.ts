@@ -16,7 +16,9 @@ export default async function emailRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ error: 'Email address is required' });
     }
 
-    const userName = name || email.split('@')[0] || 'there';
+    const rawName = name || email.split('@')[0] || 'there';
+    const firstName = rawName.trim().split(' ')[0] || 'there';
+    const appUrl = process.env.APP_URL || 'https://toolsby.vineetsansare.com/jd2cv/';
 
     const htmlContent = `
 <!DOCTYPE html>
@@ -54,7 +56,7 @@ export default async function emailRoutes(fastify: FastifyInstance) {
           <tr>
             <td align="left" style="padding-bottom: 16px;">
               <h1 style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin: 0 0 12px 0; line-height: 1.2;">
-                Welcome to JD2CV, ${userName} 👋
+                Welcome to JD2CV, ${firstName} 👋
               </h1>
               <p style="font-size: 16px; color: rgba(255, 255, 255, 0.8); margin: 0; line-height: 1.6;">
                 We're excited to have you on board! JD2CV is your AI-powered career workspace designed to optimize your resume for any target job description with Applicant Tracking System (ATS) precision.
@@ -121,7 +123,7 @@ export default async function emailRoutes(fastify: FastifyInstance) {
           <!-- Primary CTA Button -->
           <tr>
             <td align="center" style="padding-bottom: 32px;">
-              <a href="http://localhost:5173" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #4f378a 100%); color: #FFFFFF; font-weight: 700; font-size: 16px; padding: 14px 32px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);">
+              <a href="${appUrl}" target="_blank" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #4f378a 100%); color: #FFFFFF; font-weight: 700; font-size: 16px; padding: 14px 32px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);">
                 Optimize Your First CV Now ➔
               </a>
             </td>
@@ -151,7 +153,7 @@ export default async function emailRoutes(fastify: FastifyInstance) {
       const data = await resend.emails.send({
         from: 'JD2CV Workspace <onboarding@resend.dev>',
         to: [email],
-        subject: `Welcome to JD2CV Career Workspace, ${userName}! 🚀`,
+        subject: `Welcome to JD2CV Career Workspace, ${firstName}! 🚀`,
         html: htmlContent
       });
 
