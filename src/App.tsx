@@ -9,7 +9,7 @@ import {
   Sparkles, Sun, Moon, AlertCircle,
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Upload, Plus, Download, Trash2,
-  Copy, ArrowRight, Zap, ArrowLeft, History
+  Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
@@ -64,6 +64,7 @@ function App() {
   // Theme & Layout States
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'workspace' | 'quick-optimize' | 'resumes' | 'history' | 'applications' | 'reports' | 'settings'>('quick-optimize');
   const [generations, setGenerations] = useState<GenerationRecord[]>([]);
   const [generationsLoading, setGenerationsLoading] = useState(false);
@@ -764,10 +765,35 @@ function App() {
 
   const renderTopNav = () => {
     return (
-      <header className="glass-header top-header">
-        <div style={{ flexGrow: 1 }}></div>
+      <header className="glass-header top-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem' }}>
+        {/* Mobile Hamburger Button & Brand */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button
+            type="button"
+            className="mobile-hamburger-btn"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-primary)',
+              cursor: 'pointer',
+              padding: '0.25rem',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            aria-label="Toggle Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Mobile Brand Logo */}
+          <div className="mobile-brand-title" style={{ alignItems: 'center', gap: '0.5rem' }}>
+            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'linear-gradient(135deg, #7c3aed 0%, #4f378a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '12px' }}>✦</div>
+            <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>JD2CV</span>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <button 
             type="button" 
             className="theme-toggle-header-btn" 
@@ -782,10 +808,10 @@ function App() {
             type="button"
             className="btn btn-primary"
             onClick={() => { setIsCustomizing(true); setCustomizerStep(1); }}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: 'auto', padding: '0.5rem 1.25rem', borderRadius: '20px', background: 'var(--accent-primary)', fontSize: '0.85rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: 'auto', padding: '0.5rem 1rem', borderRadius: '20px', background: 'var(--accent-primary)', fontSize: '0.82rem' }}
           >
             <Plus size={16} />
-            <span>Create Resume</span>
+            <span className="create-resume-btn-text">Create Resume</span>
           </button>
         </div>
       </header>
@@ -1296,17 +1322,21 @@ function App() {
                         borderRadius: '8px', 
                         border: activeCVIndices.includes(index) ? '1px solid var(--accent-primary)' : '1px solid var(--card-border)',
                         background: activeCVIndices.includes(index) ? 'rgba(37,99,235,0.02)' : 'transparent',
-                        cursor: 'pointer' 
+                        cursor: 'pointer',
+                        width: '100%',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden'
                       }}
                     >
                       <input
                         type="checkbox"
                         checked={activeCVIndices.includes(index)}
                         onChange={() => handleToggleCVIndex(index)}
-                        style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
+                        style={{ width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--accent-primary)' }}
                       />
-                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' }} title={cv.name}>{cv.name}</span>
+                      <div style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={cv.name}>{cv.name}</span>
                         <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Baseline Resume</span>
                       </div>
                     </label>
@@ -1397,16 +1427,16 @@ function App() {
             )}
 
             <button
-              className="btn btn-primary"
+              className="btn btn-primary btn-mobile-full"
               onClick={handleGenerate}
               style={{ 
                 background: 'var(--accent-secondary)', 
                 alignSelf: 'flex-end', 
-                width: 'auto', 
                 padding: '0.75rem 2rem', 
                 fontSize: '0.9rem',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'center',
                 gap: '0.5rem'
               }}
               disabled={!canSubmit}
@@ -1830,6 +1860,82 @@ function App() {
             <span>Settings</span>
           </button>
         </div>
+
+        {/* Slide-Over Mobile Glass Drawer */}
+        {isMobileMenuOpen && (
+          <div className="mobile-drawer-overlay no-print" onClick={() => setIsMobileMenuOpen(false)}>
+            <div className="mobile-drawer-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="mobile-drawer-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  {userProfile?.avatar_url ? (
+                    <img src={userProfile.avatar_url} alt="Profile" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed 0%, #4f378a 100%)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                      {userProfile?.full_name?.charAt(0) || 'V'}
+                    </div>
+                  )}
+                  <div style={{ minWidth: 0, flexGrow: 1 }}>
+                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {userProfile?.full_name || 'Vineet'}
+                    </h4>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {userProfile?.email}
+                    </span>
+                  </div>
+                </div>
+                <button type="button" onClick={() => setIsMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem' }}>
+                  <X size={22} />
+                </button>
+              </div>
+
+              <div className="mobile-drawer-nav">
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'quick-optimize' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('quick-optimize'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <Sparkles size={18} />
+                  <span>AI Workspace</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'resumes' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('resumes'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <FileText size={18} />
+                  <span>My Resumes ({contextCVs.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'history' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('history'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <History size={18} />
+                  <span>CV History</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'settings' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('settings'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <Settings size={18} />
+                  <span>Settings</span>
+                </button>
+              </div>
+
+              <div className="mobile-drawer-footer">
+                <button
+                  type="button"
+                  onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}
+                  className="mobile-drawer-logout-btn"
+                >
+                  <LogOut size={18} />
+                  <span>Log Out</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AuroraBackground>
   );
