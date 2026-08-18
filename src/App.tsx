@@ -270,10 +270,13 @@ function App() {
 
   const applyTheme = (t: 'light' | 'dark') => {
     const body = document.body;
+    const root = document.documentElement;
     if (t === 'dark') {
       body.classList.add('dark-theme');
+      root.classList.add('dark-theme');
     } else {
       body.classList.remove('dark-theme');
+      root.classList.remove('dark-theme');
     }
   };
 
