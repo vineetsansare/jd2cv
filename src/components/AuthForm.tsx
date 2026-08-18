@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { supabase } from '../utils/supabase';
-import { Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
+import { Mail, Lock, User, Sparkles, AlertCircle, ArrowRight, CheckCircle2, ShieldCheck, Zap, Sun, Moon } from 'lucide-react';
 import { AuroraBackground } from './ui/AuroraBackground';
 import { LiquidCard } from './ui/LiquidCard';
 import { CursorTrailProvider } from './ui/CursorTrailProvider';
 
 interface AuthFormProps {
   onSuccess: () => void;
+  theme?: 'light' | 'dark';
+  onThemeToggle?: () => void;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', onThemeToggle }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -111,6 +113,36 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   return (
     <CursorTrailProvider>
       <AuroraBackground intensity="vibrant">
+        {/* Top Right Dark/Light Theme Toggle */}
+        {onThemeToggle && (
+          <button 
+            type="button" 
+            onClick={onThemeToggle}
+            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+            style={{ 
+              position: 'fixed',
+              top: '1.25rem',
+              right: '1.25rem',
+              zIndex: 9999,
+              width: '42px',
+              height: '42px',
+              borderRadius: '50%',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              color: 'var(--text-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+              backdropFilter: 'blur(12px)',
+              WebkitBackdropFilter: 'blur(12px)'
+            }}
+          >
+            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+        )}
+
         <div className="auth-wrapper" style={{
           display: 'flex',
           minHeight: '100vh',

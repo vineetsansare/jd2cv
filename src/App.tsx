@@ -657,7 +657,7 @@ function App() {
         <div style={{ position: 'absolute', top: '10%', left: '20%', width: '400px', height: '400px', background: 'rgba(99, 102, 241, 0.1)', filter: 'blur(100px)', borderRadius: '50%' }}></div>
         <div style={{ position: 'absolute', bottom: '10%', right: '20%', width: '400px', height: '400px', background: 'rgba(16, 185, 129, 0.08)', filter: 'blur(100px)', borderRadius: '50%' }}></div>
         
-        <AuthForm onSuccess={() => {}} />
+        <AuthForm onSuccess={() => {}} theme={theme} onThemeToggle={handleThemeToggle} />
       </div>
     );
   }
@@ -806,7 +806,7 @@ function App() {
 
           <button 
             type="button"
-            className="btn btn-primary"
+            className="btn btn-primary header-create-btn"
             onClick={() => { setIsCustomizing(true); setCustomizerStep(1); }}
             style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: 'auto', padding: '0.5rem 1rem', borderRadius: '20px', background: 'var(--accent-primary)', fontSize: '0.82rem' }}
           >
@@ -1824,42 +1824,6 @@ function App() {
             )}
           </div>
         </main>
-
-        {/* Mobile Bottom Navigation Bar */}
-        <div className="mobile-bottom-nav no-print">
-          <button
-            type="button"
-            className={`mobile-nav-item ${activeTab === 'quick-optimize' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('quick-optimize'); setIsCustomizing(false); }}
-          >
-            <Sparkles size={18} />
-            <span>AI Workspace</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-nav-item ${activeTab === 'resumes' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('resumes'); setIsCustomizing(false); }}
-          >
-            <FileText size={18} />
-            <span>My Resumes</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-nav-item ${activeTab === 'history' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('history'); setIsCustomizing(false); }}
-          >
-            <History size={18} />
-            <span>CV History</span>
-          </button>
-          <button
-            type="button"
-            className={`mobile-nav-item ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => { setActiveTab('settings'); setIsCustomizing(false); }}
-          >
-            <Settings size={18} />
-            <span>Settings</span>
-          </button>
-        </div>
 
         {/* Slide-Over Mobile Glass Drawer */}
         {isMobileMenuOpen && (
