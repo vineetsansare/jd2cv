@@ -1259,13 +1259,22 @@ textarea {
 
 /* Printing styles */
 @media print {
-  body {
+  body, html {
     background: #ffffff !important;
     color: #111827 !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+  }
+
+  .aurora-wrapper, .aurora-container, .aurora-content {
+    position: static !important;
+    background: #ffffff !important;
+    display: block !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   .app-container, .app-container.sidebar-collapsed {
@@ -1282,14 +1291,16 @@ textarea {
   .cv-display-header,
   .tabs-container,
   .sidebar-toggle-btn,
-  .cv-display-content > *:not(.print-pane),
-  .print-pane > *:not(.resume-preview-sheet) {
+  .mobile-drawer-overlay,
+  .mobile-bottom-nav,
+  .cv-display-content > *:not(.print-pane) {
     display: none !important;
   }
   
   .main-layout {
     margin-left: 0 !important;
     padding-top: 0 !important;
+    padding: 0 !important;
     min-height: 0 !important;
   }
 
@@ -1320,19 +1331,33 @@ textarea {
     max-height: none !important;
   }
 
+  .mobile-sheet-scaler {
+    transform: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: block !important;
+  }
+
   .resume-preview-sheet {
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 0 !important;
+    padding: 12mm 15mm !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: none !important;
     min-height: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  .resume-preview-sheet.compact-1page {
+    padding: 8mm 12mm !important;
   }
 
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 0;
   }
 }
 
