@@ -117,7 +117,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           width: '100vw',
           alignItems: 'flex-start',
           justifyContent: 'center',
-          padding: '2.5rem 1rem 3.5rem 1rem',
+          padding: '3.5rem 1.25rem 4.5rem 1.25rem',
           boxSizing: 'border-box',
           overflowY: 'auto'
         }}>
