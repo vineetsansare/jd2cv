@@ -2031,15 +2031,31 @@ textarea {
     color: var(--accent-primary);
   }
 
-  /* AuthForm Mobile Stacking */
+  /* AuthForm Full Vertical Scroll & Mobile Scaling */
+  .auth-wrapper {
+    align-items: flex-start !important;
+    padding: 1.5rem 1rem 3.5rem 1rem !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    box-sizing: border-box !important;
+  }
+
   .auth-hero-split {
     grid-template-columns: 1fr !important;
     gap: 1.5rem !important;
-    padding: 1rem !important;
+    padding: 0 !important;
+    align-items: flex-start !important;
   }
 
-  .auth-left-brand {
-    display: none !important;
+  .auth-hero-split h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .auth-hero-split p {
+    font-size: 0.9rem !important;
   }
 
   .auth-card-container {
