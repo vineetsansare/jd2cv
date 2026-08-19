@@ -603,7 +603,7 @@ textarea {
 .resume-preview-sheet {
   width: 210mm;
   min-height: 297mm;
-  padding: 12mm 15mm;
+  padding: 10mm 10mm;
   background: #ffffff;
   color: #111827;
   font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -614,9 +614,27 @@ textarea {
 
 /* Compact 1-Page Layout Mode (Prevents Page 2 overflow) */
 .resume-preview-sheet.compact-1page {
-  padding: 8mm 12mm !important;
+  padding: 6mm 8mm !important;
   font-size: 9pt !important;
   line-height: 1.28 !important;
+}
+
+/* Page Break Protection for PDF Export */
+.resume-preview-sheet h2,
+.resume-preview-sheet h3,
+.resume-preview-sheet .role-row,
+.resume-preview-sheet .company-row {
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+.resume-preview-sheet li,
+.resume-preview-sheet .skills-list li,
+.resume-preview-sheet p,
+.resume-preview-sheet .role-row,
+.resume-preview-sheet .company-row {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
 }
 
 .resume-preview-sheet.compact-1page h1 {
@@ -1342,7 +1360,7 @@ textarea {
   .resume-preview-sheet {
     box-shadow: none !important;
     border-radius: 0 !important;
-    padding: 12mm 15mm !important;
+    padding: 10mm 10mm !important;
     margin: 0 !important;
     width: 100% !important;
     max-width: none !important;
@@ -1352,7 +1370,7 @@ textarea {
   }
 
   .resume-preview-sheet.compact-1page {
-    padding: 8mm 12mm !important;
+    padding: 6mm 8mm !important;
   }
 
   @page {
