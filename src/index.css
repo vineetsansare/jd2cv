@@ -1277,27 +1277,44 @@ textarea {
 
 /* Printing styles */
 @media print {
-  body, html {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 12mm 12mm !important;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
     background: #ffffff !important;
     color: #111827 !important;
-    min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
   }
 
-  .aurora-wrapper, .aurora-container, .aurora-content {
+  .aurora-wrapper, 
+  .aurora-container, 
+  .aurora-content {
     position: static !important;
     background: #ffffff !important;
     display: block !important;
+    width: 100% !important;
+    height: auto !important;
     min-height: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
+    overflow: visible !important;
   }
   
-  .app-container, .app-container.sidebar-collapsed {
+  .app-container, 
+  .app-container.sidebar-collapsed {
     display: block !important;
+    width: 100% !important;
+    height: auto !important;
     min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
   
   .sidebar,
@@ -1319,6 +1336,9 @@ textarea {
     margin-left: 0 !important;
     padding-top: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
     min-height: 0 !important;
   }
 
@@ -1327,6 +1347,8 @@ textarea {
     margin: 0 !important;
     width: 100% !important;
     max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
   
   .cv-display-card {
@@ -1335,6 +1357,9 @@ textarea {
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .print-pane {
@@ -1347,39 +1372,40 @@ textarea {
     display: block !important;
     overflow: visible !important;
     max-height: none !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   .mobile-sheet-scaler {
     transform: none !important;
     width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
+    height: auto !important;
+    min-height: 0 !important;
   }
 
-  .resume-preview-sheet {
+  .resume-preview-sheet,
+  .resume-preview-sheet.compact-1page {
     box-shadow: none !important;
     border-radius: 0 !important;
+    border: none !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
-    max-width: none !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     min-height: 0 !important;
+    height: auto !important;
     background: #ffffff !important;
     color: #111827 !important;
   }
 
-  .resume-preview-sheet.compact-1page {
-    padding: 0 !important;
-  }
-
   .resume-preview-sheet h2:first-of-type {
-    margin-top: 0.5rem !important;
-  }
-
-  @page {
-    size: A4;
-    margin: 10mm 10mm 10mm 10mm;
+    margin-top: 0.3rem !important;
   }
 }
 
