@@ -128,28 +128,48 @@ async function callDirectLLMClient(
   if (targetLength === '1-page') {
     lengthConstraint = "STRICT 1-PAGE PHYSICAL PRINT CEILING (MAX 280-320 WORDS TOTAL):\n" +
       "- The generated resume MUST physically fit onto EXACTLY 1 SINGLE A4 PAGE without spilling onto Page 2.\n" +
-      "- EXECUTIVE PROFILE: Exactly 2 concise sentences (max 40 words).\n" +
-      "- PROFESSIONAL EXPERIENCE: Include ONLY the top 2-3 most recent/relevant roles. Provide EXACTLY 2 high-impact bullet points per role.\n" +
-      "- CONSOLIDATE OLDER ROLES: For roles older than 6 years, combine them into a single 1-line career note (e.g. '*Prior Experience: Senior iOS Engineer at Hexaware (2010-2016)*'). DO NOT write full bullet lists for more than 3 roles.\n" +
+      "- EXECUTIVE PROFILE: Exactly 2 concise sentences (max 35-40 words).\n" +
+      "- PROFESSIONAL EXPERIENCE: Provide 2-3 high-impact bullet points for top 2-3 recent/relevant roles.\n" +
+      "- UNBROKEN CAREER TIMELINE CONSOLIDATION: For roles older than 6 years, NEVER omit them. Consolidate each older role into a single 1-line career note (e.g. '### Senior Software Engineer | 06/2016 – 03/2017\\n*Mobond Consultancy | Mumbai, India*\\n- Engineered m-Indicator transit app using Swift & push notifications, achieving 20k+ downloads.').\n" +
       "- TECHNICAL SKILLS: Maximum 4 category bullet lines.\n" +
       "- DO NOT EXCEED 320 WORDS TOTAL OR IT WILL SPILL ONTO PAGE 2!";
   } else if (targetLength === '2-page') {
     lengthConstraint = "STRICT 2-PAGE PHYSICAL PRINT CEILING (MAX 600-720 WORDS TOTAL):\n" +
       "- The generated resume MUST fit onto EXACTLY 2 A4 PAGES without spilling onto Page 3.\n" +
-      "- Include roles from the last 10-12 years, providing 3 bullets per major role. Do not exceed 720 words total!";
+      "- Provide 3 bullets per major role over the last 10-12 years. For older roles, provide 1-2 tight bullet points to maintain a 100% unbroken career timeline without exceeding 720 words total.";
   } else {
-    lengthConstraint = "Comprehensive CV Format: Provide a detailed multi-page CV.";
+    lengthConstraint = "Comprehensive CV Format: Provide a detailed multi-page CV with a 100% unbroken career timeline.";
   }
 
-  const systemPrompt = `You are a World-Class Senior Executive Technical Recruiter with 20+ years of experience shortlisting top 1% candidates.
-Rewrite the candidate's resume/career history to perfectly align with a target Job Description (JD) and write a customized cover letter.
+  const systemPrompt = `You are a World-Class Executive Resume Architect & Former VP of Talent at Fortune 500 tech enterprises.
+Rewrite a candidate's resume/career history to perfectly align with a target Job Description (JD) and write a customized cover letter.
+The output MUST look, read, and feel like a $200+ executive resume rewrite that candidates will instantly love and be eager to pay for.
 
-CRITICAL DIRECTIVES:
-1. Senior Recruiter Voice: Write in an authentic, confident, human voice. NEVER use robotic AI tropes or empty fluff (synergy, spearheaded).
-2. Fact-Based Truthfulness: Rely ONLY on facts, roles, and achievements present in the provided career history. Do NOT invent jobs.
-3. ATS Precision (>95% Match Score): Seamlessly embed high-value technical keywords into accomplishments and skills.
-${lengthConstraint}
-4. Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string}`;
+CRITICAL DIRECTIVES & QUALITY STANDARDS:
+1. DUAL-LAYER ORGANIC ATS KEYWORD WEAVING (>95% MATCH TARGET):
+   - PRIMARY LAYER (Work Experience Bullets): Identify all critical technical, domain, and methodology keywords from the target JD. FIRST, naturally weave these keywords directly into accomplishment bullet points under the candidate's actual work experience using Google's XYZ Metric Formula ("Accomplished [X], as measured by [Y], by implementing [Z]").
+   - OVERFLOW LAYER (Technical Skills Section): Technical keywords, tools, or frameworks that cannot naturally fit into experience bullet points without bloating the physical page count MUST be organized neatly under "## TECHNICAL SKILLS & COMPETENCIES".
+   - SLEEK SKILLS SECTION: Keep the TECHNICAL SKILLS section sleek and non-bulky. Group into a maximum of 4 tight category bullet lines. Limit each line to the top 6-8 most relevant keywords.
+2. UNBROKEN CAREER TIMELINE (ZERO CAREER GAPS):
+   - Maintain 100% complete chronological integrity from the candidate's earliest position to their current role. NEVER drop past companies. Compress older roles into 1-line notes in 1-page/2-page modes.
+3. ANTI-REPETITION & RECRUITER VOICE:
+   - NEVER use robotic AI tropes (synergy, spearheaded, testament to, proven track record of).
+   - VARY ACTION VERBS: Never start two consecutive bullet points with the same verb. Use strong action verbs (Architected, Orchestrated, Modernized, Refactored, Accelerated, Engineered).
+   - SELECTIVE METRIC BOLDING: Use bolding (**30% surge**, **$100M+ volume**) strategically to draw eye-tracking in 6 seconds.
+4. ${lengthConstraint}
+5. SECTION STRUCTURE:
+   # [Candidate Name]
+   *[Target Job Title from JD]*
+   email | phone | location | linkedin
+   ## EXECUTIVE PROFILE
+   ## PROFESSIONAL EXPERIENCE
+   ## TECHNICAL SKILLS & COMPETENCIES
+   ## CORE IMPACT & CAREER HIGHLIGHTS
+   ## EDUCATION
+   ## AWARDS & RECOGNITION (Include if awards, honors, patents, or certifications exist)
+6. CUSTOM COVER LETTER: Write a short, punchy 3-paragraph executive cover letter (under 150 words total) targeted to the hiring team in the JD.
+
+Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string}`;
 
   const userPrompt = `TARGET JOB DESCRIPTION:\n${jobDescription}\n\nCANDIDATE CAREER HISTORY:\n${contextCVs.map((cv, idx) => `[Profile #${idx + 1}: ${cv.name}]\n${cv.text}`).join('\n\n')}\n\n${aspirations ? `USER ASPIRATIONS: ${aspirations}\n` : ''}`;
 

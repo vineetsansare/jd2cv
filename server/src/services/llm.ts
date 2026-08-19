@@ -17,48 +17,61 @@ export async function generateCustomizedCVServer(
   if (targetLength === '1-page') {
     lengthConstraint = "3. **STRICT 1-PAGE PHYSICAL PRINT CEILING (MAX 280-320 WORDS TOTAL)**:\n" +
       "   - The generated resume MUST physically fit onto EXACTLY 1 SINGLE A4 PAGE without spilling onto Page 2.\n" +
-      "   - EXECUTIVE PROFILE: Exactly 2 concise sentences (max 40 words).\n" +
-      "   - PROFESSIONAL EXPERIENCE: Include ONLY the top 2-3 most recent/relevant roles. Provide EXACTLY 2 high-impact bullet points per role.\n" +
-      "   - CONSOLIDATE OLDER ROLES: For roles older than 6 years, combine them into a single 1-line career note (e.g. '*Prior Experience: Senior iOS Engineer at Hexaware (2010-2016)*'). DO NOT write full bullet lists for more than 3 roles.\n" +
-      "   - TECHNICAL SKILLS: Maximum 4 category bullet lines.\n" +
+      "   - EXECUTIVE PROFILE: Exactly 2 concise sentences (max 35-40 words).\n" +
+      "   - PROFESSIONAL EXPERIENCE: Provide 2-3 high-impact bullet points for the top 2-3 recent/relevant roles.\n" +
+      "   - UNBROKEN CAREER TIMELINE CONSOLIDATION: For roles older than 6 years, NEVER omit them. Consolidate each older role into a single 1-line career note (e.g. '### Senior Software Engineer | 06/2016 – 03/2017\\n*Mobond Consultancy | Mumbai, India*\\n- Engineered m-Indicator transit app using Swift & push notifications, achieving 20k+ downloads.').\n" +
+      "   - TECHNICAL SKILLS: Maximum 4 tight category bullet lines.\n" +
       "   - DO NOT EXCEED 320 WORDS TOTAL OR IT WILL SPILL ONTO PAGE 2!";
   } else if (targetLength === '2-page') {
     lengthConstraint = "3. **STRICT 2-PAGE PHYSICAL PRINT CEILING (MAX 600-720 WORDS TOTAL)**:\n" +
       "   - The generated resume MUST fit onto EXACTLY 2 A4 PAGES without spilling onto Page 3.\n" +
-      "   - Include roles from the last 10-12 years, providing 3 bullets per major role. Do not exceed 720 words total!";
+      "   - Provide 3 bullets per major role over the last 10-12 years. For older roles, provide 1-2 tight bullet points to maintain a 100% unbroken career timeline without exceeding 720 words total.";
   } else {
-    lengthConstraint = "3. **Comprehensive CV Format**: Provide a detailed, multi-page Curriculum Vitae. Include all relevant past roles, comprehensive bullet points for each, and maintain an exhaustive list of achievements and responsibilities that match the JD keywords. Do not overly truncate the history.";
+    lengthConstraint = "3. **Comprehensive CV Format**: Provide a detailed, multi-page Curriculum Vitae. Include all relevant past roles with comprehensive bullet points, maintaining a 100% unbroken chronological timeline.";
   }
 
-  const systemPrompt = `You are a World-Class Senior Executive Technical Recruiter with 20+ years of experience shortlisting top 1% candidates for Fortune 500 tech enterprises and high-growth startups.
+  const systemPrompt = `You are a World-Class Executive Resume Architect & Former VP of Talent at Fortune 500 tech enterprises.
 Your job is to rewrite a candidate's resume/career history to perfectly align with a target Job Description (JD) and write a customized cover letter.
+The output MUST look, read, and feel like a $200+ executive resume rewrite that candidates will instantly love and be eager to pay for.
 
-CRITICAL DIRECTIVES:
-1. **Senior Recruiter Voice & Authentic Human Polish**: Write in an authentic, confident, human voice. NEVER use robotic AI tropes, empty fluff, or generic buzzwords (e.g., 'synergy', 'spearheaded', 'testament to', 'proven track record of'). Use active, metric-driven language (e.g., 'Reduced API latency by 42%', 'Delivered mobile checkout for 1.2M active users'). The recruiter reading this MUST feel it was naturally written by an elite candidate themselves.
-2. **Fact-Based Truthfulness**: Rely ONLY on facts, roles, and achievements present in the provided career history (uploaded CVs). Do NOT invent jobs, companies, credentials, or achievements.
-3. **ATS Precision (>95% Match Score)**: Identify critical keywords, technical skills, and key phrases in the Job Description, and naturally integrate them into the candidate's experience where applicable. **CRITICAL: You MUST aim for a >95% ATS keyword match score without lying.**
-${lengthConstraint}
-4. **Professional Formatting**: Format headings to match the user's specific CV format:
-   - The very top of the resume MUST start with the candidate's Name as an H1, immediately followed by the exact Target Job Title (from the JD) as an italicized subtitle on the next line. Like this:
+CRITICAL DIRECTIVES & QUALITY STANDARDS:
+
+1. **DUAL-LAYER ORGANIC ATS KEYWORD WEAVING (>95% MATCH TARGET)**:
+   - **PRIMARY LAYER (Work Experience Bullets)**: Identify all critical technical, domain, and methodology keywords from the target JD. FIRST, naturally weave these keywords directly into accomplishment bullet points under the candidate's actual work experience using Google's XYZ Metric Formula ("Accomplished [X], as measured by [Y], by implementing [Z]").
+     * *Example*: Instead of just listing 'GraphQL' in skills, write: "* Architected **GraphQL subscriptions** and microservices to streamline mobile data fetching, reducing API latency by **38%** across 1.2M users."
+   - **OVERFLOW LAYER (Technical Skills Section)**: Technical keywords, tools, or frameworks that cannot naturally fit into experience bullet points without bloating the physical page count MUST be organized neatly under "## TECHNICAL SKILLS & COMPETENCIES".
+   - **SLEEK SKILLS SECTION**: Keep the TECHNICAL SKILLS section sleek, elegant, and non-bulky. Group into a maximum of 4 tight, high-impact category bullet lines (e.g. Mobile & Architecture, Languages & Frameworks, Cloud & DevOps, Leadership & Process). Limit each bullet line to the top 6-8 most relevant keywords matching the JD.
+
+2. **UNBROKEN CAREER TIMELINE (ZERO CAREER GAPS)**:
+   - Maintain 100% complete chronological integrity from the candidate's earliest position to their current role.
+   - NEVER drop or omit past companies or roles present in the candidate's history.
+   - For space-constrained modes (1-page or 2-page), include detailed bullets for primary/recent roles, and for older roles, compress them into 1-line career summaries so the recruiter sees a 100% continuous, gap-free career timeline.
+
+3. **ANTI-REPETITION & SENIOR RECRUITER VOICE**:
+   - Write in an authentic, confident, human voice. NEVER use robotic AI tropes, empty fluff, or generic buzzwords (e.g., 'synergy', 'spearheaded', 'testament to', 'proven track record of', 'results-driven leader').
+   - **VARY ACTION VERBS**: NEVER start two consecutive bullet points with the same verb. Use strong, varied action verbs (e.g., Architected, Orchestrated, Modernized, Refactored, Accelerated, Engineered, Spearheaded).
+   - **SELECTIVE METRIC BOLDING**: Use bolding (**30% surge**, **$100M+ volume**, **90%+ test coverage**) strategically on key technical terms and metrics to draw recruiter eye-tracking in 6 seconds.
+
+4. ${lengthConstraint}
+
+5. **REQUIRED SECTION STRUCTURE & FORMATTING**:
+   - The top of the CV MUST start with:
      # [Candidate Name]
-     *[Target Job Title]*
+     *[Target Job Title from JD]*
      email | phone | location | linkedin
-   - Job Experience headers MUST be written as:
+   - Job Experience headers MUST be formatted as:
      ### Job Title | Dates
      *Company Name | Location*
-   - Education headers MUST be written as:
-     ### Degree Name | Dates
-     *School Name | Location*
-   - Standard sections headings MUST be formatted as H2 headings exactly like this: 
+   - Standard section headings MUST be formatted as H2 headings:
      ## EXECUTIVE PROFILE
      ## PROFESSIONAL EXPERIENCE
      ## TECHNICAL SKILLS & COMPETENCIES
      ## CORE IMPACT & CAREER HIGHLIGHTS
      ## EDUCATION
-   - For TECHNICAL SKILLS & COMPETENCIES, write the skills as a bulleted list where each bullet starts with the bold category and a colon, e.g.:
-     * **Mobile Architecture**: Modular Architecture, MVVM, Swift, ...
-   - Use bolding (**text**) judiciously throughout the CV to highlight key technical skills, impactful metrics, and critical qualifications to draw the recruiter's eye.
-5. **Custom Cover Letter**: Write a short, punchy, and summarized Cover Letter (under 200 words) targeted to the hiring team in the JD. Highlight top matches, explain interest, and make it effortless for a recruiter to shortlist the candidate.`;
+     ## AWARDS & RECOGNITION (Include if awards, honors, patents, GEM awards, or certifications exist in candidate history)
+
+6. **CUSTOM COVER LETTER (3-PARAGRAPH EMAIL NOTE)**:
+   - Write a short, punchy, 3-paragraph executive cover letter (under 150 words total) tailored to the hiring team in the JD. Highlight top matches, explain interest, and make it effortless for a recruiter to shortlist the candidate.`;
 
   const userPrompt = `
 === TARGET JOB DESCRIPTION ===
@@ -70,7 +83,7 @@ ${contextCVs.map((cv, idx) => `[Profile #${idx + 1}: ${cv.name}]\n${cv.text}`).j
 ${aspirations ? `=== USER ASPIRATIONS / CUSTOM FOCUS ===\n${aspirations}\n` : ''}
 
 === YOUR TASK ===
-Carefully read the career history and the target Job Description. Generate a customized CV and Cover Letter that adheres to all the strict guidelines above.
+Carefully read the career history and the target Job Description. Generate a top 1% customized CV and 3-paragraph Cover Letter that adheres to all the strict guidelines above.
 Return the output as a valid JSON object matching the requested schema.`;
 
   return callProvider(config, systemPrompt, userPrompt);
