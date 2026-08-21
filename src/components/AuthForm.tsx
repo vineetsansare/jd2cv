@@ -95,10 +95,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', o
     setError(null);
     setSuccess(null);
     try {
+      const cleanRedirectUrl = `${window.location.origin}${window.location.pathname}`.replace(/\/+$/, '');
       const { error: socialError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: window.location.href
+          redirectTo: cleanRedirectUrl
         }
       });
       if (socialError) throw socialError;

@@ -45,6 +45,11 @@ interface UserProfile {
 function App() {
   const [session, setSession] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  // Clean double-hash if present in browser address bar (e.g. ##access_token=)
+  if (typeof window !== 'undefined' && window.location.hash.startsWith('##')) {
+    window.location.hash = window.location.hash.replace(/^##/, '#');
+  }
+
   const isOAuthCallback = window.location.hash.includes('access_token=') || 
                           window.location.search.includes('code=') ||
                           window.location.hash.includes('type=recovery');
@@ -53,6 +58,11 @@ function App() {
 
   // 1. Auth Subscription & Session Setup
   useEffect(() => {
+    // 5-second safety timer: Ensures the UI never freezes on loading screen
+    const safetyTimer = setTimeout(() => {
+      setAuthLoading(false);
+    }, 5000);
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setSession(session);
@@ -87,7 +97,10 @@ function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const checkAndSendWelcomeEmail = async (email: string, fullName?: string) => {
