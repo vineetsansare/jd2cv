@@ -884,7 +884,7 @@ function App() {
         <section className="entrance-fade" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '2.1rem', margin: 0, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-              Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋
+              Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
             </h2>
             <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
               You have 2 pending ATS optimizations and 3 new job matches today.
@@ -1299,7 +1299,7 @@ function App() {
         {/* Header Section */}
         <div>
           <h2 style={{ fontSize: '2.1rem', margin: 0, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋
+            Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
           </h2>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
             Ready to land your next role? Optimize your resume for any job description in seconds.
