@@ -45,7 +45,163 @@ interface UserProfile {
 function App() {
   const [session, setSession] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const isOAuthCallback = window.location.hash.includes('access_token=') || 
+                          window.location.search.includes('code=') ||
+                          window.location.hash.includes('type=recovery');
+  const [authLoading, setAuthLoading] = useState<boolean>(isOAuthCallback || true);
+  const isLoadingUserDataRef = useRef(false);
+
+  // 1. Auth Subscription & Session Setup
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setSession(session);
+        loadUserData(session);
+      } else if (!isOAuthCallback) {
+        setSession(null);
+        setAuthLoading(false);
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setSession(session);
+        if (session) {
+          loadUserData(session);
+          if (window.location.hash || window.location.search) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        }
+      } else if (event === 'PASSWORD_RECOVERY') {
+        setSession(session);
+        setIsResettingPassword(true);
+      } else if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUserProfile(null);
+        setContextCVs([]);
+        setActiveCVIndices([]);
+        setAuthLoading(false);
+      } else if (session) {
+        setSession(session);
+        loadUserData(session);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkAndSendWelcomeEmail = async (email: string, fullName?: string) => {
+    if (!email) return;
+    const storageKey = `welcome_email_sent_${email}`;
+    if (localStorage.getItem(storageKey)) return;
+
+    try {
+      const proxyUrl = import.meta.env.VITE_PROXY_URL || 'http://localhost:3001';
+      await fetch(`${proxyUrl}/api/email/welcome`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, name: fullName })
+      });
+      localStorage.setItem(storageKey, 'true');
+    } catch (e) {
+      console.error('Welcome email trigger error:', e);
+    }
+  };
+
+  // 2. Fetch user profile and CVs from Supabase
+  const loadUserData = async (currentSession: any) => {
+    if (!currentSession?.user) return;
+    if (isLoadingUserDataRef.current) return;
+    isLoadingUserDataRef.current = true;
+    setAuthLoading(true);
+
+    try {
+      let profile = null;
+      let retryCount = 0;
+
+      while (retryCount < 2) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('email, full_name, plan, generation_count, avatar_url')
+          .eq('id', currentSession.user.id)
+          .maybeSingle();
+
+        if (data) {
+          profile = data;
+          break;
+        }
+
+        await new Promise(res => setTimeout(res, 400));
+        retryCount++;
+      }
+
+      if (!profile) {
+        const meta = currentSession.user.user_metadata || {};
+        const defaultName = meta.full_name || meta.name || currentSession.user.email?.split('@')[0] || 'User';
+        const defaultAvatar = meta.avatar_url || meta.picture || '';
+
+        const newProfile = {
+          id: currentSession.user.id,
+          email: currentSession.user.email,
+          full_name: defaultName,
+          plan: 'free',
+          generation_count: 0,
+          avatar_url: defaultAvatar
+        };
+
+        const { data: upserted } = await supabase
+          .from('profiles')
+          .upsert(newProfile, { onConflict: 'id' })
+          .select('email, full_name, plan, generation_count, avatar_url')
+          .single();
+
+        profile = upserted || newProfile;
+      }
+
+      const plan = (profile.plan as 'free' | 'byok' | 'pro') || 'free';
+      setUserProfile({
+        email: profile.email || currentSession.user.email,
+        full_name: profile.full_name || currentSession.user.user_metadata?.full_name || 'User',
+        plan,
+        generation_count: profile.generation_count || 0,
+        avatar_url: profile.avatar_url || currentSession.user.user_metadata?.avatar_url || ''
+      });
+
+      if (plan === 'free') {
+        setConfig(prev => ({
+          ...prev,
+          provider: 'gemini',
+          model: 'gemini-2.5-flash'
+        }));
+      } else if (plan === 'byok') {
+        getSavedAPIKeysStatus().then(setSavedKeys);
+      }
+
+      // Trigger welcome email for first-time signups
+      checkAndSendWelcomeEmail(profile.email || currentSession.user.email, profile.full_name);
+
+      // Fetch user's saved CVs
+      const { data: cvs, error: _cvError } = await supabase
+        .from('cv_documents')
+        .select('id, filename, extracted_text')
+        .eq('user_id', currentSession.user.id);
+
+      if (cvs && !_cvError) {
+        const mappedCVs = cvs.map(c => ({
+          id: c.id,
+          name: c.filename,
+          text: c.extracted_text
+        }));
+        setContextCVs(mappedCVs);
+        setActiveCVIndices(mappedCVs.map((_, idx) => idx));
+      }
+    } catch (err) {
+      console.error('Error loading session data:', err);
+    } finally {
+      isLoadingUserDataRef.current = false;
+      setAuthLoading(false);
+    }
+  };
 
   // Password reset flow states
   const [isResettingPassword, setIsResettingPassword] = useState(false);
@@ -110,121 +266,7 @@ function App() {
     anthropic: false
   });
 
-  // 1. Auth Subscription & Session Setup
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-        loadUserData(session);
-      } else {
-        setAuthLoading(false);
-      }
-    });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (event === 'PASSWORD_RECOVERY') {
-        setIsResettingPassword(true);
-      }
-      if (session) {
-        loadUserData(session);
-      } else {
-        setUserProfile(null);
-        setContextCVs([]);
-        setActiveCVIndices([]);
-        setAuthLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkAndSendWelcomeEmail = async (email: string, fullName?: string) => {
-    if (!email) return;
-    const storageKey = `welcome_email_sent_${email}`;
-    if (localStorage.getItem(storageKey)) return;
-
-    try {
-      const proxyUrl = import.meta.env.VITE_PROXY_URL || 'http://localhost:3001';
-      await fetch(`${proxyUrl}/api/email/welcome`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name: fullName })
-      });
-      localStorage.setItem(storageKey, 'true');
-    } catch (e) {
-      console.error('Welcome email trigger error:', e);
-    }
-  };
-
-  // 2. Fetch user profile and CVs from Supabase
-  const loadUserData = async (currentSession: any) => {
-    setAuthLoading(true);
-    try {
-      let profile = null;
-      let retryCount = 0;
-
-      while (retryCount < 5) {
-        const { data, error: _error } = await supabase
-          .from('profiles')
-          .select('email, full_name, plan, generation_count, avatar_url')
-          .eq('id', currentSession.user.id)
-          .maybeSingle();
-
-        if (data) {
-          profile = data;
-          break;
-        }
-
-        await new Promise(res => setTimeout(res, 1000));
-        retryCount++;
-      }
-
-        if (profile) {
-          const plan = profile.plan as 'free' | 'byok' | 'pro';
-          setUserProfile({
-            email: profile.email,
-            full_name: profile.full_name,
-            plan,
-            generation_count: profile.generation_count || 0,
-            avatar_url: profile.avatar_url
-          });
-
-          if (plan === 'free') {
-            setConfig(prev => ({
-              ...prev,
-              provider: 'gemini',
-              model: 'gemini-2.5-flash'
-            }));
-          } else if (plan === 'byok') {
-            getSavedAPIKeysStatus().then(setSavedKeys);
-          }
-
-          // Trigger welcome email for first-time signups
-          checkAndSendWelcomeEmail(profile.email || currentSession.user.email, profile.full_name);
-        }
-
-      // Fetch user's saved CVs
-      const { data: cvs, error: _cvError } = await supabase
-        .from('cv_documents')
-        .select('id, filename, extracted_text')
-        .eq('user_id', currentSession.user.id);
-
-      if (cvs && !_cvError) {
-        const mappedCVs = cvs.map(c => ({
-          id: c.id,
-          name: c.filename,
-          text: c.extracted_text
-        }));
-        setContextCVs(mappedCVs);
-        setActiveCVIndices(mappedCVs.map((_, idx) => idx));
-      }
-    } catch (err) {
-      console.error('Error loading session data:', err);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
 
   const handleUpdateAvatar = async (croppedDataUrl: string) => {
     if (!session?.user?.id) return;
