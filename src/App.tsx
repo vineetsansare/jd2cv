@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { SettingsPanel } from './components/SettingsPanel';
 import { CVDisplay } from './components/CVDisplay';
 import { AuthForm } from './components/AuthForm';
+import { PricingModal } from './components/PricingModal';
 import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
@@ -239,7 +240,42 @@ function App() {
   const [generationsLoading, setGenerationsLoading] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [customizerStep, setCustomizerStep] = useState(1);
+  const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
+  const [pricingModalReason, setPricingModalReason] = useState<'limit_reached' | 'model_upgrade' | 'manual' | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  const handleSelectPlan = async (newPlan: 'free' | 'byok' | 'pro') => {
+    if (!session?.user?.id) return;
+    try {
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ plan: newPlan })
+        .eq('id', session.user.id);
+
+      if (updateError) throw updateError;
+
+      setUserProfile(prev => prev ? { ...prev, plan: newPlan } : null);
+
+      if (newPlan === 'free') {
+        setConfig(prev => ({
+          ...prev,
+          provider: 'gemini',
+          model: 'gemini-2.5-flash'
+        }));
+      } else if (newPlan === 'byok') {
+        getSavedAPIKeysStatus().then(status => {
+          setSavedKeys(status);
+          const hasAnyKey = status.gemini || status.openai || status.anthropic;
+          if (!hasAnyKey) {
+            setActiveTab('settings');
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to update plan in database:', err);
+      setError(err.message || 'Failed to update subscription plan.');
+    }
+  };
 
   const fetchRecentGenerations = async () => {
     setGenerationsLoading(true);
@@ -497,6 +533,12 @@ function App() {
   }, [generating]);
 
   const handleGenerate = async () => {
+    if (userProfile?.plan === 'free' && userProfile.generation_count >= 3) {
+      setPricingModalReason('limit_reached');
+      setIsPricingModalOpen(true);
+      return;
+    }
+
     if (activeCVIndices.length === 0) {
       setError('Please select at least one CV from the context checkboxes to use as career history.');
       return;
@@ -533,6 +575,12 @@ function App() {
   };
 
   const handleAutoFix = async () => {
+    if (userProfile?.plan === 'free' && userProfile.generation_count >= 3) {
+      setPricingModalReason('limit_reached');
+      setIsPricingModalOpen(true);
+      return;
+    }
+
     if (!result) return;
     
     setGenerating(true);
@@ -796,12 +844,29 @@ function App() {
 
           <div style={{ marginTop: 'auto' }}>
             {!sidebarCollapsed && (
-              <div className="glass-card" style={{ padding: '1rem', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--card-border)', marginBottom: '1rem' }}>
-                <span className="font-label-sm" style={{ fontWeight: 700, display: 'block', marginBottom: '0.25rem' }}>
-                  {userProfile?.plan === 'pro' ? 'Pro Plan' : userProfile?.plan === 'byok' ? 'BYOK Plan' : 'Free Tier'}
-                </span>
+              <div 
+                className="glass-card" 
+                onClick={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
+                style={{ 
+                  padding: '0.85rem 1rem', 
+                  borderRadius: '12px', 
+                  background: 'var(--bg-secondary)', 
+                  border: userProfile?.plan === 'pro' ? '1px solid rgba(192, 132, 252, 0.3)' : '1px solid var(--card-border)', 
+                  marginBottom: '1rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                  <span className="font-label-sm" style={{ fontWeight: 800, color: userProfile?.plan === 'pro' ? '#c084fc' : userProfile?.plan === 'byok' ? '#a78bfa' : 'var(--text-primary)' }}>
+                    {userProfile?.plan === 'pro' ? '⭐ Pro Plan' : userProfile?.plan === 'byok' ? '🔑 BYOK Plan' : 'Free Tier'}
+                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--accent-primary)', fontWeight: 700, textDecoration: 'underline' }}>
+                    {userProfile?.plan === 'pro' ? 'Manage' : 'Upgrade'}
+                  </span>
+                </div>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  {userProfile?.plan === 'free' ? `${userProfile.generation_count} of 3 free generated` : 'Unlimited optimized CVs'}
+                  {userProfile?.plan === 'free' ? `${userProfile.generation_count} of 3 free used` : 'Unlimited generations'}
                 </span>
               </div>
             )}
@@ -852,6 +917,42 @@ function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Plan Upgrade Pill */}
+          <button
+            type="button"
+            onClick={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
+            style={{
+              background: userProfile?.plan === 'pro' 
+                ? 'rgba(192, 132, 252, 0.12)' 
+                : 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%)',
+              border: userProfile?.plan === 'pro' 
+                ? '1px solid rgba(192, 132, 252, 0.3)' 
+                : '1px solid rgba(236, 72, 153, 0.35)',
+              color: userProfile?.plan === 'pro' ? '#c084fc' : '#f472b6',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '999px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            {userProfile?.plan === 'pro' ? (
+              <>
+                <Zap size={13} fill="#c084fc" />
+                <span>PRO ACTIVE</span>
+              </>
+            ) : (
+              <>
+                <Zap size={13} fill="#f472b6" />
+                <span>UPGRADE TO PRO</span>
+              </>
+            )}
+          </button>
+
           <button 
             type="button" 
             className="theme-toggle-header-btn" 
@@ -1876,12 +1977,23 @@ function App() {
                     userProfile={userProfile}
                     onLogout={handleLogout}
                     onUpdateAvatar={handleUpdateAvatar}
+                    onOpenPricingModal={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
                   />
                 )}
               </>
             )}
           </div>
         </main>
+
+        {/* Pricing & Tier Upgrade Modal */}
+        <PricingModal
+          isOpen={isPricingModalOpen}
+          onClose={() => setIsPricingModalOpen(false)}
+          currentPlan={userProfile?.plan || 'free'}
+          onSelectPlan={handleSelectPlan}
+          generationCount={userProfile?.generation_count || 0}
+          triggerReason={pricingModalReason}
+        />
 
         {/* Slide-Over Mobile Glass Drawer */}
         {isMobileMenuOpen && (

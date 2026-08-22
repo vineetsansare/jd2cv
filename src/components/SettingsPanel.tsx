@@ -10,6 +10,7 @@ interface SettingsPanelProps {
   userProfile: { email: string; full_name?: string; plan: 'free' | 'byok' | 'pro'; generation_count: number; avatar_url?: string } | null;
   onLogout: () => void;
   onUpdateAvatar?: (avatarUrl: string) => Promise<void>;
+  onOpenPricingModal?: () => void;
 }
 
 const PROVIDER_MODELS = {
@@ -23,7 +24,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   onChangeConfig,
   userProfile,
   onLogout,
-  onUpdateAvatar
+  onUpdateAvatar,
+  onOpenPricingModal
 }) => {
   const [keyInput, setKeyInput] = useState('');
   const [savedKeys, setSavedKeys] = useState<{ gemini: boolean; openai: boolean; anthropic: boolean }>({
@@ -260,29 +262,67 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-secondary)', padding: '1rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--card-border)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Subscription Plan:</span>
                 <span style={{ 
                   fontSize: '0.85rem', 
-                  fontWeight: 700, 
-                  color: userProfile.plan === 'pro' ? 'var(--accent-secondary)' : userProfile.plan === 'byok' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  fontWeight: 800, 
+                  color: userProfile.plan === 'pro' ? '#c084fc' : userProfile.plan === 'byok' ? '#a78bfa' : 'var(--text-primary)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '0.25rem'
+                  gap: '0.35rem',
+                  background: userProfile.plan === 'pro' ? 'rgba(192, 132, 252, 0.15)' : userProfile.plan === 'byok' ? 'rgba(167, 139, 250, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                  padding: '3px 10px',
+                  borderRadius: '999px',
+                  border: userProfile.plan === 'pro' ? '1px solid rgba(192, 132, 252, 0.3)' : '1px solid var(--card-border)'
                 }}>
-                  {userProfile.plan === 'pro' ? <Zap size={12} /> : <ShieldCheck size={12} />}
+                  {userProfile.plan === 'pro' ? <Zap size={12} fill="#c084fc" /> : <ShieldCheck size={12} />}
                   {userProfile.plan.toUpperCase()}
                 </span>
               </div>
 
               {userProfile.plan === 'free' && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Free Generations Used:</span>
-                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {userProfile.generation_count} / 3
-                  </span>
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Free Trial Balance:</span>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: userProfile.generation_count >= 3 ? '#f87171' : 'var(--text-primary)' }}>
+                      {userProfile.generation_count} / 3 used
+                    </span>
+                  </div>
+                  <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, (userProfile.generation_count / 3) * 100)}%`,
+                        height: '100%',
+                        background: userProfile.generation_count >= 3 ? '#ef4444' : 'linear-gradient(90deg, #7c3aed 0%, #10b981 100%)',
+                        borderRadius: '999px',
+                        transition: 'width 0.3s ease'
+                      }}
+                    />
+                  </div>
                 </div>
+              )}
+
+              {onOpenPricingModal && (
+                <button
+                  type="button"
+                  onClick={onOpenPricingModal}
+                  className="btn btn-primary"
+                  style={{
+                    width: '100%',
+                    padding: '0.6rem 1rem',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    justifyContent: 'center',
+                    marginTop: '0.25rem',
+                    background: userProfile.plan === 'pro' ? 'var(--bg-tertiary)' : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
+                    color: userProfile.plan === 'pro' ? 'var(--text-primary)' : '#ffffff',
+                    border: userProfile.plan === 'pro' ? '1px solid var(--card-border)' : 'none'
+                  }}
+                >
+                  {userProfile.plan === 'pro' ? 'Manage Subscription' : 'Upgrade Plan / Go BYOK'}
+                </button>
               )}
             </div>
 
