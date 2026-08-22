@@ -3,6 +3,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { CVDisplay } from './components/CVDisplay';
 import { AuthForm } from './components/AuthForm';
 import { PricingModal } from './components/PricingModal';
+import { ContactUsPanel } from './components/ContactUsPanel';
 import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
@@ -10,7 +11,7 @@ import {
   Sparkles, Sun, Moon, AlertCircle,
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Upload, Plus, Download, Trash2,
-  Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X
+  Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X, MessageSquare
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
@@ -235,7 +236,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'workspace' | 'quick-optimize' | 'resumes' | 'history' | 'applications' | 'reports' | 'settings'>('quick-optimize');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'quick-optimize' | 'resumes' | 'history' | 'applications' | 'reports' | 'settings' | 'contact'>('quick-optimize');
   const [generations, setGenerations] = useState<GenerationRecord[]>([]);
   const [generationsLoading, setGenerationsLoading] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -839,6 +840,15 @@ function App() {
             >
               <Settings size={18} />
               {!sidebarCollapsed && <span className="font-label-sm">Settings</span>}
+            </button>
+
+            <button 
+              className={`tab ${activeTab === 'contact' && !isCustomizing ? 'active nav-item-active' : ''}`} 
+              onClick={() => { setActiveTab('contact'); setIsCustomizing(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', border: 'none', background: 'none', color: 'inherit', textAlign: 'left', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              <MessageSquare size={18} />
+              {!sidebarCollapsed && <span className="font-label-sm">Contact Us</span>}
             </button>
           </nav>
 
@@ -1980,6 +1990,13 @@ function App() {
                     onOpenPricingModal={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
                   />
                 )}
+
+                {activeTab === 'contact' && (
+                  <ContactUsPanel
+                    userProfile={userProfile}
+                    session={session}
+                  />
+                )}
               </>
             )}
           </div>
@@ -2054,6 +2071,14 @@ function App() {
                 >
                   <Settings size={18} />
                   <span>Settings</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'contact' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('contact'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <MessageSquare size={18} />
+                  <span>Contact Us</span>
                 </button>
               </div>
 

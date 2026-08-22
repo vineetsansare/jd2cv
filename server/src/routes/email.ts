@@ -164,4 +164,118 @@ export default async function emailRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/contact', async (request, reply) => {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      return reply.status(500).send({ error: 'RESEND_API_KEY is not configured on the server' });
+    }
+
+    const resend = new Resend(apiKey);
+    const { 
+      name, 
+      email, 
+      plan = 'free', 
+      subject = 'General Inquiry', 
+      message, 
+      attachments = [] 
+    } = request.body as { 
+      name?: string; 
+      email: string; 
+      plan?: string; 
+      subject: string; 
+      message: string; 
+      attachments?: Array<{ filename: string; content: string; contentType?: string }>;
+    };
+
+    if (!email || !message) {
+      return reply.status(400).send({ error: 'Email and message are required' });
+    }
+
+    const formattedAttachments = attachments.slice(0, 3).map(att => {
+      const base64Data = att.content.includes('base64,') 
+        ? att.content.split('base64,')[1] 
+        : att.content;
+      return {
+        filename: att.filename || 'screenshot.png',
+        content: Buffer.from(base64Data, 'base64')
+      };
+    });
+
+    const targetAdminEmail = process.env.ADMIN_EMAIL || 'vineetsansare@gmail.com';
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>New JD2CV User Support Message</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0B0F17; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #FFFFFF;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0B0F17; padding: 40px 10px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background: rgba(24, 28, 36, 0.95); border: 1px solid rgba(124, 58, 237, 0.3); border-radius: 20px; padding: 32px; box-shadow: 0 12px 48px rgba(0,0,0,0.5);">
+          
+          <tr>
+            <td>
+              <h2 style="margin: 0 0 16px 0; font-size: 22px; font-weight: 800; color: #FFFFFF;">📩 JD2CV Support Ticket</h2>
+              <hr style="border: none; height: 1px; background: rgba(255, 255, 255, 0.1); margin: 0 0 20px 0;">
+            </td>
+          </tr>
+
+          <tr>
+            <td>
+              <table width="100%" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                <tr>
+                  <td style="color: #a78bfa; font-size: 13px; font-weight: 600; padding: 4px 0;">From Candidate:</td>
+                  <td style="color: #FFFFFF; font-size: 14px; font-weight: 700; padding: 4px 0;">${name || 'Anonymous'} &lt;${email}&gt;</td>
+                </tr>
+                <tr>
+                  <td style="color: #a78bfa; font-size: 13px; font-weight: 600; padding: 4px 0;">Subscription Plan:</td>
+                  <td style="color: #10b981; font-size: 14px; font-weight: 700; padding: 4px 0;">${plan.toUpperCase()}</td>
+                </tr>
+                <tr>
+                  <td style="color: #a78bfa; font-size: 13px; font-weight: 600; padding: 4px 0;">Subject / Category:</td>
+                  <td style="color: #FFFFFF; font-size: 14px; font-weight: 600; padding: 4px 0;">${subject}</td>
+                </tr>
+                <tr>
+                  <td style="color: #a78bfa; font-size: 13px; font-weight: 600; padding: 4px 0;">Screenshots Attached:</td>
+                  <td style="color: #FFFFFF; font-size: 14px; padding: 4px 0;">${formattedAttachments.length} file(s)</td>
+                </tr>
+              </table>
+
+              <h3 style="color: #FFFFFF; font-size: 16px; margin: 0 0 10px 0;">Candidate's Message:</h3>
+              <div style="background: rgba(0, 0, 0, 0.3); border-left: 3px solid #7c3aed; padding: 16px; border-radius: 8px; font-size: 15px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;">${message}</div>
+
+              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.1); font-size: 12px; color: rgba(255, 255, 255, 0.5);">
+                Reply directly to this email in your inbox to respond to <strong>${email}</strong>.
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    try {
+      const data = await resend.emails.send({
+        from: 'JD2CV Support <onboarding@resend.dev>',
+        to: [targetAdminEmail],
+        replyTo: email,
+        subject: `[JD2CV Support] ${subject} - from ${name || email} (${plan.toUpperCase()})`,
+        html: htmlContent,
+        attachments: formattedAttachments
+      });
+
+      return reply.send({ success: true, data });
+    } catch (err: any) {
+      fastify.log.error('Resend contact email error:', err);
+      return reply.status(500).send({ error: err.message || 'Failed to deliver support email' });
+    }
+  });
+
 }
