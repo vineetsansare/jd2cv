@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Check, Zap, Key, Sparkles, X, ShieldCheck, ArrowRight, Star } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Check, Zap, Key, Sparkles, X, ShieldCheck, ArrowRight, Star, Globe } from 'lucide-react';
 
 export interface PricingModalProps {
   isOpen: boolean;
@@ -10,6 +10,87 @@ export interface PricingModalProps {
   triggerReason?: 'limit_reached' | 'model_upgrade' | 'manual' | null;
 }
 
+type CurrencyCode = 'AED' | 'USD' | 'INR' | 'EUR' | 'GBP';
+
+interface CurrencyPricing {
+  symbol: string;
+  monthlyPrice: string;
+  weeklyPrice: string;
+  monthlyDisplay: string;
+  weeklyDisplay: string;
+  label: string;
+  tagline: string;
+}
+
+const CURRENCIES: Record<CurrencyCode, CurrencyPricing> = {
+  AED: {
+    symbol: 'AED',
+    monthlyPrice: '29',
+    weeklyPrice: '15',
+    monthlyDisplay: '29 AED',
+    weeklyDisplay: '15 AED',
+    label: '🇦🇪 AED (د.إ)',
+    tagline: 'Less than the price of a single coffee / meal'
+  },
+  USD: {
+    symbol: '$',
+    monthlyPrice: '7.99',
+    weeklyPrice: '3.99',
+    monthlyDisplay: '$7.99',
+    weeklyDisplay: '$3.99',
+    label: '🇺🇸 USD ($)',
+    tagline: 'Less than the price of a single coffee / meal'
+  },
+  INR: {
+    symbol: '₹',
+    monthlyPrice: '599',
+    weeklyPrice: '299',
+    monthlyDisplay: '₹599',
+    weeklyDisplay: '₹299',
+    label: '🇮🇳 INR (₹)',
+    tagline: 'High-speed AI tailoring for top career opportunities'
+  },
+  EUR: {
+    symbol: '€',
+    monthlyPrice: '7.99',
+    weeklyPrice: '3.99',
+    monthlyDisplay: '€7.99',
+    weeklyDisplay: '€3.99',
+    label: '🇪🇺 EUR (€)',
+    tagline: 'Less than the price of a single coffee / meal'
+  },
+  GBP: {
+    symbol: '£',
+    monthlyPrice: '6.99',
+    weeklyPrice: '3.49',
+    monthlyDisplay: '£6.99',
+    weeklyDisplay: '£3.49',
+    label: '🇬🇧 GBP (£)',
+    tagline: 'Less than the price of a single coffee / meal'
+  }
+};
+
+const detectDefaultCurrency = (): CurrencyCode => {
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.includes('Dubai') || tz.includes('Muscat') || tz.includes('Riyadh') || tz.includes('Qatar')) {
+      return 'AED';
+    }
+    if (tz.includes('Calcutta') || tz.includes('Kolkata') || tz.includes('India')) {
+      return 'INR';
+    }
+    if (tz.includes('London')) {
+      return 'GBP';
+    }
+    if (tz.includes('Berlin') || tz.includes('Paris') || tz.includes('Madrid') || tz.includes('Rome') || tz.includes('Amsterdam')) {
+      return 'EUR';
+    }
+  } catch (e) {
+    // fallback
+  }
+  return 'AED'; // Default to UAE / AED as primary target market!
+};
+
 export const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
@@ -19,9 +100,16 @@ export const PricingModal: React.FC<PricingModalProps> = ({
   triggerReason = 'manual'
 }) => {
   const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly'>('monthly');
+  const [currency, setCurrency] = useState<CurrencyCode>('AED');
   const [loadingPlan, setLoadingPlan] = useState<'free' | 'byok' | 'pro' | null>(null);
 
+  useEffect(() => {
+    setCurrency(detectDefaultCurrency());
+  }, []);
+
   if (!isOpen) return null;
+
+  const currentCur = CURRENCIES[currency];
 
   const handlePlanClick = async (plan: 'free' | 'byok' | 'pro') => {
     if (plan === currentPlan) {
@@ -142,71 +230,117 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               marginInline: 'auto'
             }}
           >
-            Tailor high-converting, ATS-beating resumes and cover letters in seconds. Choose the plan that matches your job hunt pace.
+            Tailor high-converting, ATS-beating resumes and cover letters in seconds.
           </p>
 
-          {/* Billing Cycle Toggle */}
+          {/* Controls Bar: Currency Selector + Billing Cycle Toggle */}
           <div
             style={{
-              display: 'inline-flex',
+              display: 'flex',
+              flexWrap: 'wrap',
               alignItems: 'center',
-              background: 'rgba(255, 255, 255, 0.05)',
-              padding: '4px',
-              borderRadius: '12px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              marginTop: '1.5rem',
-              gap: '4px'
+              justifyContent: 'center',
+              gap: '1rem',
+              marginTop: '1.5rem'
             }}
           >
-            <button
-              type="button"
-              onClick={() => setBillingCycle('monthly')}
+            {/* Currency Selector */}
+            <div
               style={{
-                padding: '0.45rem 1.15rem',
-                borderRadius: '8px',
-                border: 'none',
-                background: billingCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
-                color: billingCycle === 'monthly' ? '#ffffff' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              Monthly Pro ($19.99/mo)
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingCycle('weekly')}
-              style={{
-                padding: '0.45rem 1.15rem',
-                borderRadius: '8px',
-                border: 'none',
-                background: billingCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
-                color: billingCycle === 'weekly' ? '#ffffff' : 'var(--text-secondary)',
-                fontWeight: 600,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.35rem'
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '4px 8px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                gap: '6px'
               }}
             >
-              <span>Weekly Sprint Pass ($9.99/wk)</span>
-              <span
+              <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
+              <select
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
                 style={{
-                  fontSize: '0.7rem',
-                  background: 'rgba(16, 185, 129, 0.2)',
-                  color: '#34d399',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontWeight: 700
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  padding: '2px 4px',
+                  outline: 'none'
                 }}
               >
-                Sprint
-              </span>
-            </button>
+                {Object.entries(CURRENCIES).map(([code, details]) => (
+                  <option key={code} value={code} style={{ background: '#0f172a', color: '#fff' }}>
+                    {details.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Billing Cycle Toggle */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                background: 'rgba(255, 255, 255, 0.05)',
+                padding: '4px',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                gap: '4px'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setBillingCycle('monthly')}
+                style={{
+                  padding: '0.45rem 1.15rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: billingCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
+                  color: billingCycle === 'monthly' ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Monthly Pro ({currentCur.monthlyDisplay}/mo)
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle('weekly')}
+                style={{
+                  padding: '0.45rem 1.15rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: billingCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
+                  color: billingCycle === 'weekly' ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <span>Weekly Sprint Pass ({currentCur.weeklyDisplay}/wk)</span>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    background: 'rgba(16, 185, 129, 0.2)',
+                    color: '#34d399',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: 700
+                  }}
+                >
+                  Sprint
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -244,8 +378,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>$0</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>0 {currentCur.symbol}</span>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>forever</span>
               </div>
 
@@ -320,8 +454,8 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '1rem' }}>
-                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>$0</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>0 {currentCur.symbol}</span>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>/ month (Uses your keys)</span>
               </div>
 
@@ -420,17 +554,17 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 )}
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.25rem' }}>
                 <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>
-                  {billingCycle === 'weekly' ? '$9.99' : '$19.99'}
+                  {billingCycle === 'weekly' ? currentCur.weeklyDisplay : currentCur.monthlyDisplay}
                 </span>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                   {billingCycle === 'weekly' ? '/ week (Cancel anytime)' : '/ month (Cancel anytime)'}
                 </span>
               </div>
 
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-                Full hands-off executive suite with zero API key setup. Unlimited high-speed AI tailoring.
+              <p style={{ fontSize: '0.78rem', color: '#a78bfa', fontWeight: 600, margin: '0 0 1.25rem 0' }}>
+                ✨ {currentCur.tagline}
               </p>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
