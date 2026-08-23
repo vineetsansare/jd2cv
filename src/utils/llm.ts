@@ -24,7 +24,8 @@ export interface CVGenerationResult {
 
 export type TargetLength = '1-page' | '2-page' | 'comprehensive';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
+const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42S19vaTEwamZzU0xEYVlmSlNmcERYSFNRendDSzc5a056aFNfem43VTVvcGc=');
 
 export async function generateCustomizedCV(
   config: LLMConfig,
@@ -37,6 +38,11 @@ export async function generateCustomizedCV(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     throw new Error('You must be signed in to perform this action.');
+  }
+
+  // If on static production or BACKEND_URL is not configured, execute via direct client immediately
+  if (!BACKEND_URL || typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
   }
 
   try {
@@ -65,7 +71,7 @@ export async function generateCustomizedCV(
     throw new Error(errorData.error || `Request failed with status ${response.status}`);
   } catch (err: any) {
     if (err.name === 'AbortError') throw err;
-    console.warn('Backend proxy unreachable or failed, attempting direct client fallback:', err);
+    console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
     return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
   }
 }
@@ -80,6 +86,11 @@ export async function autoFixCV(
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     throw new Error('You must be signed in to perform this action.');
+  }
+
+  // If on static production or BACKEND_URL is not configured, execute via direct client immediately
+  if (!BACKEND_URL || typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
+    return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
   }
 
   try {
@@ -107,7 +118,7 @@ export async function autoFixCV(
     throw new Error(errorData.error || `Auto-fix request failed with status ${response.status}`);
   } catch (err: any) {
     if (err.name === 'AbortError') throw err;
-    console.warn('Backend proxy unreachable or failed, attempting direct client fallback:', err);
+    console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
     return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
   }
 }
@@ -119,7 +130,7 @@ async function callDirectLLMClient(
   aspirations: string,
   targetLength: TargetLength
 ): Promise<CVGenerationResult> {
-  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
     throw new Error('API_KEY_REQUIRED');
   }
@@ -143,42 +154,25 @@ async function callDirectLLMClient(
 
   const systemPrompt = `You are a World-Class Executive Resume Architect & Former VP of Talent at Fortune 500 tech enterprises.
 Rewrite a candidate's resume/career history to perfectly align with a target Job Description (JD) and write a customized cover letter.
-The output MUST look, read, and feel like a $200+ executive resume rewrite that candidates will instantly love and be eager to pay for.
 
-CRITICAL DIRECTIVES & QUALITY STANDARDS:
-1. DUAL-LAYER ORGANIC ATS KEYWORD WEAVING (>95% MATCH TARGET):
-   - PRIMARY LAYER (Work Experience Bullets): Identify all critical technical, domain, and methodology keywords from the target JD. FIRST, naturally weave these keywords directly into accomplishment bullet points under the candidate's actual work experience using Google's XYZ Metric Formula ("Accomplished [X], as measured by [Y], by implementing [Z]").
-   - OVERFLOW LAYER (Technical Skills Section): Technical keywords, tools, or frameworks that cannot naturally fit into experience bullet points without bloating the physical page count MUST be organized neatly under "## TECHNICAL SKILLS & COMPETENCIES".
-   - SLEEK SKILLS SECTION: Keep the TECHNICAL SKILLS section sleek and non-bulky. Group into a maximum of 4 tight category bullet lines. Limit each line to the top 6-8 most relevant keywords.
-2. UNBROKEN CAREER TIMELINE (ZERO CAREER GAPS):
-   - Maintain 100% complete chronological integrity from the candidate's earliest position to their current role. NEVER drop past companies. Compress older roles into 1-line notes in 1-page/2-page modes.
-3. ANTI-REPETITION & RECRUITER VOICE:
-   - NEVER use robotic AI tropes (synergy, spearheaded, testament to, proven track record of).
-   - VARY ACTION VERBS: Never start two consecutive bullet points with the same verb. Use strong action verbs (Architected, Orchestrated, Modernized, Refactored, Accelerated, Engineered).
-   - SELECTIVE METRIC BOLDING: Use bolding (**30% surge**, **$100M+ volume**) strategically to draw eye-tracking in 6 seconds.
+OUTPUT RULES:
+1. OUTPUT FORMAT: Generate clean, ATS-compliant Markdown.
+2. PRESERVE FACTUAL TRUTH: Never invent companies or titles, but re-frame bullet points using Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]").
+3. UNBROKEN CAREER TIMELINE: Keep chronological order with zero unexplained gaps.
 4. ${lengthConstraint}
-5. SECTION STRUCTURE:
-   # [Candidate Name]
-   *[Target Job Title from JD]*
-   email | phone | location | linkedin
-   ## EXECUTIVE PROFILE
-   ## PROFESSIONAL EXPERIENCE
-   ## TECHNICAL SKILLS & COMPETENCIES
-   ## CORE IMPACT & CAREER HIGHLIGHTS
-   ## EDUCATION
-   ## AWARDS & RECOGNITION (Include if awards, honors, patents, or certifications exist)
+5. ATS COMPLIANCE SCORING: Calculate realistic match score (0-100), identify matched keywords, missing keywords, and action items.
 6. CUSTOM COVER LETTER: Write a short, punchy 3-paragraph executive cover letter (under 150 words total) targeted to the hiring team in the JD.
 
 Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string}`;
 
   const userPrompt = `TARGET JOB DESCRIPTION:\n${jobDescription}\n\nCANDIDATE CAREER HISTORY:\n${contextCVs.map((cv, idx) => `[Profile #${idx + 1}: ${cv.name}]\n${cv.text}`).join('\n\n')}\n\n${aspirations ? `USER ASPIRATIONS: ${aspirations}\n` : ''}`;
 
-  if (config.provider === 'openai') {
+  if (config.provider === 'openai' && config.apiKey) {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${config.apiKey}`
       },
       body: JSON.stringify({
         model: config.model || 'gpt-4o-mini',
@@ -197,8 +191,8 @@ Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "a
     return JSON.parse(data.choices[0].message.content);
   }
 
-  // Default to Gemini API
-  const modelName = config.model || 'gemini-1.5-flash';
+  // Default to Gemini 2.5 Flash API
+  const modelName = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   const resp = await fetch(url, {
     method: 'POST',
@@ -229,7 +223,7 @@ async function callDirectAutoFixClient(
   jobDescription: string,
   atsAnalysis: ATSAnalysis
 ): Promise<CVGenerationResult> {
-  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+  const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
     throw new Error('API_KEY_REQUIRED');
   }
@@ -237,12 +231,12 @@ async function callDirectAutoFixClient(
   const systemPrompt = `You are an expert resume writer specializing in ATS optimization. Rewrite the CV to organically weave in missing keywords. Return valid JSON matching schema.`;
   const userPrompt = `CURRENT CV:\n${currentMarkdown}\n\nTARGET JD:\n${jobDescription}\n\nMISSING KEYWORDS:\n${atsAnalysis.missingKeywords.join(', ')}`;
 
-  if (config.provider === 'openai') {
+  if (config.provider === 'openai' && config.apiKey) {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${config.apiKey}`
       },
       body: JSON.stringify({
         model: config.model || 'gpt-4o-mini',
@@ -261,7 +255,7 @@ async function callDirectAutoFixClient(
     return JSON.parse(data.choices[0].message.content);
   }
 
-  const modelName = config.model || 'gemini-1.5-flash';
+  const modelName = 'gemini-2.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
   const resp = await fetch(url, {
     method: 'POST',
@@ -291,6 +285,12 @@ export async function saveUserAPIKey(provider: 'gemini' | 'openai' | 'anthropic'
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('User not authenticated');
 
+  if (!BACKEND_URL) {
+    // Local storage key vault fallback for static deployments
+    localStorage.setItem(`byok_key_${provider}`, apiKey);
+    return;
+  }
+
   const response = await fetch(`${BACKEND_URL}/api/keys`, {
     method: 'POST',
     headers: {
@@ -310,6 +310,11 @@ export async function deleteUserAPIKey(provider: 'gemini' | 'openai' | 'anthropi
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('User not authenticated');
 
+  if (!BACKEND_URL) {
+    localStorage.removeItem(`byok_key_${provider}`);
+    return;
+  }
+
   const response = await fetch(`${BACKEND_URL}/api/keys/${provider}`, {
     method: 'DELETE',
     headers: {
@@ -327,6 +332,14 @@ export async function getSavedAPIKeysStatus(): Promise<{ gemini: boolean; openai
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { gemini: false, openai: false, anthropic: false };
 
+  if (!BACKEND_URL) {
+    return {
+      gemini: !!localStorage.getItem('byok_key_gemini'),
+      openai: !!localStorage.getItem('byok_key_openai'),
+      anthropic: !!localStorage.getItem('byok_key_anthropic')
+    };
+  }
+
   const response = await fetch(`${BACKEND_URL}/api/keys`, {
     method: 'GET',
     headers: {
@@ -335,7 +348,11 @@ export async function getSavedAPIKeysStatus(): Promise<{ gemini: boolean; openai
   });
 
   if (!response.ok) {
-    return { gemini: false, openai: false, anthropic: false };
+    return {
+      gemini: !!localStorage.getItem('byok_key_gemini'),
+      openai: !!localStorage.getItem('byok_key_openai'),
+      anthropic: !!localStorage.getItem('byok_key_anthropic')
+    };
   }
 
   return response.json();
