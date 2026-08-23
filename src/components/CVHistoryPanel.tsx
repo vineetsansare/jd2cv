@@ -45,6 +45,9 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
     
     document.body.appendChild(printContainer);
 
+    // Add printing class to body to suppress all background meshes and dark mode styling
+    document.body.classList.add('is-printing-cv');
+
     // Mobile Viewport Fix for AirPrint / Android Print
     const viewportMeta = document.querySelector('meta[name="viewport"]');
     const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
@@ -57,6 +60,7 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
       window.print();
       document.body.removeChild(printContainer);
       document.title = originalTitle;
+      document.body.classList.remove('is-printing-cv');
       setDownloadingId(null);
       if (viewportMeta && originalViewport) {
         setTimeout(() => {

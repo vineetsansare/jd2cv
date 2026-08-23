@@ -132,6 +132,9 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     // Set temporary document title
     document.title = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
 
+    // Add printing class to body to suppress all background meshes and dark mode styling
+    document.body.classList.add('is-printing-cv');
+
     // Mobile Viewport Fix for AirPrint / Android Print
     const viewportMeta = document.querySelector('meta[name="viewport"]');
     const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
@@ -145,6 +148,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     setTimeout(() => {
       window.print();
       document.title = originalTitle;
+      document.body.classList.remove('is-printing-cv');
       if (viewportMeta && originalViewport) {
         setTimeout(() => {
           viewportMeta.setAttribute('content', originalViewport);

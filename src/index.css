@@ -1276,14 +1276,33 @@ textarea {
 }
 
 /* Printing styles */
+body.is-printing-cv {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+body.is-printing-cv .aurora-container,
+body.is-printing-cv .aurora-blob,
+body.is-printing-cv .aurora-grid-overlay,
+body.is-printing-cv .aurora-noise-overlay,
+body.is-printing-cv .particles-canvas,
+body.is-printing-cv canvas {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 10mm 10mm 10mm !important;
+    margin: 8mm 10mm 8mm 10mm !important;
   }
 
   *, *:before, *:after {
     box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   html, body {
@@ -1292,40 +1311,21 @@ textarea {
     height: auto !important;
     min-height: 0 !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
     color: #111827 !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
   }
 
-  .aurora-wrapper, 
-  .aurora-container, 
-  .aurora-content {
-    position: static !important;
-    background: #ffffff !important;
-    display: block !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    overflow: visible !important;
-  }
-  
-  .app-container, 
-  .app-container.sidebar-collapsed {
-    display: block !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
+  /* Completely suppress all background meshes, glowing blobs, canvas particles, and UI chrome */
+  .aurora-container,
+  .aurora-blob,
+  .aurora-grid-overlay,
+  .aurora-noise-overlay,
+  .particles-canvas,
+  canvas,
   .sidebar,
   .app-header,
   .top-header,
@@ -1337,76 +1337,60 @@ textarea {
   .sidebar-toggle-btn,
   .mobile-drawer-overlay,
   .mobile-bottom-nav,
+  .theme-toggle-header-btn,
+  .pricing-modal-overlay,
+  .cv-theme-selector,
   .cv-display-content > *:not(.print-pane) {
     display: none !important;
-  }
-  
-  .main-layout {
-    margin-left: 0 !important;
-    padding-top: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    height: auto !important;
-    min-height: 0 !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
-  .main-content {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    max-width: none !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-  
-  .cv-display-card {
-    border: none !important;
-    background: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-
-  .print-pane {
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    display: block !important;
-    overflow: visible !important;
-    max-height: none !important;
-    width: 100% !important;
-    min-width: 794px !important;
-    height: auto !important;
-    min-height: 0 !important;
-  }
-
+  /* Completely eliminate all dark borders, dark backgrounds, and shadows from all layout containers */
+  .aurora-wrapper, 
+  .aurora-content,
+  .app-container, 
+  .app-container.sidebar-collapsed,
+  .main-layout,
+  .main-content,
+  .glass-card,
+  .cv-display-card,
+  .cv-display-content,
+  .print-pane,
   .mobile-sheet-scaler {
-    transform: none !important;
+    position: static !important;
+    display: block !important;
     width: 100% !important;
     min-width: 794px !important;
     max-width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    display: block !important;
     height: auto !important;
     min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-width: 0 !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+    transform: none !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
+  /* Pristine clean CV document */
   .resume-preview-sheet,
   .resume-preview-sheet.compact-1page {
+    position: static !important;
+    display: block !important;
     box-shadow: none !important;
     border-radius: 0 !important;
     border: none !important;
+    border-width: 0 !important;
+    outline: none !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
@@ -1415,7 +1399,10 @@ textarea {
     min-height: 0 !important;
     height: auto !important;
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #111827 !important;
+    font-size: 9.5pt !important;
+    line-height: 1.35 !important;
   }
 
   .resume-preview-sheet .contact-row {
@@ -1441,6 +1428,27 @@ textarea {
     justify-content: space-between !important;
     align-items: baseline !important;
     width: 100% !important;
+  }
+
+  .resume-preview-sheet h2 {
+    border-top: 1.5px solid var(--cv-accent-color, #111827) !important;
+    border-bottom: 1.5px solid var(--cv-accent-color, #111827) !important;
+    color: var(--cv-accent-color, #111827) !important;
+    padding: 3px 0 !important;
+    margin-top: 1.2rem !important;
+    margin-bottom: 0.6rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    text-align: center !important;
+    font-weight: 700 !important;
+    display: block !important;
+    background: transparent !important;
+  }
+
+  .resume-preview-sheet.compact-1page h2 {
+    padding: 1.5px 0 !important;
+    margin-top: 0.65rem !important;
+    margin-bottom: 0.35rem !important;
   }
 
   .resume-preview-sheet h2:first-of-type {
