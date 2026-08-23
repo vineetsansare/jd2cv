@@ -2122,8 +2122,7 @@ textarea {
     align-items: flex-start !important;
     padding-top: 3.5rem !important; /* Generous breathing room at the top before content starts */
     padding-bottom: 4.5rem !important; /* Generous breathing room at the bottom after content ends */
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
+    padding: 1.5rem 1rem 3rem 1rem !important;
     overflow-y: auto !important;
     height: auto !important;
     min-height: 100vh !important;
@@ -2131,20 +2130,38 @@ textarea {
   }
 
   .auth-hero-split {
-    grid-template-columns: 1fr !important;
-    gap: 1.5rem !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1.25rem !important;
     padding: 0 !important;
-    align-items: flex-start !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .auth-form-column {
+    order: 1 !important;
+    width: 100% !important;
+    max-width: 440px !important;
+  }
+
+  .auth-showcase-panel {
+    order: 2 !important;
+    display: none !important; /* Hide secondary marketing deck on mobile so login card and Google button are immediately visible */
+  }
+
+  .notebook-card-flip {
+    padding: 1.5rem 1.25rem !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
   }
 
   .auth-hero-split h2 {
-    font-size: 1.5rem !important;
+    font-size: 1.4rem !important;
     line-height: 1.25 !important;
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.35rem !important;
   }
 
   .auth-hero-split p {
-    font-size: 0.9rem !important;
+    font-size: 0.85rem !important;
   }
 
   .auth-card-container {

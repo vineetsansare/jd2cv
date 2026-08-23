@@ -163,7 +163,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', o
             alignItems: 'flex-start'
           }} className="auth-hero-split">
             {/* Left Showcase Panel */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem' }} className="entrance-fade">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '1rem' }} className="entrance-fade auth-showcase-panel">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} className="stagger-1">
                 <div style={{
                   width: '40px',
@@ -218,7 +218,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', o
             </div>
 
             {/* Right Liquid Glass Form Card with 3D Notebook Flip */}
-            <div className="perspective-container">
+            <div className="perspective-container auth-form-column">
               <LiquidCard
                 variant="glass"
                 padding="lg"

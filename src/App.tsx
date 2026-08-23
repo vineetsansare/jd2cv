@@ -753,16 +753,17 @@ function App() {
     return (
       <div style={{ 
         display: 'flex', 
-        height: '100vh', 
+        minHeight: '100vh', 
         width: '100vw', 
         justifyContent: 'center', 
-        alignItems: 'center', 
+        alignItems: 'flex-start', 
         background: 'radial-gradient(circle at center, var(--bg-secondary) 0%, var(--bg-primary) 100%)',
         position: 'relative',
-        overflow: 'hidden'
+        overflowY: 'auto',
+        overflowX: 'hidden'
       }}>
-        <div style={{ position: 'absolute', top: '10%', left: '20%', width: '400px', height: '400px', background: 'rgba(99, 102, 241, 0.1)', filter: 'blur(100px)', borderRadius: '50%' }}></div>
-        <div style={{ position: 'absolute', bottom: '10%', right: '20%', width: '400px', height: '400px', background: 'rgba(16, 185, 129, 0.08)', filter: 'blur(100px)', borderRadius: '50%' }}></div>
+        <div style={{ position: 'absolute', top: '10%', left: '20%', width: '400px', height: '400px', background: 'rgba(99, 102, 241, 0.1)', filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
+        <div style={{ position: 'absolute', bottom: '10%', right: '20%', width: '400px', height: '400px', background: 'rgba(16, 185, 129, 0.08)', filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
         
         <AuthForm onSuccess={() => {}} theme={theme} onThemeToggle={handleThemeToggle} />
       </div>
