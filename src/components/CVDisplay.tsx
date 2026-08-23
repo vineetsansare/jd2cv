@@ -131,12 +131,26 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     
     // Set temporary document title
     document.title = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
+
+    // Mobile Viewport Fix for AirPrint / Android Print
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
+
+    if (viewportMeta) {
+      // Temporarily expand viewport to full desktop A4 canvas so mobile print engines don't constrain width to 375px
+      viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
+    }
     
-    // Trigger browser print
-    window.print();
-    
-    // Restore original document title
-    document.title = originalTitle;
+    // Trigger browser print with slight delay for mobile layout engine to recalculate full A4 width
+    setTimeout(() => {
+      window.print();
+      document.title = originalTitle;
+      if (viewportMeta && originalViewport) {
+        setTimeout(() => {
+          viewportMeta.setAttribute('content', originalViewport);
+        }, 1000);
+      }
+    }, 250);
   };
 
   // Helper to calculate circular stroke values

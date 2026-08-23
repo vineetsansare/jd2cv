@@ -45,12 +45,25 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
     
     document.body.appendChild(printContainer);
 
+    // Mobile Viewport Fix for AirPrint / Android Print
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
+
+    if (viewportMeta) {
+      viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
+    }
+
     setTimeout(() => {
       window.print();
       document.body.removeChild(printContainer);
       document.title = originalTitle;
       setDownloadingId(null);
-    }, 200);
+      if (viewportMeta && originalViewport) {
+        setTimeout(() => {
+          viewportMeta.setAttribute('content', originalViewport);
+        }, 1000);
+      }
+    }, 250);
   };
 
   const formatDate = (isoString: string) => {

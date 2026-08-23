@@ -1279,11 +1279,16 @@ textarea {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm 12mm 12mm 12mm !important;
+    margin: 10mm 10mm 10mm 10mm !important;
+  }
+
+  *, *:before, *:after {
+    box-sizing: border-box !important;
   }
 
   html, body {
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
     background: #ffffff !important;
@@ -1291,6 +1296,8 @@ textarea {
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .aurora-wrapper, 
@@ -1300,6 +1307,7 @@ textarea {
     background: #ffffff !important;
     display: block !important;
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
     padding: 0 !important;
@@ -1311,6 +1319,7 @@ textarea {
   .app-container.sidebar-collapsed {
     display: block !important;
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
     padding: 0 !important;
@@ -1338,6 +1347,7 @@ textarea {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
   }
@@ -1346,6 +1356,7 @@ textarea {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    min-width: 794px !important;
     max-width: none !important;
     height: auto !important;
     min-height: 0 !important;
@@ -1358,6 +1369,7 @@ textarea {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
   }
@@ -1373,6 +1385,7 @@ textarea {
     overflow: visible !important;
     max-height: none !important;
     width: 100% !important;
+    min-width: 794px !important;
     height: auto !important;
     min-height: 0 !important;
   }
@@ -1380,6 +1393,7 @@ textarea {
   .mobile-sheet-scaler {
     transform: none !important;
     width: 100% !important;
+    min-width: 794px !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -1396,12 +1410,37 @@ textarea {
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+    min-width: 794px !important;
     max-width: 100% !important;
-    min-width: 0 !important;
     min-height: 0 !important;
     height: auto !important;
     background: #ffffff !important;
     color: #111827 !important;
+  }
+
+  .resume-preview-sheet .contact-row {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 1.25rem !important;
+    width: 100% !important;
+  }
+
+  .resume-preview-sheet .skills-list {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    column-gap: 2rem !important;
+    row-gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .resume-preview-sheet .role-row,
+  .resume-preview-sheet .company-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: baseline !important;
+    width: 100% !important;
   }
 
   .resume-preview-sheet h2:first-of-type {
