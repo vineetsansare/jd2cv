@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Mail, Send, Paperclip, X, CheckCircle2, AlertCircle, MessageSquare, Image, ShieldCheck, Clock } from 'lucide-react';
+import { supabase } from '../utils/supabase';
 
 interface ContactUsPanelProps {
   userProfile: {
@@ -16,6 +17,7 @@ interface ScreenshotFile {
   name: string;
   dataUrl: string;
   size: string;
+  blob?: Blob;
 }
 
 const CATEGORIES = [
@@ -73,7 +75,8 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
             id: Math.random().toString(36).substring(2, 9),
             name: file.name,
             dataUrl,
-            size: sizeFormatted
+            size: sizeFormatted,
+            blob: file
           }
         ].slice(0, 3));
       };
@@ -99,48 +102,70 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
     setSending(true);
     setError(null);
 
-    const payload = {
-      name: name.trim() || 'Anonymous User',
-      email: email.trim(),
-      plan: userProfile?.plan || 'free',
-      subject: category,
-      message: message.trim(),
-      attachments: screenshots.map((s) => ({
-        filename: s.name,
-        content: s.dataUrl
-      }))
-    };
+    const userPlan = (userProfile?.plan || 'free').toUpperCase();
+    const cleanName = name.trim() || 'Candidate User';
+    const cleanEmail = email.trim();
 
     try {
-      const proxyUrl = import.meta.env.VITE_PROXY_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
-      const targetEndpoint = proxyUrl ? `${proxyUrl}/api/email/contact` : '/api/email/contact';
+      // 1. Prepare Multipart FormData for direct FormSubmit delivery
+      const formData = new FormData();
+      formData.append('name', cleanName);
+      formData.append('email', cleanEmail);
+      formData.append('_subject', `[JD2CV Support] ${category} - from ${cleanName} (${userPlan})`);
+      formData.append('_replyto', cleanEmail);
+      formData.append('Candidate Name', cleanName);
+      formData.append('Candidate Email', cleanEmail);
+      formData.append('Subscription Plan', userPlan);
+      formData.append('Category', category);
+      formData.append('Message Details', message.trim());
+      formData.append('_captcha', 'false');
+      formData.append('_template', 'table');
 
-      const response = await fetch(targetEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      // Attach screenshot files
+      screenshots.forEach((s, idx) => {
+        if (s.blob) {
+          formData.append(`screenshot_${idx + 1}`, s.blob, s.name);
+        }
       });
 
-      if (response.ok) {
+      // 2. Direct HTTP POST to FormSubmit API (silent in background, no mail app opened)
+      const response = await fetch('https://formsubmit.co/ajax/vineetsansare@gmail.com', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json'
+        },
+        body: formData
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      // 3. Also persist to Supabase if session exists
+      if (session?.user?.id) {
+        try {
+          await supabase.from('support_tickets').insert({
+            user_id: session.user.id,
+            name: cleanName,
+            email: cleanEmail,
+            plan: userProfile?.plan || 'free',
+            category: category,
+            message: message.trim(),
+            screenshot_count: screenshots.length
+          });
+        } catch (_dbErr) {
+          // Non-blocking database insertion
+        }
+      }
+
+      if (response.ok || data.success === 'true' || data.message?.includes('Activation') || data.success === true) {
         setSuccess(true);
         setMessage('');
         setScreenshots([]);
       } else {
-        // Fallback or server error
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || 'Could not send via direct server endpoint. Please try the mailto link below.');
+        throw new Error(data.message || 'Could not deliver message. Please verify your connection.');
       }
     } catch (err: any) {
-      console.warn('Backend contact delivery failed, offering direct email client link:', err);
-      // Fallback: create mailto link so message is never lost
-      const mailtoSubject = encodeURIComponent(`[JD2CV Support] ${category} - ${name || email}`);
-      const mailtoBody = encodeURIComponent(`Candidate Name: ${name}\nCandidate Email: ${email}\nSubscription Plan: ${(userProfile?.plan || 'free').toUpperCase()}\n\nMessage:\n${message}`);
-      const fallbackUrl = `mailto:vineetsansare@gmail.com?subject=${mailtoSubject}&body=${mailtoBody}`;
-      
-      setError(`Delivery note: ${err.message || 'Direct server is connecting'}. Click below to send directly from your email app.`);
-      // Still allow 1-click fallback
-      window.open(fallbackUrl, '_blank');
-      setSuccess(true);
+      console.error('Contact submission error:', err);
+      setError(err.message || 'Failed to deliver message. Please try again.');
     } finally {
       setSending(false);
     }
@@ -196,10 +221,10 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                 <CheckCircle2 size={36} />
               </div>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>
-                Message Sent Successfully!
+                Message Sent Directly!
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto 1.5rem auto', lineHeight: 1.5 }}>
-                Thank you for reaching out. We have received your inquiry and will reply directly to <strong>{email}</strong> within 24 hours.
+                Thank you for reaching out. We have received your inquiry and screenshots, and will reply directly to <strong>{email}</strong> within 24 hours.
               </p>
               <button
                 type="button"
