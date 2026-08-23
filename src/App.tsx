@@ -552,7 +552,7 @@ function App() {
     const activeCVs = activeCVIndices.map((idx) => contextCVs[idx]);
 
     const activeConfig = userProfile?.plan === 'free'
-      ? { ...config, provider: 'gemini' as const, model: 'gemini-1.5-flash' }
+      ? { ...config, provider: 'gemini' as const, model: 'gemini-flash-latest' }
       : config;
 
     try {
@@ -590,7 +590,7 @@ function App() {
     abortControllerRef.current = new AbortController();
 
     const activeConfig = userProfile?.plan === 'free'
-      ? { ...config, provider: 'gemini' as const, model: 'gemini-1.5-flash' }
+      ? { ...config, provider: 'gemini' as const, model: 'gemini-flash-latest' }
       : config;
 
     try {

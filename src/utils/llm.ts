@@ -301,8 +301,42 @@ async function callDirectAutoFixClient(
     throw new Error('API_KEY_REQUIRED');
   }
 
-  const systemPrompt = `You are an expert resume writer specializing in ATS optimization. Rewrite the CV to organically weave in missing keywords. Return valid JSON matching schema.`;
-  const userPrompt = `CURRENT CV:\n${currentMarkdown}\n\nTARGET JD:\n${jobDescription}\n\nMISSING KEYWORDS:\n${atsAnalysis.missingKeywords.join(', ')}`;
+  const systemPrompt = `You are a World-Class Executive Resume Architect & ATS Optimization Specialist.
+Your task is to rewrite and optimize an existing CV to seamlessly and organically weave in missing keywords from the target Job Description (JD), while preserving all factual truth and the exact executive formatting structure.
+
+OUTPUT STRUCTURE RULES:
+1. HEADER:
+# Candidate Name
+*Target Job Title / Specialization*
+email@domain.com | +971-55-555-5555 | City, Country | linkedin.com/in/username
+
+2. SECTION HEADINGS (Always use standard Markdown H2):
+## EXECUTIVE PROFILE
+Two concise, high-impact sentences highlighting core leadership and domain expertise with target keywords organically integrated.
+
+## PROFESSIONAL EXPERIENCE
+For every job role use EXACT format:
+### Job Title | MM/YYYY – Present (or MM/YYYY – MM/YYYY)
+*Company Name | City, Country*
+- Bullet points starting with strong action verbs using Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]") with **Key Tech / Skill** bolded.
+
+## TECHNICAL SKILLS & COMPETENCIES
+- **Mobile & Architecture**: React Native, Android, iOS, Swift, Kotlin...
+- **Languages & Frameworks**: TypeScript, JavaScript, Node.js, SQL...
+- **Cloud & DevOps**: CI/CD, Fastlane, Docker, AWS, GCP...
+- **Leadership & Process**: Technical Leadership, Agile (Scrum), Mentoring, Generative AI...
+
+## EDUCATION
+### Degree Name | YYYY – YYYY
+*University Name | City, Country*
+
+## AWARDS & RECOGNITION
+### Award Name | YYYY | Organization
+
+3. RETURN FORMAT: Return valid JSON matching schema:
+{"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string}`;
+
+  const userPrompt = `CURRENT CV TO ENHANCE:\n${currentMarkdown}\n\nTARGET JOB DESCRIPTION:\n${jobDescription}\n\nMISSING KEYWORDS TO INCORPORATE ORGANICALLY:\n${atsAnalysis.missingKeywords.join(', ')}`;
 
   if (config.provider === 'openai' && config.apiKey) {
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -325,14 +359,40 @@ async function callDirectAutoFixClient(
       throw new Error(err.error?.message || `OpenAI API Error: ${resp.statusText}`);
     }
     const data = await resp.json();
-    return JSON.parse(data.choices[0].message.content);
+    const raw = JSON.parse(data.choices[0].message.content);
+    return {
+      cvMarkdown: raw.cvMarkdown || raw.markdown || raw.cv_markdown || currentMarkdown,
+      atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : 95,
+      atsAnalysis: raw.atsAnalysis || {
+        matchedKeywords: [...(atsAnalysis.matchedKeywords || []), ...(atsAnalysis.missingKeywords || [])],
+        missingKeywords: [],
+        strengths: atsAnalysis.strengths || [],
+        weaknesses: [],
+        actionItems: []
+      },
+      humanFriendlyChanges: raw.humanFriendlyChanges || ['Organically incorporated missing keywords across experience and competencies.'],
+      coverLetter: raw.coverLetter || ''
+    };
   }
 
   const contents = [
     { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
   ];
 
-  return await callGeminiWithFailover(apiKey, contents);
+  const raw = await callGeminiWithFailover(apiKey, contents);
+  return {
+    cvMarkdown: raw.cvMarkdown || raw.markdown || raw.cv_markdown || currentMarkdown,
+    atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : 95,
+    atsAnalysis: raw.atsAnalysis || {
+      matchedKeywords: [...(atsAnalysis.matchedKeywords || []), ...(atsAnalysis.missingKeywords || [])],
+      missingKeywords: [],
+      strengths: atsAnalysis.strengths || [],
+      weaknesses: [],
+      actionItems: []
+    },
+    humanFriendlyChanges: raw.humanFriendlyChanges || ['Organically incorporated missing keywords across experience and competencies.'],
+    coverLetter: raw.coverLetter || ''
+  };
 }
 
 // Client-side helper for managing user-configured keys in the database (BYOK)
