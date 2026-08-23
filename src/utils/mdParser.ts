@@ -7,24 +7,50 @@ export interface CVParseOptions {
   photoUrl?: string;
 }
 
+const KNOWN_SECTIONS = [
+  'EXECUTIVE PROFILE',
+  'PROFESSIONAL SUMMARY',
+  'SUMMARY',
+  'PROFESSIONAL EXPERIENCE',
+  'WORK EXPERIENCE',
+  'EXPERIENCE',
+  'TECHNICAL SKILLS & COMPETENCIES',
+  'TECHNICAL SKILLS',
+  'CORE COMPETENCIES',
+  'CORE IMPACT & CAREER HIGHLIGHTS',
+  'KEY ACHIEVEMENTS',
+  'EDUCATION',
+  'AWARDS & RECOGNITION',
+  'AWARDS',
+  'CERTIFICATIONS',
+  'PROJECTS'
+];
+
+function isSectionHeading(text: string): boolean {
+  const clean = text.replace(/^#+\s*/, '').replace(/\*+/g, '').replace(/_+/g, '').trim().toUpperCase();
+  return KNOWN_SECTIONS.some(s => clean === s || clean.startsWith(s));
+}
+
+function cleanSectionTitle(text: string): string {
+  return text.replace(/^#+\s*/, '').replace(/\*+/g, '').replace(/_+/g, '').trim().toUpperCase();
+}
+
 export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = {}): string {
   if (!markdown) return '';
 
   const accentColor = options.accentColor || '#475569';
   const showPhoto = options.showPhoto && options.photoUrl;
 
-  // Complementary dark text color map matching accent theme palette
   const textColorMap: Record<string, string> = {
-    '#475569': '#1e293b', // Slate Charcoal -> Deep Slate
-    '#7c3aed': '#1e1b2e', // Executive Violet -> Deep Violet Slate
-    '#2563eb': '#0f172a', // Sapphire Blue -> Deep Navy Slate
-    '#059669': '#062e24', // Emerald Teal -> Deep Forest Charcoal
-    '#e11d48': '#271016'  // Creative Rose -> Deep Crimson Charcoal
+    '#475569': '#1e293b',
+    '#7c3aed': '#1e1b2e',
+    '#2563eb': '#0f172a',
+    '#059669': '#062e24',
+    '#e11d48': '#271016'
   };
   const bodyTextColor = textColorMap[accentColor] || '#1f2937';
 
   const lines = markdown
-    // Escape HTML tags to prevent XSS
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -35,25 +61,26 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   let inSkills = false;
   let skillsListOpen = false;
   let inList = false;
-  let justSawH1 = false;
+  let sawH1 = false;
+  let sawSubtitle = false;
 
-  const mailIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:3px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
-  const phoneIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-  const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-  const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:3px;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
+  const mailIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+  const phoneIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+  const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.trim();
+    if (!line) continue;
 
-    // Check for H1 (Name)
-    if (line.startsWith('# ')) {
-      // Close list or skills list if open
+    // 1. Check for H1 (Name at top)
+    if (!sawH1 && (line.startsWith('# ') || (!line.startsWith('##') && !line.includes('@') && i < 3 && line.length < 50 && !isSectionHeading(line)))) {
       if (skillsListOpen) { processedLines.push('</ul>'); skillsListOpen = false; }
       if (inList) { processedLines.push('</ul>'); inList = false; }
       inSkills = false;
 
-      const name = line.substring(2).trim();
+      const name = line.replace(/^#+\s*/, '').replace(/\*+/g, '').trim();
       if (showPhoto) {
         processedLines.push(
           `<div class="cv-header-photo-wrapper">` +
@@ -64,43 +91,46 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       } else {
         processedLines.push(`<h1>${name}</h1>`);
       }
-      justSawH1 = true;
+      sawH1 = true;
       continue;
     }
 
-    // Check for H2 (Sections like EXECUTIVE PROFILE, PROFESSIONAL EXPERIENCE)
-    if (line.startsWith('## ')) {
-      // Close list or skills list if open
+    // 2. Check for Section Heading (e.g. ## EXECUTIVE PROFILE or **Executive Profile**)
+    if (line.startsWith('## ') || isSectionHeading(line)) {
       if (skillsListOpen) { processedLines.push('</ul>'); skillsListOpen = false; }
       if (inList) { processedLines.push('</ul>'); inList = false; }
 
-      const title = line.substring(3).trim();
+      const title = cleanSectionTitle(line);
       processedLines.push(`<h2>${title}</h2>`);
 
-      // Toggle skills grid mode
-      if (title.toUpperCase().includes('SKILLS') || title.toUpperCase().includes('COMPETENCIES')) {
+      if (title.includes('SKILL') || title.includes('COMPETENC')) {
         inSkills = true;
       } else {
         inSkills = false;
       }
-      justSawH1 = false;
       continue;
     }
 
-    // Subtitle check (immediately after H1)
-    if (justSawH1 && line && !line.includes('|') && !line.startsWith('###')) {
-      // Clean asterisks if present
-      const subtitle = line.replace(/^\*(.*)\*$/, '$1').trim();
+    // 3. Subtitle check (Target Role right below H1)
+    if (sawH1 && !sawSubtitle && !line.includes('@') && !line.includes('+') && !line.startsWith('##') && !isSectionHeading(line)) {
+      const subtitle = line.replace(/^[\*\_#\s]+|[\*\_#\s]+$/g, '').trim();
       processedLines.push(`<div class="subtitle">${subtitle}</div>`);
-      justSawH1 = false;
+      sawSubtitle = true;
       continue;
     }
 
-    // Contact info row check
-    if (line.includes('|') && (line.includes('@') || line.includes('+') || line.includes('linkedin.com'))) {
-      const parts = line.split('|');
-      const formattedParts = parts.map((part) => {
-        const item = part.trim();
+    // 4. Contact info row check
+    if (line.includes('@') || line.includes('linkedin.com') || (line.includes('+') && line.length < 150)) {
+      // Split by |, •, or bullet delimiters
+      const rawParts = line.split(/[|•·]/).map(p => p.trim()).filter(Boolean);
+      const formattedParts = rawParts.map((part) => {
+        let item = part.replace(/^[\*\_\[\]]+|[\*\_\[\]]+$/g, '').trim();
+        // Clean markdown links [text](url)
+        const linkMatch = item.match(/\[(.*?)\]\((.*?)\)/);
+        if (linkMatch) {
+          item = linkMatch[1];
+        }
+
         if (item.includes('@')) {
           return `<span class="contact-item">${mailIcon}<a href="mailto:${item}">${item}</a></span>`;
         } else if (item.includes('linkedin.com')) {
@@ -119,94 +149,84 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       } else {
         processedLines.push(`<div class="contact-row">${formattedParts.join('')}</div>`);
       }
-      justSawH1 = false;
       continue;
     }
 
-    // Reset subtitle flags for other content lines
-    if (line) {
-      justSawH1 = false;
-    }
-
-    // Check for H3 (Job roles & Degrees with 'Title | Dates' alignment syntax)
-    if (line.startsWith('### ')) {
-      // Close list or skills list if open
+    // 5. Check for H3 / Role Title & Dates Row
+    // Matches: '### Title | Dates', '**Title** | Dates', or 'Title | Dates'
+    if (line.startsWith('### ') || (line.includes('|') && !line.startsWith('*') && (line.includes('Present') || /\d{4}/.test(line)))) {
       if (skillsListOpen) { processedLines.push('</ul>'); skillsListOpen = false; }
       if (inList) { processedLines.push('</ul>'); inList = false; }
 
-      const titleContent = line.substring(4).trim();
-      if (titleContent.includes('|')) {
-        const [title, dates] = titleContent.split('|');
-        processedLines.push(
-          `<div class="role-row">` +
-            `<span class="role-title">${title.trim()}</span>` +
-            `<span class="role-dates">${dates.trim()}</span>` +
-          `</div>`
-        );
-      } else {
-        processedLines.push(`<div class="role-row"><span class="role-title">${titleContent}</span></div>`);
-      }
-      continue;
-    }
+      const cleanLine = line.replace(/^###\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
+      const parts = cleanLine.split('|');
+      const roleTitle = parts[0].trim();
+      const roleDates = parts[1] ? parts[1].trim() : '';
 
-    // Check for Italicized Subline immediately following H3 (Company / Location alignment syntax)
-    // Matches e.g.: *Company Name | Location*
-    if (line.startsWith('*') && line.endsWith('*') && line.includes('|')) {
-      const cleanContent = line.substring(1, line.length - 1).trim();
-      const [company, location] = cleanContent.split('|');
       processedLines.push(
-        `<div class="company-row">` +
-          `<span class="company-name">${company.trim()}</span>` +
-          `<span class="company-location">${location.trim()}</span>` +
+        `<div class="role-row">` +
+          `<span class="role-title">${roleTitle}</span>` +
+          (roleDates ? `<span class="role-dates">${roleDates}</span>` : '') +
         `</div>`
       );
       continue;
     }
 
-    // Skip horizontal rules (since borders are automatically rendered by CSS headings)
-    if (line === '---') {
+    // 6. Check for Company & Location Row
+    // Matches: '*Company | Location*', '*Company, Location*', or 'Company | Location'
+    if ((line.startsWith('*') && line.includes('|')) || (line.includes('|') && (line.includes('Dubai') || line.includes('UAE') || line.includes('India') || line.includes('USA') || line.includes('London')))) {
+      const cleanContent = line.replace(/^\*|\*$/g, '').replace(/^_|_$/g, '').trim();
+      const parts = cleanContent.split('|');
+      const company = parts[0].trim();
+      const location = parts[1] ? parts[1].trim() : '';
+
+      processedLines.push(
+        `<div class="company-row">` +
+          `<span class="company-name">${company}</span>` +
+          (location ? `<span class="company-location">${location}</span>` : '') +
+        `</div>`
+      );
       continue;
     }
 
-    // Bullet points parsing (lists)
-    const bulletMatch = line.match(/^[-*]\s+(.*)$/);
+    // Skip horizontal rules
+    if (line === '---' || line === '***') {
+      continue;
+    }
+
+    // 7. Bullet Points Parsing (Lists)
+    const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
     if (bulletMatch) {
       const content = bulletMatch[1].trim();
 
       if (inSkills) {
-        // Render 2-column skills grid
         if (!skillsListOpen) {
           processedLines.push('<ul class="skills-list">');
           skillsListOpen = true;
         }
 
-        // Parse bold text, italics, and links for the content
         let formattedContent = content
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
           .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
-        // Check if item starts with bold text category, e.g. **Mobile Architecture**: Swift...
-        const categoryMatch = content.match(/^\*\*(.*?)\*\*:\s*(.*)$/);
-        if (categoryMatch) {
-          // Parse the remainder for inline bold
+        const categoryMatch = content.match(/^\*\*(.*?)\*\*:\s*(.*)$/) || content.match(/^(.*?):\s*(.*)$/);
+        if (categoryMatch && categoryMatch[1].length < 40) {
           let remainder = categoryMatch[2]
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
             
-          processedLines.push(`<li><strong class="skill-category">${categoryMatch[1]}</strong>${remainder}</li>`);
+          processedLines.push(`<li><strong class="skill-category">${categoryMatch[1]}: </strong>${remainder}</li>`);
         } else {
           processedLines.push(`<li>${formattedContent}</li>`);
         }
       } else {
-        // Standard work bullet list
         if (!inList) {
           processedLines.push('<ul>');
           inList = true;
         }
         
-        // Parse bold text and italics inside bullets
         let formattedContent = content
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\*(.*?)\*/g, '<em>$1</em>')
@@ -217,13 +237,13 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       continue;
     }
 
-    // Close lists if we hit a non-bullet line
+    // Close open lists if on non-bullet line
     if (!bulletMatch && line) {
       if (skillsListOpen) { processedLines.push('</ul>'); skillsListOpen = false; }
       if (inList) { processedLines.push('</ul>'); inList = false; }
     }
 
-    // Parse standard paragraphs
+    // 8. Standard Paragraph Text
     if (line) {
       let formattedParagraph = line
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -231,12 +251,9 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
 
       processedLines.push(`<p>${formattedParagraph}</p>`);
-    } else {
-      processedLines.push('');
     }
   }
 
-  // Final list closures
   if (skillsListOpen) processedLines.push('</ul>');
   if (inList) processedLines.push('</ul>');
 
@@ -244,18 +261,15 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   return `<div class="cv-styled-document" style="--cv-accent-color: ${accentColor}; --cv-text-color: ${bodyTextColor};">${rawHtml}</div>`;
 }
 
-/**
- * Strips markdown symbols to produce a clean plain-text version of the CV.
- */
 export function stripMarkdown(markdown: string): string {
   if (!markdown) return '';
   return markdown
-    .replace(/^#+\s+/gm, '') // Remove headers
-    .replace(/^[-*]\s+/gm, '• ') // Convert bullet points to unicode bullets
-    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-    .replace(/\*(.*?)\*/g, '$1') // Remove italics
-    .replace(/\[(.*?)\]\((.*?)\)/g, '$1 ($2)') // Format links
-    .replace(/^---$/gm, '──────────────────────────────') // Convert HR to clean text dividers
-    .replace(/\n{3,}/g, '\n\n') // Normalize multiple line breaks
+    .replace(/^#+\s+/gm, '')
+    .replace(/^[-*•]\s+/gm, '• ')
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1 ($2)')
+    .replace(/^---$/gm, '──────────────────────────────')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
