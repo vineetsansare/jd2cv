@@ -27,6 +27,70 @@ export type TargetLength = '1-page' | '2-page' | 'comprehensive';
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42S19vaTEwamZzU0xEYVlmSlNmcERYSFNRendDSzc5a056aFNfem43VTVvcGc=');
 
+// Priority cascade list of models to automatically fallback when Google servers experience capacity spikes
+const CANDIDATE_GEMINI_MODELS = [
+  'gemini-flash-latest',
+  'gemini-3.5-flash',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-pro-latest'
+];
+
+async function callGeminiWithFailover(apiKey: string, contents: any[]): Promise<any> {
+  let lastError: any = null;
+
+  for (const model of CANDIDATE_GEMINI_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents,
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return JSON.parse(rawText);
+      }
+
+      const err = await resp.json().catch(() => ({}));
+      const errMsg = err.error?.message || `Status ${resp.status}`;
+      lastError = new Error(errMsg);
+
+      // If high demand (503), rate limit (429), or model not found (404), seamlessly cascade to next model
+      if (
+        resp.status === 503 || 
+        resp.status === 429 || 
+        resp.status === 404 || 
+        resp.status === 500 ||
+        errMsg.toLowerCase().includes('high demand') ||
+        errMsg.toLowerCase().includes('overloaded') ||
+        errMsg.toLowerCase().includes('resource has been exhausted')
+      ) {
+        console.warn(`Gemini model ${model} unavailable (${errMsg}), automatically switching to next model in cascade...`);
+        continue;
+      }
+
+      throw new Error(errMsg);
+    } catch (e: any) {
+      lastError = e;
+      const msg = e.message?.toLowerCase() || '';
+      if (msg.includes('high demand') || msg.includes('overloaded') || msg.includes('503') || msg.includes('429')) {
+        console.warn(`Model ${model} spike, cascading to next model...`);
+        continue;
+      }
+    }
+  }
+
+  throw lastError || new Error('All AI models are temporarily busy. Please retry in a few moments.');
+}
+
 export async function generateCustomizedCV(
   config: LLMConfig,
   contextCVs: { name: string; text: string }[],
@@ -218,30 +282,12 @@ Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "a
     return JSON.parse(data.choices[0].message.content);
   }
 
-  // Default to Gemini 2.5 Flash API
-  const modelName = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json'
-      }
-    })
-  });
+  // Execute with Resilient Gemini Auto-Failover Cascade
+  const contents = [
+    { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
+  ];
 
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini API Error: ${resp.statusText}`);
-  }
-
-  const data = await resp.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return JSON.parse(rawText);
+  return await callGeminiWithFailover(apiKey, contents);
 }
 
 async function callDirectAutoFixClient(
@@ -282,29 +328,11 @@ async function callDirectAutoFixClient(
     return JSON.parse(data.choices[0].message.content);
   }
 
-  const modelName = 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [
-        { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json'
-      }
-    })
-  });
+  const contents = [
+    { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
+  ];
 
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err.error?.message || `Gemini API Error: ${resp.statusText}`);
-  }
-
-  const data = await resp.json();
-  const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return JSON.parse(rawText);
+  return await callGeminiWithFailover(apiKey, contents);
 }
 
 // Client-side helper for managing user-configured keys in the database (BYOK)
@@ -313,7 +341,6 @@ export async function saveUserAPIKey(provider: 'gemini' | 'openai' | 'anthropic'
   if (!session) throw new Error('User not authenticated');
 
   if (!BACKEND_URL) {
-    // Local storage key vault fallback for static deployments
     localStorage.setItem(`byok_key_${provider}`, apiKey);
     return;
   }
