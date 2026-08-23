@@ -210,6 +210,9 @@ function App() {
         setContextCVs(mappedCVs);
         setActiveCVIndices(mappedCVs.map((_, idx) => idx));
       }
+
+      // Fetch user's recent CV generation history
+      fetchRecentGenerations();
     } catch (err) {
       console.error('Error loading session data:', err);
     } finally {
@@ -533,6 +536,63 @@ function App() {
     return () => clearInterval(interval);
   }, [generating]);
 
+  const saveGenerationToHistory = async (
+    cvResult: CVGenerationResult,
+    targetJD: string,
+    provider: string,
+    model: string
+  ) => {
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession?.user?.id) return;
+
+      // 1. Save record into Supabase 'generations' table
+      const { data: insertedGen, error: genError } = await supabase
+        .from('generations')
+        .insert({
+          user_id: currentSession.user.id,
+          job_description: targetJD,
+          cv_markdown: cvResult.cvMarkdown,
+          cover_letter: cvResult.coverLetter || '',
+          ats_score: cvResult.atsScore || 0,
+          ats_analysis: cvResult.atsAnalysis || {},
+          human_changes: cvResult.humanFriendlyChanges || [],
+          provider_used: provider,
+          model_used: model
+        })
+        .select()
+        .single();
+
+      if (genError) {
+        console.error('Failed to save to generations table in Supabase:', genError);
+      } else if (insertedGen) {
+        setGenerations(prev => [insertedGen as GenerationRecord, ...prev.filter(g => g.id !== insertedGen.id)].slice(0, 5));
+      }
+
+      // 2. Increment generation_count in Supabase 'profiles' table
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('generation_count')
+        .eq('id', currentSession.user.id)
+        .single();
+
+      const newCount = ((profileData?.generation_count ?? userProfile?.generation_count) || 0) + 1;
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ generation_count: newCount })
+        .eq('id', currentSession.user.id);
+
+      if (profileError) {
+        console.error('Failed to update generation_count in profiles:', profileError);
+      } else {
+        setUserProfile(prev => prev ? { ...prev, generation_count: newCount } : null);
+      }
+    } catch (err) {
+      console.error('Error in saveGenerationToHistory:', err);
+    }
+  };
+
   const handleGenerate = async () => {
     if (userProfile?.plan === 'free' && userProfile.generation_count >= 5) {
       setPricingModalReason('limit_reached');
@@ -559,9 +619,8 @@ function App() {
       const cvResult = await generateCustomizedCV(activeConfig, activeCVs, jobDescription, aspirations, targetLength, abortControllerRef.current.signal);
       setResult(cvResult);
       
-      if (userProfile && userProfile.plan === 'free') {
-        setUserProfile(prev => prev ? { ...prev, generation_count: prev.generation_count + 1 } : null);
-      }
+      // Save generation to history & increment generation_count in Supabase
+      saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('CV generation cancelled by user.');
@@ -597,9 +656,8 @@ function App() {
       const fixedResult = await autoFixCV(activeConfig, result.cvMarkdown, jobDescription, result.atsAnalysis, abortControllerRef.current.signal);
       setResult(fixedResult);
 
-      if (userProfile && userProfile.plan === 'free') {
-        setUserProfile(prev => prev ? { ...prev, generation_count: prev.generation_count + 1 } : null);
-      }
+      // Save updated generation to history & increment count
+      saveGenerationToHistory(fixedResult, jobDescription, activeConfig.provider, activeConfig.model);
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('Auto-fix cancelled by user.');
