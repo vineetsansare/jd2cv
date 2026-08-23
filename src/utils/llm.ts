@@ -119,9 +119,9 @@ async function callDirectLLMClient(
   aspirations: string,
   targetLength: TargetLength
 ): Promise<CVGenerationResult> {
-  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || '';
+  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
   if (!apiKey) {
-    throw new Error('Server proxy unreachable (Failed to fetch). Please enter your API key in Settings (or run the backend server).');
+    throw new Error('API_KEY_REQUIRED');
   }
 
   let lengthConstraint = "";
@@ -229,9 +229,9 @@ async function callDirectAutoFixClient(
   jobDescription: string,
   atsAnalysis: ATSAnalysis
 ): Promise<CVGenerationResult> {
-  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY || '';
+  const apiKey = config.apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
   if (!apiKey) {
-    throw new Error('Server proxy unreachable (Failed to fetch). Please enter your API key in Settings.');
+    throw new Error('API_KEY_REQUIRED');
   }
 
   const systemPrompt = `You are an expert resume writer specializing in ATS optimization. Rewrite the CV to organically weave in missing keywords. Return valid JSON matching schema.`;

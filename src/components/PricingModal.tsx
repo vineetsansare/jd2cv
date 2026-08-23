@@ -390,7 +390,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>3 Free</strong> CV Tailorings</span>
+                  <span><strong>5 Free</strong> CV Tailorings</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />

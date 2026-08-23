@@ -534,7 +534,7 @@ function App() {
   }, [generating]);
 
   const handleGenerate = async () => {
-    if (userProfile?.plan === 'free' && userProfile.generation_count >= 3) {
+    if (userProfile?.plan === 'free' && userProfile.generation_count >= 5) {
       setPricingModalReason('limit_reached');
       setIsPricingModalOpen(true);
       return;
@@ -576,7 +576,7 @@ function App() {
   };
 
   const handleAutoFix = async () => {
-    if (userProfile?.plan === 'free' && userProfile.generation_count >= 3) {
+    if (userProfile?.plan === 'free' && userProfile.generation_count >= 5) {
       setPricingModalReason('limit_reached');
       setIsPricingModalOpen(true);
       return;
@@ -877,7 +877,7 @@ function App() {
                   </span>
                 </div>
                 <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  {userProfile?.plan === 'free' ? `${userProfile.generation_count} of 3 free used` : 'Unlimited generations'}
+                  {userProfile?.plan === 'free' ? `${userProfile.generation_count} of 5 free used` : 'Unlimited generations'}
                 </span>
               </div>
             )}
@@ -1192,12 +1192,12 @@ function App() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>Customized CV count</span>
                   <span style={{ fontWeight: 600 }}>
-                    {userProfile?.plan === 'free' ? `${userProfile.generation_count} / 3` : 'Unlimited'}
+                    {userProfile?.plan === 'free' ? `${userProfile.generation_count} / 5` : 'Unlimited'}
                   </span>
                 </div>
                 {userProfile?.plan === 'free' && (
                   <div style={{ width: '100%', height: '5px', background: 'var(--bg-secondary)', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(userProfile.generation_count / 3) * 100}%`, height: '100%', background: 'var(--accent-primary)' }}></div>
+                    <div style={{ width: `${(userProfile.generation_count / 5) * 100}%`, height: '100%', background: 'var(--accent-primary)' }}></div>
                   </div>
                 )}
               </div>
@@ -1583,16 +1583,71 @@ function App() {
 
             {/* API Key missing notification */}
             {!isKeyConfigured && (
-              <div className="flex-row-gap" style={{ color: 'var(--danger)', fontSize: '0.85rem', background: 'rgba(186, 26, 26, 0.08)', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-                <AlertCircle size={16} />
-                <span>API Key missing for active provider. Update keys in Settings tab.</span>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                color: '#fbbf24',
+                fontSize: '0.85rem',
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.25)',
+                padding: '0.75rem 1rem',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>API Key required for active provider.</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600 }}
+                >
+                  Go to Settings →
+                </button>
               </div>
             )}
 
             {error && (
-              <div className="flex-row-gap" style={{ color: 'var(--danger)', fontSize: '0.85rem', background: 'rgba(255, 59, 48, 0.08)', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-                <AlertCircle size={16} />
-                <span>{error}</span>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.6rem',
+                color: '#f87171',
+                fontSize: '0.85rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                padding: '0.85rem 1rem',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                  <span>
+                    {error === 'API_KEY_REQUIRED'
+                      ? 'An API Key is required on the BYOK plan. Please add your Gemini, OpenAI, or Anthropic API key in Settings.'
+                      : error}
+                  </span>
+                </div>
+                {(error === 'API_KEY_REQUIRED' || error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('load failed')) && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('settings')}
+                    className="btn btn-secondary"
+                    style={{
+                      alignSelf: 'flex-start',
+                      padding: '0.35rem 0.85rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <span>Go to Settings →</span>
+                  </button>
+                )}
               </div>
             )}
 

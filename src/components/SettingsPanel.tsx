@@ -286,16 +286,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Free Trial Balance:</span>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: userProfile.generation_count >= 3 ? '#f87171' : 'var(--text-primary)' }}>
-                      {userProfile.generation_count} / 3 used
+                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: userProfile.generation_count >= 5 ? '#f87171' : 'var(--text-primary)' }}>
+                      {userProfile.generation_count} / 5 used
                     </span>
                   </div>
                   <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '999px', overflow: 'hidden' }}>
                     <div
                       style={{
-                        width: `${Math.min(100, (userProfile.generation_count / 3) * 100)}%`,
+                        width: `${Math.min(100, (userProfile.generation_count / 5) * 100)}%`,
                         height: '100%',
-                        background: userProfile.generation_count >= 3 ? '#ef4444' : 'linear-gradient(90deg, #7c3aed 0%, #10b981 100%)',
+                        background: userProfile.generation_count >= 5 ? '#ef4444' : 'linear-gradient(90deg, #7c3aed 0%, #10b981 100%)',
                         borderRadius: '999px',
                         transition: 'width 0.3s ease'
                       }}
