@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Mail, Send, Paperclip, X, CheckCircle2, AlertCircle, MessageSquare, Image, ShieldCheck, Clock } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Mail, Send, Paperclip, X, CheckCircle2, AlertCircle, MessageSquare, Image, ShieldCheck, Clock, Lock } from 'lucide-react';
 import { supabase } from '../utils/supabase';
 
 interface ContactUsPanelProps {
@@ -28,6 +28,9 @@ const CATEGORIES = [
   'General Career Workspace Question'
 ];
 
+const COOLDOWN_KEY = 'jd2cv_support_last_submission';
+const COOLDOWN_SECONDS = 60; // Industry standard 60-second rate-limiting cooldown
+
 export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, session }) => {
   const initialName = userProfile?.full_name || session?.user?.user_metadata?.full_name || '';
   const initialEmail = userProfile?.email || session?.user?.email || '';
@@ -36,12 +39,33 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
   const [email, setEmail] = useState(initialEmail);
   const [category, setCategory] = useState(CATEGORIES[0]);
   const [message, setMessage] = useState('');
+  const [honeypot, setHoneypot] = useState(''); // Anti-bot honeypot field
   const [screenshots, setScreenshots] = useState<ScreenshotFile[]>([]);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Rate Limiting Cooldown Clock
+  useEffect(() => {
+    const checkCooldown = () => {
+      const lastSent = localStorage.getItem(COOLDOWN_KEY);
+      if (lastSent) {
+        const elapsed = (Date.now() - parseInt(lastSent, 10)) / 1000;
+        if (elapsed < COOLDOWN_SECONDS) {
+          setCooldownRemaining(Math.ceil(COOLDOWN_SECONDS - elapsed));
+          return;
+        }
+      }
+      setCooldownRemaining(0);
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -54,12 +78,16 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
 
     setError(null);
 
+    const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+
     Array.from(files).forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        setError('Only image files (PNG, JPG, WEBP) are supported as screenshots.');
+      // 1. Strict MIME validation
+      if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
+        setError('Security rule: Only safe image files (PNG, JPG, WEBP) are supported.');
         return;
       }
 
+      // 2. Strict file size cap (3MB)
       if (file.size > 3 * 1024 * 1024) {
         setError(`File "${file.name}" exceeds the 3MB size limit.`);
         return;
@@ -73,7 +101,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
           ...prev,
           {
             id: Math.random().toString(36).substring(2, 9),
-            name: file.name,
+            name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'), // Sanitize filename
             dataUrl,
             size: sizeFormatted,
             blob: file
@@ -94,8 +122,33 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !message.trim()) {
-      setError('Please provide your email address and message.');
+
+    // 1. Anti-Bot Honeypot Trigger Check
+    if (honeypot.trim().length > 0) {
+      console.warn('Bot submission silently filtered by honeypot.');
+      setSuccess(true);
+      return;
+    }
+
+    // 2. Client-Side Rate-Limiting Cooldown
+    if (cooldownRemaining > 0) {
+      setError(`Please wait ${cooldownRemaining} seconds before submitting another ticket.`);
+      return;
+    }
+
+    // 3. Input Validation & Sanitization
+    const cleanEmail = email.trim();
+    const cleanName = name.trim().slice(0, 100) || 'Candidate User';
+    const cleanMessage = message.trim().slice(0, 3000);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError('Please provide a valid email address.');
+      return;
+    }
+
+    if (!cleanMessage) {
+      setError('Please describe your issue or question in the message field.');
       return;
     }
 
@@ -103,11 +156,9 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
     setError(null);
 
     const userPlan = (userProfile?.plan || 'free').toUpperCase();
-    const cleanName = name.trim() || 'Candidate User';
-    const cleanEmail = email.trim();
 
     try {
-      // 1. Prepare Multipart FormData for direct FormSubmit delivery
+      // 4. Prepare Multipart FormData for FormSubmit
       const formData = new FormData();
       formData.append('name', cleanName);
       formData.append('email', cleanEmail);
@@ -117,7 +168,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
       formData.append('Candidate Email', cleanEmail);
       formData.append('Subscription Plan', userPlan);
       formData.append('Category', category);
-      formData.append('Message Details', message.trim());
+      formData.append('Message Details', cleanMessage);
       formData.append('_captcha', 'false');
       formData.append('_template', 'table');
 
@@ -128,7 +179,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
         }
       });
 
-      // 2. Direct HTTP POST to FormSubmit API (silent in background, no mail app opened)
+      // 5. Silent Direct Delivery via HTTPS POST
       const response = await fetch('https://formsubmit.co/ajax/vineetsansare@gmail.com', {
         method: 'POST',
         headers: {
@@ -139,7 +190,10 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
 
       const data = await response.json().catch(() => ({}));
 
-      // 3. Also persist to Supabase if session exists
+      // 6. Record rate-limit timestamp
+      localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
+
+      // 7. Audit log to Supabase if session active
       if (session?.user?.id) {
         try {
           await supabase.from('support_tickets').insert({
@@ -148,11 +202,11 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
             email: cleanEmail,
             plan: userProfile?.plan || 'free',
             category: category,
-            message: message.trim(),
+            message: cleanMessage,
             screenshot_count: screenshots.length
           });
         } catch (_dbErr) {
-          // Non-blocking database insertion
+          // Non-blocking
         }
       }
 
@@ -161,7 +215,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
         setMessage('');
         setScreenshots([]);
       } else {
-        throw new Error(data.message || 'Could not deliver message. Please verify your connection.');
+        throw new Error(data.message || 'Could not deliver message. Please verify your internet connection.');
       }
     } catch (err: any) {
       console.error('Contact submission error:', err);
@@ -237,6 +291,20 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Invisible Anti-Spam Honeypot Field */}
+              <div style={{ display: 'none' }} aria-hidden="true">
+                <label htmlFor="website_url">Do not fill this field</label>
+                <input
+                  id="website_url"
+                  type="text"
+                  name="_honey"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                />
+              </div>
+
               {error && (
                 <div
                   style={{
@@ -266,6 +334,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                     id="contact-name"
                     type="text"
                     required
+                    maxLength={100}
                     placeholder="e.g. Vineet Sansare"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -281,6 +350,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                     id="contact-email"
                     type="email"
                     required
+                    maxLength={150}
                     placeholder="your.email@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -325,12 +395,13 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                     Message Details
                   </label>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {message.length} chars
+                    {message.length} / 3000 chars
                   </span>
                 </div>
                 <textarea
                   id="contact-message"
                   required
+                  maxLength={3000}
                   rows={5}
                   placeholder="Please describe what happened, steps to reproduce, or any questions you have regarding your CV tailoring..."
                   value={message}
@@ -441,7 +512,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={sending}
+                disabled={sending || cooldownRemaining > 0}
                 className="btn btn-primary"
                 style={{
                   width: '100%',
@@ -453,14 +524,21 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                   justifyContent: 'center',
                   gap: '0.5rem',
                   marginTop: '0.5rem',
-                  background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
-                  boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)'
+                  background: cooldownRemaining > 0 ? 'var(--bg-secondary)' : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
+                  boxShadow: cooldownRemaining > 0 ? 'none' : '0 4px 15px rgba(124, 58, 237, 0.35)',
+                  cursor: cooldownRemaining > 0 ? 'not-allowed' : 'pointer',
+                  opacity: cooldownRemaining > 0 ? 0.7 : 1
                 }}
               >
                 {sending ? (
                   <>
                     <div className="radar-spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                    <span>Sending Ticket...</span>
+                    <span>Sending Secure Ticket...</span>
+                  </>
+                ) : cooldownRemaining > 0 ? (
+                  <>
+                    <Lock size={16} />
+                    <span>Cooldown active ({cooldownRemaining}s)</span>
                   </>
                 ) : (
                   <>
@@ -512,7 +590,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
           <div className="glass-card" style={{ padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--card-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <ShieldCheck size={16} style={{ color: '#38bdf8' }} />
-              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Confidentiality</span>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>Confidentiality & Privacy</span>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
               Your CV data, attached screenshots, and career details are kept 100% confidential and never shared with third parties.
