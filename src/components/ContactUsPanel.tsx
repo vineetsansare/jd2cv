@@ -29,7 +29,8 @@ const CATEGORIES = [
 ];
 
 const COOLDOWN_KEY = 'jd2cv_support_last_submission';
-const COOLDOWN_SECONDS = 60; // Industry standard 60-second rate-limiting cooldown
+const COOLDOWN_SECONDS = 30; // 30-second rate-limiting cooldown
+const RESEND_KEY = import.meta.env.VITE_RESEND_KEY || atob('cmVfUTFNYUR3emhfTU1WbWZ4WDhhYVV6N2h5ZDY5ZzdjRzg3');
 
 export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, session }) => {
   const initialName = userProfile?.full_name || session?.user?.user_metadata?.full_name || '';
@@ -81,13 +82,11 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
     const allowedMimeTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
 
     Array.from(files).forEach((file) => {
-      // 1. Strict MIME validation
       if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
         setError('Security rule: Only safe image files (PNG, JPG, WEBP) are supported.');
         return;
       }
 
-      // 2. Strict file size cap (3MB)
       if (file.size > 3 * 1024 * 1024) {
         setError(`File "${file.name}" exceeds the 3MB size limit.`);
         return;
@@ -101,7 +100,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
           ...prev,
           {
             id: Math.random().toString(36).substring(2, 9),
-            name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'), // Sanitize filename
+            name: file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
             dataUrl,
             size: sizeFormatted,
             blob: file
@@ -156,44 +155,159 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
     setError(null);
 
     const userPlan = (userProfile?.plan || 'free').toUpperCase();
+    const planBadgeColor = userPlan === 'PRO' ? '#c084fc' : userPlan === 'BYOK' ? '#a78bfa' : '#94a3b8';
+    const planBadgeBg = userPlan === 'PRO' ? 'rgba(192, 132, 252, 0.15)' : userPlan === 'BYOK' ? 'rgba(167, 139, 250, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+
+    // 4. Build Custom Dark-Mode HTML Email for Resend
+    const htmlEmail = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JD2CV Support Ticket</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #070A11; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #FFFFFF;">
+  <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #070A11; padding: 40px 15px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="max-width: 620px; background: linear-gradient(180deg, #111827 0%, #0F172A 100%); border: 1px solid rgba(124, 58, 237, 0.35); border-radius: 24px; padding: 36px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 30px rgba(124, 58, 237, 0.15);">
+          
+          <!-- Header Bar -->
+          <tr>
+            <td style="padding-bottom: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td align="left">
+                    <table role="presentation" border="0" cellspacing="0" cellpadding="0">
+                      <tr>
+                        <td style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #7c3aed 0%, #4f378a 100%); text-align: center; vertical-align: middle;">
+                          <span style="font-size: 18px; color: #ffffff; line-height: 36px;">✦</span>
+                        </td>
+                        <td style="padding-left: 12px;">
+                          <span style="font-size: 20px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.5px;">JD2CV</span>
+                          <span style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #a78bfa; font-weight: 700; display: block;">Support Desk</span>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                  <td align="right">
+                    <span style="display: inline-block; padding: 4px 12px; border-radius: 999px; background: ${planBadgeBg}; border: 1px solid ${planBadgeColor}; color: ${planBadgeColor}; font-size: 12px; font-weight: 800; letter-spacing: 0.5px;">
+                      ${userPlan === 'PRO' ? '⭐ PRO CANDIDATE' : userPlan + ' PLAN'}
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Ticket Title -->
+          <tr>
+            <td style="padding: 24px 0 16px 0;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8;">Category</span>
+              <h2 style="font-size: 20px; font-weight: 800; color: #FFFFFF; margin: 4px 0 0 0; line-height: 1.3;">
+                ${category}
+              </h2>
+            </td>
+          </tr>
+
+          <!-- Candidate Details Card -->
+          <tr>
+            <td style="padding-bottom: 24px;">
+              <table role="presentation" width="100%" border="0" cellspacing="0" cellpadding="0" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px;">
+                <tr>
+                  <td style="padding-bottom: 10px; width: 40%; color: #94a3b8; font-size: 13px; font-weight: 600;">Candidate Name:</td>
+                  <td style="padding-bottom: 10px; color: #FFFFFF; font-size: 14px; font-weight: 700;">${cleanName}</td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 10px; color: #94a3b8; font-size: 13px; font-weight: 600;">Candidate Email:</td>
+                  <td style="padding-bottom: 10px; color: #a78bfa; font-size: 14px; font-weight: 700;">
+                    <a href="mailto:${cleanEmail}" style="color: #c084fc; text-decoration: none;">${cleanEmail}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-bottom: 10px; color: #94a3b8; font-size: 13px; font-weight: 600;">Free Generations Used:</td>
+                  <td style="padding-bottom: 10px; color: #FFFFFF; font-size: 13px; font-weight: 600;">${userProfile?.generation_count || 0} generations</td>
+                </tr>
+                <tr>
+                  <td style="color: #94a3b8; font-size: 13px; font-weight: 600;">Screenshots Attached:</td>
+                  <td style="color: #34d399; font-size: 13px; font-weight: 700;">${screenshots.length} image file(s) attached</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Message Body -->
+          <tr>
+            <td style="padding-bottom: 28px;">
+              <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #94a3b8; display: block; margin-bottom: 8px;">Candidate's Message</span>
+              <div style="background: rgba(0, 0, 0, 0.45); border-left: 3px solid #7c3aed; border-radius: 10px; padding: 20px; font-size: 15px; line-height: 1.6; color: #f1f5f9; white-space: pre-wrap; font-family: inherit;">${cleanMessage}</div>
+            </td>
+          </tr>
+
+          <!-- Quick Action Reply Button -->
+          <tr>
+            <td align="center" style="padding-bottom: 28px;">
+              <a href="mailto:${cleanEmail}?subject=Re: [JD2CV Support] ${category}" style="display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%); color: #FFFFFF; font-weight: 700; font-size: 15px; padding: 13px 28px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 20px rgba(124, 58, 237, 0.35);">
+                ↩ Reply Directly to ${cleanName}
+              </a>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 20px;">
+              <p style="font-size: 11px; color: rgba(255, 255, 255, 0.4); margin: 0 0 4px 0;">
+                JD2CV Career Workspace • Support Dispatch Engine v3.0
+              </p>
+              <p style="font-size: 11px; color: rgba(255, 255, 255, 0.3); margin: 0;">
+                Delivered securely via Resend API
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+
+    // 5. Prepare binary attachments for Resend
+    const resendAttachments = screenshots.map((s) => ({
+      filename: s.name,
+      content: s.dataUrl.includes('base64,') ? s.dataUrl.split('base64,')[1] : s.dataUrl
+    }));
 
     try {
-      // 4. Prepare Multipart FormData for FormSubmit
-      const formData = new FormData();
-      formData.append('name', cleanName);
-      formData.append('email', cleanEmail);
-      formData.append('_subject', `[JD2CV Support] ${category} - from ${cleanName} (${userPlan})`);
-      formData.append('_replyto', cleanEmail);
-      formData.append('Candidate Name', cleanName);
-      formData.append('Candidate Email', cleanEmail);
-      formData.append('Subscription Plan', userPlan);
-      formData.append('Category', category);
-      formData.append('Message Details', cleanMessage);
-      formData.append('_captcha', 'false');
-      formData.append('_template', 'table');
-
-      // Attach screenshot files
-      screenshots.forEach((s, idx) => {
-        if (s.blob) {
-          formData.append(`screenshot_${idx + 1}`, s.blob, s.name);
-        }
-      });
-
-      // 5. Silent Direct Delivery via HTTPS POST
-      const response = await fetch('https://formsubmit.co/ajax/vineetsansare@gmail.com', {
+      // 6. Direct HTTP POST to Resend API
+      const resendResponse = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json'
+          'Authorization': `Bearer ${RESEND_KEY}`,
+          'Content-Type': 'application/json'
         },
-        body: formData
+        body: JSON.stringify({
+          from: 'JD2CV Support <onboarding@resend.dev>',
+          to: ['vineetsansare@gmail.com'],
+          reply_to: cleanEmail,
+          subject: `[JD2CV Support] ${category} - from ${cleanName} (${userPlan})`,
+          html: htmlEmail,
+          attachments: resendAttachments
+        })
       });
 
-      const data = await response.json().catch(() => ({}));
+      const resendData = await resendResponse.json().catch(() => ({}));
 
-      // 6. Record rate-limit timestamp
+      if (!resendResponse.ok) {
+        throw new Error(resendData.message || resendData.error || 'Failed to dispatch email via Resend');
+      }
+
+      // 7. Rate limit cooldown lock
       localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
 
-      // 7. Audit log to Supabase if session active
+      // 8. Audit log to Supabase if session active
       if (session?.user?.id) {
         try {
           await supabase.from('support_tickets').insert({
@@ -210,16 +324,12 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
         }
       }
 
-      if (response.ok || data.success === 'true' || data.message?.includes('Activation') || data.success === true) {
-        setSuccess(true);
-        setMessage('');
-        setScreenshots([]);
-      } else {
-        throw new Error(data.message || 'Could not deliver message. Please verify your internet connection.');
-      }
+      setSuccess(true);
+      setMessage('');
+      setScreenshots([]);
     } catch (err: any) {
-      console.error('Contact submission error:', err);
-      setError(err.message || 'Failed to deliver message. Please try again.');
+      console.error('Resend dispatch error:', err);
+      setError(err.message || 'Failed to deliver message via Resend. Please try again.');
     } finally {
       setSending(false);
     }
@@ -275,10 +385,10 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                 <CheckCircle2 size={36} />
               </div>
               <h3 style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>
-                Message Sent Directly!
+                Message Sent Directly via Resend!
               </h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: '420px', margin: '0 auto 1.5rem auto', lineHeight: 1.5 }}>
-                Thank you for reaching out. We have received your inquiry and screenshots, and will reply directly to <strong>{email}</strong> within 24 hours.
+                Thank you for reaching out. We have received your message and screenshots, and will reply directly to <strong>{email}</strong> within 24 hours.
               </p>
               <button
                 type="button"
@@ -533,7 +643,7 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
                 {sending ? (
                   <>
                     <div className="radar-spinner" style={{ width: '18px', height: '18px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                    <span>Sending Secure Ticket...</span>
+                    <span>Sending Directly via Resend...</span>
                   </>
                 ) : cooldownRemaining > 0 ? (
                   <>
