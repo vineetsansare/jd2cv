@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { History, Download, Eye, Sparkles, Calendar, ShieldCheck } from 'lucide-react';
 import { LiquidCard } from './ui/LiquidCard';
-import { parseMarkdownToHtml } from '../utils/mdParser';
+import { printCvDocument } from '../utils/printHelper';
 
 export interface GenerationRecord {
   id: string;
@@ -31,43 +31,15 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
 
   const handleDownloadPDF = (gen: GenerationRecord) => {
     setDownloadingId(gen.id);
-    const originalTitle = document.title;
-    
-    // Set document title for PDF output file name
     const timestampStr = new Date(gen.created_at).toISOString().split('T')[0];
-    document.title = `CV_Optimized_${timestampStr}`;
-
-    // Create temporary print container
-    const printContainer = document.createElement('div');
-    printContainer.id = 'temp-print-container';
-    printContainer.className = 'cv-preview-container print-only-wrapper';
-    printContainer.innerHTML = parseMarkdownToHtml(gen.cv_markdown);
+    const filename = `CV_Optimized_${timestampStr}`;
     
-    document.body.appendChild(printContainer);
-
-    // Add printing class to body to suppress all background meshes and dark mode styling
-    document.body.classList.add('is-printing-cv');
-
-    // Mobile Viewport Fix for AirPrint / Android Print
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
-
-    if (viewportMeta) {
-      viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
-    }
+    // Execute isolated iframe print engine
+    printCvDocument(gen.cv_markdown, undefined, filename);
 
     setTimeout(() => {
-      window.print();
-      document.body.removeChild(printContainer);
-      document.title = originalTitle;
-      document.body.classList.remove('is-printing-cv');
       setDownloadingId(null);
-      if (viewportMeta && originalViewport) {
-        setTimeout(() => {
-          viewportMeta.setAttribute('content', originalViewport);
-        }, 1000);
-      }
-    }, 250);
+    }, 500);
   };
 
   const formatDate = (isoString: string) => {

@@ -6,6 +6,8 @@ import { LiquidCard } from './ui/LiquidCard';
 import { CVThemeSelector } from './CVThemeSelector';
 import type { CVThemeConfig } from './CVThemeSelector';
 
+import { printCvDocument } from '../utils/printHelper';
+
 interface CVDisplayProps {
   result: CVGenerationResult;
   onUpdateMarkdown: (markdown: string) => void;
@@ -76,8 +78,6 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   };
 
   const handlePrint = () => {
-    const originalTitle = document.title;
-    
     // 1. Get first name
     const firstName = userProfile?.full_name?.split(' ')[0] || 'Resume';
     
@@ -129,32 +129,10 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     const cleanRole = cleanFilenameToken(roleTitle);
     const cleanCompany = cleanFilenameToken(company);
     
-    // Set temporary document title
-    document.title = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
+    const filename = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
 
-    // Add printing class to body to suppress all background meshes and dark mode styling
-    document.body.classList.add('is-printing-cv');
-
-    // Mobile Viewport Fix for AirPrint / Android Print
-    const viewportMeta = document.querySelector('meta[name="viewport"]');
-    const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : null;
-
-    if (viewportMeta) {
-      // Temporarily expand viewport to full desktop A4 canvas so mobile print engines don't constrain width to 375px
-      viewportMeta.setAttribute('content', 'width=794, initial-scale=1.0');
-    }
-    
-    // Trigger browser print with slight delay for mobile layout engine to recalculate full A4 width
-    setTimeout(() => {
-      window.print();
-      document.title = originalTitle;
-      document.body.classList.remove('is-printing-cv');
-      if (viewportMeta && originalViewport) {
-        setTimeout(() => {
-          viewportMeta.setAttribute('content', originalViewport);
-        }, 1000);
-      }
-    }, 250);
+    // Execute isolated iframe print engine
+    printCvDocument(result.cvMarkdown, themeConfig, filename);
   };
 
   // Helper to calculate circular stroke values
