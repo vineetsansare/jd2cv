@@ -4,6 +4,7 @@ import { CVDisplay } from './components/CVDisplay';
 import { AuthForm } from './components/AuthForm';
 import { PricingModal } from './components/PricingModal';
 import { ContactUsPanel } from './components/ContactUsPanel';
+import { AdminPortal } from './components/AdminPortal';
 import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
@@ -19,15 +20,16 @@ import { LiquidCard } from './components/ui/LiquidCard';
 import { UploadIllustration, AICoachIllustration, EmptyStateIllustration } from './components/ui/Illustrations';
 import { CVHistoryPanel } from './components/CVHistoryPanel';
 import type { GenerationRecord } from './components/CVHistoryPanel';
+import { DEFAULT_PROVIDER, DEFAULT_MODEL } from './utils/models';
 
 const LOCAL_STORAGE_KEY_CONFIG = 'cv_builder_llm_config';
 const LOCAL_STORAGE_KEY_THEME = 'cv_builder_theme';
 const LOCAL_STORAGE_KEY_SIDEBAR = 'cv_builder_sidebar_collapsed';
 
 const DEFAULT_CONFIG: LLMConfig = {
-  provider: 'gemini',
+  provider: DEFAULT_PROVIDER,
   apiKey: '',
-  model: 'gemini-2.5-flash',
+  model: DEFAULT_MODEL,
 };
 
 interface CloudCV {
@@ -37,16 +39,66 @@ interface CloudCV {
 }
 
 interface UserProfile {
+  id?: string;
   email: string;
   full_name?: string;
   plan: 'free' | 'byok' | 'pro';
   generation_count: number;
   avatar_url?: string;
+  is_admin?: boolean;
 }
+
+const DEFAULT_ADMIN_EMAILS = [
+  'vineetsansare@gmail.com',
+  'admin@vineetsansare.com',
+  'vineet@jd2cv.com'
+];
+
+export function checkIsAdmin(email?: string, isDbAdmin?: boolean): boolean {
+  if (isDbAdmin === true) return true;
+  if (!email) return false;
+  const envAdmins = (import.meta.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e: string) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const allowed = [...DEFAULT_ADMIN_EMAILS, ...envAdmins];
+  return allowed.includes(email.toLowerCase());
+}
+
+const checkIsAdminRoute = () => {
+  if (typeof window === 'undefined') return false;
+  const path = window.location.pathname.toLowerCase();
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return (
+    path.endsWith('/admin') ||
+    path.endsWith('/admin/') ||
+    path.includes('/jd2cv/admin') ||
+    hash.startsWith('#/admin') ||
+    hash.startsWith('#admin') ||
+    search.includes('view=admin') ||
+    search.includes('route=admin')
+  );
+};
 
 function App() {
   const [session, setSession] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isAdminRoute, setIsAdminRoute] = useState<boolean>(checkIsAdminRoute);
+
+  // Sync route changes
+  useEffect(() => {
+    const handleRouteChange = () => {
+      setIsAdminRoute(checkIsAdminRoute());
+    };
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
+    return () => {
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
+    };
+  }, []);
+
   // Clean double-hash if present in browser address bar (e.g. ##access_token=)
   if (typeof window !== 'undefined' && window.location.hash.startsWith('##')) {
     window.location.hash = window.location.hash.replace(/^##/, '#');
@@ -111,7 +163,7 @@ function App() {
     if (localStorage.getItem(storageKey)) return;
 
     try {
-      const proxyUrl = import.meta.env.VITE_PROXY_URL || 'http://localhost:3001';
+      const proxyUrl = import.meta.env.VITE_PROXY_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
       await fetch(`${proxyUrl}/api/email/welcome`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -137,7 +189,7 @@ function App() {
       while (retryCount < 2) {
         const { data } = await supabase
           .from('profiles')
-          .select('email, full_name, plan, generation_count, avatar_url')
+          .select('id, email, full_name, plan, generation_count, avatar_url, is_admin')
           .eq('id', currentSession.user.id)
           .maybeSingle();
 
@@ -159,28 +211,43 @@ function App() {
           id: currentSession.user.id,
           email: currentSession.user.email,
           full_name: defaultName,
-          plan: 'free',
+          plan: 'free' as const,
           generation_count: 0,
-          avatar_url: defaultAvatar
+          avatar_url: defaultAvatar,
+          is_admin: false
         };
 
         const { data: upserted } = await supabase
           .from('profiles')
           .upsert(newProfile, { onConflict: 'id' })
-          .select('email, full_name, plan, generation_count, avatar_url')
+          .select('id, email, full_name, plan, generation_count, avatar_url, is_admin')
           .single();
 
         profile = upserted || newProfile;
       }
 
       const plan = (profile.plan as 'free' | 'byok' | 'pro') || 'free';
+      const userEmail = profile.email || currentSession.user.email || '';
+      const isAdmin = checkIsAdmin(userEmail, profile.is_admin);
+
       setUserProfile({
-        email: profile.email || currentSession.user.email,
+        id: profile.id || currentSession.user.id,
+        email: userEmail,
         full_name: profile.full_name || currentSession.user.user_metadata?.full_name || 'User',
         plan,
         generation_count: profile.generation_count || 0,
-        avatar_url: profile.avatar_url || currentSession.user.user_metadata?.avatar_url || ''
+        avatar_url: profile.avatar_url || currentSession.user.user_metadata?.avatar_url || '',
+        is_admin: isAdmin
       });
+
+      // If user is designated admin but not yet marked in DB, update DB profile
+      if (isAdmin && !profile.is_admin && currentSession.user?.id) {
+        supabase
+          .from('profiles')
+          .update({ is_admin: true })
+          .eq('id', currentSession.user.id)
+          .then(() => {}, () => {});
+      }
 
       if (plan === 'free') {
         setConfig(prev => ({
@@ -292,7 +359,7 @@ function App() {
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(25);
 
       if (data && !error) {
         setGenerations(data as GenerationRecord[]);
@@ -735,6 +802,26 @@ function App() {
     userProfile?.plan === 'pro' || 
     userProfile?.plan === 'free' || 
     (userProfile?.plan === 'byok' && savedKeys[config.provider]);
+
+  // Standalone Admin Route (e.g. /admin, /jd2cv/admin, or #/admin)
+  if (isAdminRoute) {
+    return (
+      <AdminPortal
+        userProfile={userProfile}
+        session={session}
+        onReturnToApp={() => {
+          if (window.location.hash.includes('admin')) {
+            window.location.hash = '';
+          }
+          if (window.location.pathname.endsWith('/admin') || window.location.pathname.endsWith('/admin/')) {
+            const base = window.location.pathname.replace(/\/admin\/?$/, '') || '/';
+            window.history.pushState(null, '', base);
+          }
+          setIsAdminRoute(false);
+        }}
+      />
+    );
+  }
 
   // Password reset UI Overlay
   if (isResettingPassword) {

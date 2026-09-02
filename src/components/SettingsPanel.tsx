@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Settings, ShieldCheck, Zap, LogOut, CheckCircle2, Info, Camera } from 'lucide-react';
+import { Settings, ShieldCheck, Zap, LogOut, CheckCircle2, Info, Camera, Sparkles } from 'lucide-react';
 import type { LLMConfig } from '../utils/llm';
 import { saveUserAPIKey, deleteUserAPIKey, getSavedAPIKeysStatus } from '../utils/llm';
+import { PROVIDER_MODELS, type LLMProvider } from '../utils/models';
 import { AvatarCropperModal } from './AvatarCropperModal';
 
 interface SettingsPanelProps {
@@ -12,12 +13,6 @@ interface SettingsPanelProps {
   onUpdateAvatar?: (avatarUrl: string) => Promise<void>;
   onOpenPricingModal?: () => void;
 }
-
-const PROVIDER_MODELS = {
-  gemini: ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-pro'],
-  openai: ['gpt-4o', 'gpt-4o-mini', 'o1', 'o1-mini', 'o3-mini'],
-  anthropic: ['claude-3-5-sonnet-latest', 'claude-3-5-haiku-latest', 'claude-3-opus-20240229']
-};
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   config,
@@ -101,8 +96,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const provider = e.target.value as 'gemini' | 'openai' | 'anthropic';
-    const defaultModel = PROVIDER_MODELS[provider][0];
+    const provider = e.target.value as LLMProvider;
+    const defaultModel = PROVIDER_MODELS[provider]?.[0]?.id || 'gemini-2.5-flash';
     onChangeConfig({
       ...config,
       provider,
@@ -155,6 +150,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   };
 
   const isCurrentKeySaved = savedKeys[config.provider];
+  const activeModelInfo = PROVIDER_MODELS[config.provider]?.find((m) => m.id === config.model);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }} className="entrance-fade">
@@ -364,7 +360,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </div>
 
           <div className="form-group">
-            <label htmlFor="llm-model">Default Generation Model</label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+              <label htmlFor="llm-model" style={{ margin: 0 }}>Generation Model</label>
+              {userProfile?.plan !== 'free' && activeModelInfo?.tag && (
+                <span style={{
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  background: activeModelInfo.tag === 'Recommended' ? 'rgba(124, 58, 237, 0.15)' :
+                              activeModelInfo.tag === 'Flagship' ? 'rgba(59, 130, 246, 0.15)' :
+                              activeModelInfo.tag === 'Reasoning' ? 'rgba(234, 88, 12, 0.15)' :
+                              activeModelInfo.tag === 'Pro' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                  color: activeModelInfo.tag === 'Recommended' ? 'var(--accent-primary)' :
+                         activeModelInfo.tag === 'Flagship' ? '#3b82f6' :
+                         activeModelInfo.tag === 'Reasoning' ? '#ea580c' :
+                         activeModelInfo.tag === 'Pro' ? '#c084fc' : '#10b981',
+                  border: '1px solid currentColor'
+                }}>
+                  {activeModelInfo.tag}
+                </span>
+              )}
+            </div>
             <select
               id="llm-model"
               value={userProfile?.plan === 'free' ? 'gemini-flash-latest' : config.model}
@@ -372,20 +391,32 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               disabled={userProfile?.plan === 'free'}
             >
               {userProfile?.plan === 'free' ? (
-                <option value="gemini-flash-latest">gemini-flash-latest</option>
+                <option value="gemini-flash-latest">Gemini Flash (Latest)</option>
               ) : (
-                PROVIDER_MODELS[config.provider].map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))
+                <>
+                  {PROVIDER_MODELS[config.provider]?.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} {m.tag ? `[${m.tag}]` : ''} ({m.id})
+                    </option>
+                  ))}
+                  {config.model && !PROVIDER_MODELS[config.provider]?.some((m) => m.id === config.model) && (
+                    <option value={config.model}>Custom Model ({config.model})</option>
+                  )}
+                </>
               )}
             </select>
-            {userProfile?.plan === 'free' && (
-              <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '0.25rem', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+            {userProfile?.plan === 'free' ? (
+              <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '0.35rem', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
                 <Info size={14} />
                 <span>Free trial is powered by Gemini Flash. Upgrade or go BYOK to select others.</span>
               </div>
+            ) : (
+              activeModelInfo?.description && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                  <Sparkles size={13} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                  <span>{activeModelInfo.description}</span>
+                </div>
+              )
             )}
           </div>
 

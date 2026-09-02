@@ -1,7 +1,8 @@
 import { supabase } from './supabase';
+import { CANDIDATE_GEMINI_MODELS, type LLMProvider } from './models';
 
 export interface LLMConfig {
-  provider: 'gemini' | 'openai' | 'anthropic';
+  provider: LLMProvider;
   apiKey: string;
   model: string;
 }
@@ -26,15 +27,6 @@ export type TargetLength = '1-page' | '2-page' | 'comprehensive';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42S19vaTEwamZzU0xEYVlmSlNmcERYSFNRendDSzc5a056aFNfem43VTVvcGc=');
-
-// Priority cascade list of models to automatically fallback when Google servers experience capacity spikes
-const CANDIDATE_GEMINI_MODELS = [
-  'gemini-flash-latest',
-  'gemini-3.5-flash',
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-pro-latest'
-];
 
 async function callGeminiWithFailover(apiKey: string, contents: any[]): Promise<any> {
   let lastError: any = null;

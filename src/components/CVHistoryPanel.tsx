@@ -87,7 +87,7 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
               Recent Generation History
             </h2>
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Revisit, inspect, or export PDFs of your 5 most recent AI-customized resume profiles.
+              Revisit, edit, inspect, or export PDFs of your recent AI-customized resume profiles (showing up to 25).
             </p>
           </div>
         </div>
@@ -222,7 +222,7 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
                     }}
                   >
                     <Eye size={15} />
-                    <span>View / Load</span>
+                    <span>Edit / Preview</span>
                   </button>
 
                   <button

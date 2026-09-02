@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import llmRoutes from './routes/llm.js';
 import keyRoutes from './routes/keys.js';
 import emailRoutes from './routes/email.js';
+import adminRoutes from './routes/admin.js';
 
 // Load environment variables
 dotenv.config();
@@ -22,19 +23,7 @@ const allowedOrigins = [
 ];
 
 await fastify.register(cors, {
-  origin: (origin, cb) => {
-    // Allow requests with no origin (like mobile apps or curl)
-    if (!origin) {
-      cb(null, true);
-      return;
-    }
-    const isAllowed = allowedOrigins.some((allowed) => origin.startsWith(allowed));
-    if (isAllowed) {
-      cb(null, true);
-    } else {
-      cb(new Error('Not allowed by CORS'), false);
-    }
-  },
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 });
@@ -43,6 +32,7 @@ await fastify.register(cors, {
 await fastify.register(llmRoutes, { prefix: '/api/llm' });
 await fastify.register(keyRoutes, { prefix: '/api/keys' });
 await fastify.register(emailRoutes, { prefix: '/api/email' });
+await fastify.register(adminRoutes, { prefix: '/api/admin' });
 
 // Health check
 fastify.get('/health', async () => {

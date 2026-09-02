@@ -11,6 +11,7 @@ CREATE TABLE public.profiles (
     avatar_url TEXT,
     plan user_plan DEFAULT 'free'::user_plan,
     generation_count INTEGER DEFAULT 0,
+    is_admin BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -21,6 +22,15 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" 
     ON public.profiles FOR SELECT 
     USING (auth.uid() = id);
+
+CREATE POLICY "Admins can view all profiles" 
+    ON public.profiles FOR SELECT 
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles 
+            WHERE profiles.id = auth.uid() AND profiles.is_admin = true
+        )
+    );
 
 CREATE POLICY "Users can update own profile" 
     ON public.profiles FOR UPDATE 
