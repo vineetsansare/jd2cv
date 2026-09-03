@@ -488,17 +488,17 @@ function App() {
     localStorage.setItem(LOCAL_STORAGE_KEY_CONFIG, JSON.stringify(newConfig));
   };
 
-  // Add CV to Supabase Database
+  // Add or Replace Base CV in Supabase Database (Strictly 1 Master Base CV)
   const handleAddCV = async (name: string, text: string) => {
     if (!session) return;
     
-    const limit = userProfile?.plan === 'free' ? 1 : 5;
-    if (contextCVs.length >= limit) {
-      setError(`Your plan (${userProfile?.plan.toUpperCase()}) is limited to maximum ${limit} CV profile(s). Please remove a profile before uploading or upgrade your plan.`);
-      return;
-    }
-
     try {
+      // If any existing Base CV exists in Supabase, remove it so only 1 master record is retained
+      await supabase
+        .from('cv_documents')
+        .delete()
+        .eq('user_id', session.user.id);
+
       const { data, error } = await supabase
         .from('cv_documents')
         .insert({
@@ -512,52 +512,33 @@ function App() {
       if (error) throw error;
 
       const newCV = { id: data.id, name, text };
-      const updatedCVs = [...contextCVs, newCV];
-      setContextCVs(updatedCVs);
-      setActiveCVIndices([...activeCVIndices, updatedCVs.length - 1]);
+      setContextCVs([newCV]);
+      setActiveCVIndices([0]);
       setError(null);
     } catch (err: any) {
-      console.error('Failed to save CV to cloud:', err);
-      setError('Failed to upload CV to database.');
+      console.error('Failed to save Base CV to cloud:', err);
+      setError('Failed to upload Base CV to database.');
     }
   };
 
-  // Remove CV from Supabase Database
-  const handleRemoveCV = async (indexToRemove: number) => {
-    const cvToRemove = contextCVs[indexToRemove];
-    if (!cvToRemove || !session) return;
+  // Remove Base CV from Supabase Database
+  const handleRemoveCV = async (_indexToRemove?: number) => {
+    if (!session) return;
 
     try {
-      if (cvToRemove.id) {
-        const { error } = await supabase
-          .from('cv_documents')
-          .delete()
-          .eq('id', cvToRemove.id);
-        if (error) throw error;
-      }
+      const { error } = await supabase
+        .from('cv_documents')
+        .delete()
+        .eq('user_id', session.user.id);
+      if (error) throw error;
 
-      const updatedCVs = contextCVs.filter((_, idx) => idx !== indexToRemove);
-      setContextCVs(updatedCVs);
-
-      const updatedActive = activeCVIndices
-        .filter((idx) => idx !== indexToRemove)
-        .map((idx) => (idx > indexToRemove ? idx - 1 : idx));
-      setActiveCVIndices(updatedActive);
+      setContextCVs([]);
+      setActiveCVIndices([]);
       setError(null);
     } catch (err) {
-      console.error('Failed to delete CV from cloud:', err);
-      setError('Failed to delete CV from database.');
+      console.error('Failed to delete Base CV from cloud:', err);
+      setError('Failed to delete Base CV from database.');
     }
-  };
-
-  const handleDuplicateCV = async (cv: CloudCV) => {
-    if (!session) return;
-    const limit = userProfile?.plan === 'free' ? 1 : 5;
-    if (contextCVs.length >= limit) {
-      setError(`Your plan (${userProfile?.plan.toUpperCase()}) is limited to maximum ${limit} CV profile(s). Remove a profile before duplicating or upgrade.`);
-      return;
-    }
-    await handleAddCV(`${cv.name.replace(/\.[^/.]+$/, "")} (Copy)`, cv.text);
   };
 
   const handleDownloadCV = (cvName: string, text: string) => {
@@ -994,7 +975,7 @@ function App() {
               style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', border: 'none', background: 'none', color: 'inherit', textAlign: 'left', borderRadius: '8px', cursor: 'pointer' }}
             >
               <FileText size={18} />
-              {!sidebarCollapsed && <span className="font-label-sm">My Resumes</span>}
+              {!sidebarCollapsed && <span className="font-label-sm">Base CV</span>}
             </button>
 
             <button 
@@ -1284,49 +1265,44 @@ function App() {
               </section>
             )}
 
-            {/* Recent Resumes Section */}
+            {/* Master Base CV Section */}
             <section style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, margin: 0 }}>Recent Resumes</h3>
-                <button className="tab" onClick={() => setActiveTab('resumes')} style={{ border: 'none', background: 'none', color: 'var(--accent-primary)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>View Library</button>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, margin: 0 }}>Master Base CV</h3>
+                <button className="tab" onClick={() => setActiveTab('resumes')} style={{ border: 'none', background: 'none', color: 'var(--accent-primary)', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}>Manage Base CV →</button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+              <div>
                 {contextCVs.length === 0 ? (
-                  <div className="glass-card" style={{ gridColumn: '1 / -1', padding: '2rem', textAlign: 'center', borderStyle: 'dashed' }}>
+                  <div className="glass-card" style={{ padding: '2rem', textAlign: 'center', borderStyle: 'dashed' }}>
                     <FileText size={32} style={{ margin: '0 auto 0.75rem', color: 'var(--text-muted)' }} />
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No uploaded resumes. Click "Upload Resume" to get started.</p>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>No master base CV uploaded. Upload your base resume to get started.</p>
                   </div>
                 ) : (
-                  contextCVs.slice(0, 2).map((cv, index) => (
-                    <div key={index} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <FileText size={18} style={{ color: 'var(--accent-primary)' }} />
-                        </div>
-                        <span style={{ fontSize: '10px', background: 'rgba(37,99,235,0.1)', color: 'var(--accent-primary)', padding: '2px 8px', borderRadius: '99px', fontWeight: 600 }}>Active context</span>
+                  <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <FileText size={18} style={{ color: 'var(--accent-primary)' }} />
                       </div>
-                      <div>
-                        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cv.name}</h4>
-                        <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Original Profile Document</p>
-                      </div>
-                      <hr style={{ borderColor: 'var(--card-border)', margin: 0 }} />
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Size: {Math.round(cv.text.length / 100) / 10} KB</span>
-                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                          <button className="tab" onClick={() => handleDownloadCV(cv.name, cv.text)} style={{ padding: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }} title="Download">
-                            <Download size={14} />
-                          </button>
-                          <button className="tab" onClick={() => handleDuplicateCV(cv)} style={{ padding: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }} title="Duplicate">
-                            <Copy size={14} />
-                          </button>
-                          <button className="tab" onClick={() => handleRemoveCV(index)} style={{ padding: '0.25rem', border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer' }} title="Delete">
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                      <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '2px 8px', borderRadius: '99px', fontWeight: 700 }}>Active Master Base CV ✓</span>
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{contextCVs[0]?.name}</h4>
+                      <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>Primary Career Timeline Document</p>
+                    </div>
+                    <hr style={{ borderColor: 'var(--card-border)', margin: 0 }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Size: {Math.round((contextCVs[0]?.text?.length || 0) / 100) / 10} KB • ~{Math.round((contextCVs[0]?.text?.length || 0) / 5)} words</span>
+                      <div style={{ display: 'flex', gap: '0.25rem' }}>
+                        <button className="tab" onClick={() => handleDownloadCV(contextCVs[0]?.name, contextCVs[0]?.text)} style={{ padding: '0.25rem', border: 'none', background: 'none', cursor: 'pointer' }} title="Download markdown">
+                          <Download size={14} />
+                        </button>
+                        <button className="tab" onClick={() => handleRemoveCV()} style={{ padding: '0.25rem', border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer' }} title="Delete Base CV">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
-                  ))
+                  </div>
                 )}
               </div>
             </section>
@@ -1474,14 +1450,18 @@ function App() {
   };
 
   const renderResumesTab = () => {
-    const limit = userProfile?.plan === 'free' ? 1 : 5;
+    const hasBaseCV = contextCVs.length > 0;
+    const baseCV = contextCVs[0];
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }} className="entrance-fade">
         <div>
-          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 700 }}>Resume Profile Library</h2>
+          <h2 style={{ fontSize: '1.6rem', margin: 0, fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <FileText size={24} style={{ color: 'var(--accent-primary)' }} />
+            <span>Master Base CV</span>
+          </h2>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.9rem' }}>
-            Store your baseline CV profiles. The AI automatically references these files to synthesize optimized bullet points. 
-            <strong> (Plan Limit: Max {limit} profiles)</strong>.
+            Upload and manage your single Master Base Resume. The AI uses this timeline to understand your experience and tailor it for any target job description.
           </p>
         </div>
 
@@ -1492,63 +1472,164 @@ function App() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-          
-          {/* Upload Area */}
-          <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '220px' }}>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              accept=".pdf,.txt,.md"
-              multiple
-              style={{ display: 'none' }}
-            />
-            <div className="file-upload-zone" onClick={triggerFileInput} style={{ borderStyle: 'dashed', padding: '2rem' }}>
-              <Upload size={28} style={{ margin: '0 auto 0.75rem', color: 'var(--accent-primary)' }} />
-              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 600 }}>
-                {parsingFile ? 'Extracting text...' : 'Drag & Drop your Resumes'}
+        {/* Hidden File Input for Base CV Upload / Replace */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept=".pdf,.txt,.md"
+          style={{ display: 'none' }}
+        />
+
+        {!hasBaseCV ? (
+          /* Empty State: Master Base CV Upload Box */
+          <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', maxWidth: '650px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+            <div 
+              className="file-upload-zone" 
+              onClick={triggerFileInput} 
+              style={{ borderStyle: 'dashed', padding: '2.5rem 1.5rem', cursor: 'pointer', borderRadius: '16px', background: 'var(--bg-secondary)', transition: 'all 0.2s' }}
+            >
+              <Upload size={36} style={{ margin: '0 auto 0.75rem', color: 'var(--accent-primary)' }} />
+              <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {parsingFile ? 'Extracting text...' : 'Upload Your Master Base CV'}
               </h4>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Supports PDF, TXT, and Markdown files
+              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                Drag & Drop or Click to browse (Supports PDF, TXT, and Markdown up to 10MB)
+              </p>
+            </div>
+
+            <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: '12px', background: 'rgba(124, 58, 237, 0.06)', border: '1px solid rgba(124, 58, 237, 0.2)', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-secondary)', marginBottom: '0.25rem' }}>
+                <Sparkles size={16} />
+                <span>Why a Single Master Base CV?</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Maintaining one primary base CV keeps your career timeline factual and consistent, avoids conflicting dates, and prevents AI prompt latency.
               </p>
             </div>
           </div>
+        ) : (
+          /* Active Base CV Dashboard */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Master Base CV Overview Card */}
+            <div className="glass-card" style={{ padding: '1.75rem 2rem', background: 'var(--card-bg)', border: '1.5px solid rgba(16, 185, 129, 0.4)', borderRadius: '18px', boxShadow: '0 0 24px rgba(16, 185, 129, 0.08)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', minWidth: 0 }}>
+                  <div style={{
+                    width: '52px',
+                    height: '52px',
+                    borderRadius: '14px',
+                    background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    flexShrink: 0,
+                    boxShadow: '0 6px 16px rgba(124, 58, 237, 0.35)'
+                  }}>
+                    <FileText size={26} />
+                  </div>
 
-          {/* Context CV list */}
-          {contextCVs.map((cv, index) => (
-            <div key={index} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <FileText size={20} style={{ color: 'var(--accent-primary)' }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem', flexWrap: 'wrap' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={baseCV.name}>
+                        {baseCV.name}
+                      </h3>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#10b981', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '2px 8px', borderRadius: '12px' }}>
+                        Active Master CV ✓
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      <span><strong>Size:</strong> {Math.round(baseCV.text.length / 100) / 10} KB</span>
+                      <span>•</span>
+                      <span><strong>Words:</strong> ~{Math.round(baseCV.text.length / 5)}</span>
+                      <span>•</span>
+                      <span><strong>Lines:</strong> {baseCV.text.split('\n').length}</span>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.25rem' }}>
-                  <button className="tab" onClick={() => handleDownloadCV(cv.name, cv.text)} style={{ padding: '0.4rem', border: 'none', background: 'none', cursor: 'pointer' }} title="Download markdown source">
-                    <Download size={15} />
+
+                {/* Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button" 
+                    className="btn btn-primary"
+                    onClick={triggerFileInput} 
+                    disabled={parsingFile}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
+                  >
+                    <Upload size={16} />
+                    <span>{parsingFile ? 'Replacing...' : 'Replace with New CV'}</span>
                   </button>
-                  <button className="tab" onClick={() => handleDuplicateCV(cv)} style={{ padding: '0.4rem', border: 'none', background: 'none', cursor: 'pointer' }} title="Duplicate Profile">
-                    <Copy size={15} />
+                  
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary"
+                    onClick={() => handleDownloadCV(baseCV.name, baseCV.text)} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem', fontSize: '0.85rem' }}
+                    title="Download extracted markdown text"
+                  >
+                    <Download size={16} />
+                    <span>Download</span>
                   </button>
-                  <button className="tab" onClick={() => handleRemoveCV(index)} style={{ padding: '0.4rem', border: 'none', background: 'none', color: 'var(--danger)', cursor: 'pointer' }} title="Remove Profile">
-                    <Trash2 size={15} />
+
+                  <button 
+                    type="button" 
+                    className="btn btn-secondary"
+                    onClick={() => {
+                      if (window.confirm("Are you sure you want to delete your Master Base CV? You will need to upload a new one to generate resumes.")) {
+                        handleRemoveCV();
+                      }
+                    }} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem', fontSize: '0.85rem', color: 'var(--danger)', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    title="Delete Base CV"
+                  >
+                    <Trash2 size={16} />
+                    <span>Delete</span>
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cv.name}</h4>
-                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Uploaded profile document
-                </p>
-              </div>
-
-              <div style={{ background: 'var(--bg-secondary)', padding: '0.75rem', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                <strong>Size:</strong> {Math.round(cv.text.length / 100) / 10} KB • <strong>Lines:</strong> {cv.text.split('\n').length}
               </div>
             </div>
-          ))}
 
-        </div>
+            {/* Extracted Text Inspector */}
+            <div className="glass-card" style={{ padding: '1.75rem', background: 'var(--card-bg)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={16} style={{ color: 'var(--accent-primary)' }} />
+                  <span>Extracted Career Timeline (Inspector)</span>
+                </h4>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(baseCV.text);
+                    alert("Base CV extracted text copied to clipboard!");
+                  }}
+                  style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Copy size={13} />
+                  <span>Copy Text</span>
+                </button>
+              </div>
+
+              <div style={{
+                maxHeight: '380px',
+                overflowY: 'auto',
+                padding: '1.25rem',
+                borderRadius: '12px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--card-border)',
+                fontSize: '0.85rem',
+                lineHeight: 1.6,
+                color: 'var(--text-secondary)',
+                whiteSpace: 'pre-wrap',
+                fontFamily: 'monospace'
+              }}>
+                {baseCV.text}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -2429,7 +2510,7 @@ function App() {
                   onClick={() => { setActiveTab('resumes'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
                 >
                   <FileText size={18} />
-                  <span>My Resumes ({contextCVs.length})</span>
+                  <span>Base CV</span>
                 </button>
                 <button
                   type="button"
