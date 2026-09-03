@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - JD2CV | ToolsBy Vineet Sansare</title>
+  <meta name="description" content="Official Privacy Policy for JD2CV - AI Resume Optimizer by ToolsBy Vineet Sansare. Learn how your data is protected with GDPR/CCPA compliance and zero AI model training.">
+  <link rel="icon" type="image/svg+xml" href="/jd2cv/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #111726;
+      --bg-card: rgba(17, 23, 38, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-purple: #7c3aed;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .ambient-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, rgba(59, 130, 246, 0.08) 50%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(9, 13, 22, 0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+    .nav-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+    }
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-text p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+    .btn-app {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: #ffffff;
+      padding: 0.5rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-app:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    main {
+      flex: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .doc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+    @media (max-width: 640px) {
+      .doc-card {
+        padding: 2rem 1.25rem;
+      }
+    }
+    .doc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(124, 58, 237, 0.12);
+      border: 1px solid rgba(124, 58, 237, 0.3);
+      color: #c084fc;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+    .doc-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+    .doc-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .highlight-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .highlight-box h4 {
+      color: var(--accent-green);
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .highlight-box p {
+      font-size: 0.85rem;
+      color: #d1fae5;
+      margin: 0;
+      line-height: 1.5;
+    }
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 2rem 0 0.75rem 0;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    p {
+      color: #d1d5db;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1.25rem;
+      color: #d1d5db;
+    }
+    li {
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    strong {
+      color: #ffffff;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+      font-size: 0.85em;
+      color: #e2e8f0;
+    }
+    a {
+      color: var(--accent-blue);
+      text-decoration: underline;
+    }
+    a:hover {
+      color: #93c5fd;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      background: rgba(9, 13, 22, 0.95);
+      padding: 2.5rem 1.5rem;
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <header>
+    <div class="nav-container">
+      <a href="/jd2cv/" class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>JD2CV</h1>
+          <p>ToolsBy Vineet Sansare</p>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="/jd2cv/terms-of-service/" class="nav-link">Terms of Service</a>
+        <a href="/jd2cv/" class="btn-app">Open App</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="doc-card">
+      <div class="doc-badge">🛡️ GDPR & CCPA Compliant</div>
+      <h1 class="doc-title">Privacy Policy</h1>
+      <div class="doc-meta">
+        Last Updated: September 3, 2026 • Effective Date: September 3, 2026 • Platform: JD2CV (toolsby.vineetsansare.com)
+      </div>
+
+      <div class="highlight-box">
+        <h4>🔒 Zero AI Model-Training Guarantee</h4>
+        <p>We respect your career confidentiality. We do not sell your personal data. We do not train, fine-tune, or improve public AI foundation models on your resume, career history, or prompts.</p>
+      </div>
+
+      <h2>1. Preamble & Controller Identity</h2>
+      <p>
+        This Privacy Policy applies to the <strong>JD2CV</strong> AI Resume Optimizer platform (hosted at <code>toolsby.vineetsansare.com/jd2cv/</code>), operated by <strong>ToolsBy Vineet Sansare</strong> ("we", "us", or "our").
+      </p>
+      <p>
+        <strong>Data Controller Contact:</strong><br>
+        ToolsBy Vineet Sansare<br>
+        Email: <a href="mailto:vineetsansare@gmail.com">vineetsansare@gmail.com</a><br>
+        Website: <a href="https://toolsby.vineetsansare.com">toolsby.vineetsansare.com</a>
+      </p>
+
+      <h2>2. What Information We Collect</h2>
+      <p>We collect and process only the minimal information strictly required to deliver our AI career optimization services:</p>
+      <ul>
+        <li><strong>Account Data:</strong> Full name, email address, avatar photo (if uploaded or authenticated via Google OAuth), and secure authentication user IDs managed through Supabase Auth.</li>
+        <li><strong>Resume & Career Inputs:</strong> Work history, skills, education, target job descriptions, uploaded PDF resume text, and customized output documents.</li>
+        <li><strong>Bring Your Own Key (BYOK) Data:</strong> If you supply your personal LLM API keys (Google Gemini, OpenAI, Anthropic), they are stored strictly locally in your browser's encrypted local storage. We never log, store, or inspect your personal API keys on our servers.</li>
+        <li><strong>Technical & Session Analytics:</strong> Browser type, timestamps, ATS score metrics, and feature usage counters (e.g. tracking your 5 Free tier generations).</li>
+      </ul>
+
+      <h2>3. How We Use Artificial Intelligence (AI)</h2>
+      <p>
+        To perform contextual tailoring, keyword matching, and executive formatting, your input data is sent to enterprise Large Language Model (LLM) providers (Google Gemini API, OpenAI API, Anthropic Claude API).
+      </p>
+      <p>
+        <strong>Enterprise Privacy Standards:</strong> We interact with AI providers through commercial API agreements where data transmission is encrypted (TLS 1.3) and your career data is <strong>never retained to train future AI models</strong>.
+      </p>
+
+      <h2>4. Legal Basis for Processing (GDPR Art. 6)</h2>
+      <p>We process your personal data under the following lawful grounds:</p>
+      <ul>
+        <li><strong>Performance of Contract (Art. 6(1)(b)):</strong> To operate the platform, tailor your CV against job descriptions, and store your generation history.</li>
+        <li><strong>Legitimate Interests (Art. 6(1)(f)):</strong> To safeguard infrastructure security, prevent fraudulent abuse of free credits, and maintain platform stability.</li>
+        <li><strong>User Consent (Art. 6(1)(a)):</strong> For voluntary communications and support interactions.</li>
+      </ul>
+
+      <h2>5. Data Storage, Retention & Security</h2>
+      <p>
+        All user records, profiles, and generation histories are securely housed in PostgreSQL databases provided by <strong>Supabase</strong> with Row-Level Security (RLS) policies ensuring that only you have access to your data.
+      </p>
+      <p>
+        <strong>Retention Period:</strong> Your data is retained as long as your account remains active. You can delete past generations individually or request full account erasure at any time.
+      </p>
+
+      <h2>6. Your Data Rights</h2>
+      <p>Under GDPR, CCPA, and international data protection standards, you have the following guaranteed rights:</p>
+      <ul>
+        <li><strong>Right to Access:</strong> Request a complete copy of all personal data we hold about you.</li>
+        <li><strong>Right to Rectification:</strong> Request correction of inaccurate information.</li>
+        <li><strong>Right to Erasure ("Right to be Forgotten"):</strong> Request immediate permanent deletion of your account and all associated resumes.</li>
+        <li><strong>Right to Data Portability:</strong> Export your CV history and Markdown data in open, standard formats.</li>
+        <li><strong>Right to Object / Restrict Processing:</strong> Request restrictions on specific processing activities.</li>
+      </ul>
+      <p>To exercise any of these rights, simply email us at <a href="mailto:vineetsansare@gmail.com">vineetsansare@gmail.com</a>. We fulfill all verified requests within 30 days.</p>
+
+      <h2>7. Cookies & Local Storage</h2>
+      <p>
+        We do not use advertising cookies. We use only strictly necessary first-party cookies and <code>localStorage</code> tokens for authentication sessions, dark/light theme preferences, and locally saved BYOK API key configurations.
+      </p>
+
+      <h2>8. Contact Us</h2>
+      <p>
+        If you have any questions regarding this Privacy Policy or your data protection rights, please contact:<br>
+        <strong>Vineet Sansare</strong><br>
+        Email: <a href="mailto:vineetsansare@gmail.com">vineetsansare@gmail.com</a>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-links">
+      <a href="/jd2cv/privacy-policy/">Privacy Policy</a>
+      <a href="/jd2cv/terms-of-service/">Terms of Service</a>
+      <a href="/jd2cv/">App Workspace</a>
+    </div>
+    <p>© 2026 ToolsBy Vineet Sansare. All rights reserved.</p>
+  </footer>
+</body>
+</html>

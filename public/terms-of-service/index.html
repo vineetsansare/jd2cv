@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terms of Service - JD2CV | ToolsBy Vineet Sansare</title>
+  <meta name="description" content="Official Terms of Service (General Terms and Conditions) for JD2CV - AI Resume Optimizer by ToolsBy Vineet Sansare.">
+  <link rel="icon" type="image/svg+xml" href="/jd2cv/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #090d16;
+      --bg-surface: #111726;
+      --bg-card: rgba(17, 23, 38, 0.75);
+      --border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-purple: #7c3aed;
+      --accent-blue: #3b82f6;
+      --accent-amber: #f59e0b;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      line-height: 1.7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .ambient-glow {
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(124, 58, 237, 0.08) 50%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(9, 13, 22, 0.8);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+    }
+    .nav-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: inherit;
+    }
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #fff;
+      font-size: 16px;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
+    }
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-text p {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .nav-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+    .btn-app {
+      background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+      color: #ffffff;
+      padding: 0.5rem 1.1rem;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .btn-app:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+    main {
+      flex: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 2.5rem auto;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .doc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+    }
+    @media (max-width: 640px) {
+      .doc-card {
+        padding: 2rem 1.25rem;
+      }
+    }
+    .doc-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #93c5fd;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      margin-bottom: 1rem;
+    }
+    .doc-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.5rem;
+      line-height: 1.2;
+    }
+    .doc-meta {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .highlight-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      border-radius: 14px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .highlight-box h4 {
+      color: var(--accent-amber);
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.35rem;
+    }
+    .highlight-box p {
+      font-size: 0.85rem;
+      color: #fef3c7;
+      margin: 0;
+      line-height: 1.5;
+    }
+    h2 {
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin: 2rem 0 0.75rem 0;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+    }
+    p {
+      color: #d1d5db;
+      font-size: 0.95rem;
+      margin-bottom: 1rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+      margin-bottom: 1.25rem;
+      color: #d1d5db;
+    }
+    li {
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    strong {
+      color: #ffffff;
+    }
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 0.15rem 0.4rem;
+      border-radius: 6px;
+      font-size: 0.85em;
+      color: #e2e8f0;
+    }
+    a {
+      color: var(--accent-blue);
+      text-decoration: underline;
+    }
+    a:hover {
+      color: #93c5fd;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      background: rgba(9, 13, 22, 0.95);
+      padding: 2.5rem 1.5rem;
+      margin-top: 3rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+
+  <header>
+    <div class="nav-container">
+      <a href="/jd2cv/" class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-text">
+          <h1>JD2CV</h1>
+          <p>ToolsBy Vineet Sansare</p>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="/jd2cv/privacy-policy/" class="nav-link">Privacy Policy</a>
+        <a href="/jd2cv/" class="btn-app">Open App</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="doc-card">
+      <div class="doc-badge">⚖️ General Terms & Conditions</div>
+      <h1 class="doc-title">Terms of Service</h1>
+      <div class="doc-meta">
+        Last Updated: September 3, 2026 • Effective Date: September 3, 2026 • Platform: JD2CV (toolsby.vineetsansare.com)
+      </div>
+
+      <div class="highlight-box">
+        <h4>✨ 100% User Ownership</h4>
+        <p>You own all rights, title, and interest in and to your career data, customized resume text, and exported PDF documents generated through the platform.</p>
+      </div>
+
+      <h2>1. Agreement to Terms</h2>
+      <p>
+        These Terms of Service ("Terms") constitute a legally binding agreement between you and <strong>ToolsBy Vineet Sansare</strong> ("we", "us", or "our"), governing your access to and use of the <strong>JD2CV</strong> AI Resume Optimizer web platform (accessible at <code>toolsby.vineetsansare.com/jd2cv/</code>).
+      </p>
+      <p>By creating an account, authenticating via OAuth, or generating CVs, you agree to be bound by these Terms.</p>
+
+      <h2>2. Service Description</h2>
+      <p>
+        JD2CV is an online AI career optimization workspace designed to assist candidates in tailoring resumes against job descriptions, measuring ATS keyword alignment, auto-fixing competency gaps, and exporting executive-formatted A4 PDF documents.
+      </p>
+
+      <h2>3. Account Registration & Single-Account Policy</h2>
+      <ul>
+        <li><strong>Single Account Rule:</strong> Each individual user is entitled to maintain exactly one personal account. Creating multiple accounts or disposable email addresses to bypass Free tier generation limits is strictly prohibited.</li>
+        <li><strong>Account Security:</strong> You are solely responsible for maintaining the confidentiality of your credentials and all activities occurring under your account.</li>
+      </ul>
+
+      <h2>4. User Content & Intellectual Property</h2>
+      <p>
+        <strong>Your Content:</strong> You retain complete ownership of all work experience, resumes, cover letters, and documents generated through your account. You grant us only the limited technical license necessary to process your requests.
+      </p>
+      <p>
+        <strong>Our Platform:</strong> The JD2CV software, design, UI components, logos, algorithms, and documentation remain the exclusive intellectual property of ToolsBy Vineet Sansare.
+      </p>
+
+      <h2>5. AI Output & Verification Disclaimer</h2>
+      <p>
+        Our platform leverages artificial intelligence to analyze job descriptions and draft tailored resumes. While our system is optimized for high ATS pass rates:
+      </p>
+      <ul>
+        <li>AI outputs depend directly on the context provided.</li>
+        <li><strong>Candidate Review Obligation:</strong> You must review all generated dates, role descriptions, and technical competencies for factual accuracy prior to submitting applications to employers.</li>
+        <li>We do not guarantee interview invitations, job offers, or specific employment results.</li>
+      </ul>
+
+      <h2>6. Subscription Tiers & Billing</h2>
+      <p>JD2CV operates under three transparent service tiers:</p>
+      <ul>
+        <li><strong>Free Tier:</strong> 5 free lifetime generations powered by high-speed Gemini models.</li>
+        <li><strong>BYOK (Bring Your Own Key) Tier:</strong> Unlimited generations and access to premium models (OpenAI GPT-4o, Claude 3.5 Sonnet, Gemini Pro) using your own API credentials.</li>
+        <li><strong>Pro Tier:</strong> Unlimited cloud generations, priority auto-failover, candidate photo avatars, and executive styling presets.</li>
+      </ul>
+
+      <h2>7. Acceptable Use Policy</h2>
+      <p>You agree not to:</p>
+      <ul>
+        <li>Engage in automated scraping, botting, or flooding the platform with abusive requests.</li>
+        <li>Reverse engineer, decompile, or attempt to extract source algorithms without permission.</li>
+        <li>Upload fraudulent, infringing, defamatory, or unlawful materials.</li>
+      </ul>
+
+      <h2>8. Limitation of Liability</h2>
+      <p>
+        To the maximum extent permitted by applicable law, ToolsBy Vineet Sansare shall not be liable for any indirect, incidental, consequential, special, or punitive damages arising out of your use or inability to use the platform.
+      </p>
+
+      <h2>9. Contact Us</h2>
+      <p>
+        For inquiries regarding these Terms of Service, please contact:<br>
+        <strong>Vineet Sansare</strong><br>
+        Email: <a href="mailto:vineetsansare@gmail.com">vineetsansare@gmail.com</a>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-links">
+      <a href="/jd2cv/privacy-policy/">Privacy Policy</a>
+      <a href="/jd2cv/terms-of-service/">Terms of Service</a>
+      <a href="/jd2cv/">App Workspace</a>
+    </div>
+    <p>© 2026 ToolsBy Vineet Sansare. All rights reserved.</p>
+  </footer>
+</body>
+</html>
