@@ -5,6 +5,8 @@ import { AuthForm } from './components/AuthForm';
 import { PricingModal } from './components/PricingModal';
 import { ContactUsPanel } from './components/ContactUsPanel';
 import { AdminPortal } from './components/AdminPortal';
+import { LegalModal } from './components/LegalModal';
+import type { LegalDocType } from './components/LegalModal';
 import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
@@ -81,15 +83,41 @@ const checkIsAdminRoute = () => {
   );
 };
 
+const checkLegalRoute = (): LegalDocType | null => {
+  if (typeof window === 'undefined') return null;
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  const path = window.location.pathname.toLowerCase();
+  if (hash.includes('privacy') || search.includes('privacy') || path.includes('privacy')) {
+    return 'privacy';
+  }
+  if (hash.includes('terms') || search.includes('terms') || path.includes('terms')) {
+    return 'terms';
+  }
+  return null;
+};
+
 function App() {
   const [session, setSession] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(checkIsAdminRoute);
+  const [legalModalOpen, setLegalModalOpen] = useState<boolean>(() => checkLegalRoute() !== null);
+  const [legalModalDoc, setLegalModalDoc] = useState<LegalDocType>(() => checkLegalRoute() || 'privacy');
+
+  const openLegalModal = (doc: LegalDocType = 'privacy') => {
+    setLegalModalDoc(doc);
+    setLegalModalOpen(true);
+  };
 
   // Sync route changes
   useEffect(() => {
     const handleRouteChange = () => {
       setIsAdminRoute(checkIsAdminRoute());
+      const legal = checkLegalRoute();
+      if (legal) {
+        setLegalModalDoc(legal);
+        setLegalModalOpen(true);
+      }
     };
     window.addEventListener('popstate', handleRouteChange);
     window.addEventListener('hashchange', handleRouteChange);
@@ -907,10 +935,17 @@ function App() {
         overflowY: 'auto',
         overflowX: 'hidden'
       }}>
-        <div style={{ position: 'absolute', top: '10%', left: '20%', width: '400px', height: '400px', background: 'rgba(99, 102, 241, 0.1)', filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        <div style={{ position: 'absolute', bottom: '10%', right: '20%', width: '400px', height: '400px', background: 'rgba(16, 185, 129, 0.08)', filter: 'blur(100px)', borderRadius: '50%', pointerEvents: 'none' }}></div>
-        
-        <AuthForm onSuccess={() => {}} theme={theme} onThemeToggle={handleThemeToggle} />
+        <AuthForm 
+          onSuccess={() => {}} 
+          theme={theme} 
+          onThemeToggle={handleThemeToggle} 
+          onOpenLegal={(doc) => openLegalModal(doc)}
+        />
+        <LegalModal 
+          isOpen={legalModalOpen} 
+          onClose={() => setLegalModalOpen(false)} 
+          initialDoc={legalModalDoc} 
+        />
       </div>
     );
   }
@@ -1036,6 +1071,26 @@ function App() {
               <LogOut size={18} />
               {!sidebarCollapsed && <span className="font-label-sm">Log Out</span>}
             </button>
+
+            {!sidebarCollapsed && (
+              <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center', alignItems: 'center', fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.75rem', paddingBottom: '0.25rem' }}>
+                <button 
+                  type="button" 
+                  onClick={() => openLegalModal('privacy')} 
+                  style={{ background: 'none', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Privacy
+                </button>
+                <span>•</span>
+                <button 
+                  type="button" 
+                  onClick={() => openLegalModal('terms')} 
+                  style={{ background: 'none', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                >
+                  Terms
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -2189,6 +2244,7 @@ function App() {
                     onLogout={handleLogout}
                     onUpdateAvatar={handleUpdateAvatar}
                     onOpenPricingModal={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
+                    onOpenLegal={(doc) => openLegalModal(doc)}
                   />
                 )}
 
@@ -2292,10 +2348,40 @@ function App() {
                   <LogOut size={18} />
                   <span>Log Out</span>
                 </button>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => { openLegalModal('privacy'); setIsMobileMenuOpen(false); }} 
+                    style={{ background: 'none', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Privacy Policy
+                  </button>
+                  <span>•</span>
+                  <button 
+                    type="button" 
+                    onClick={() => { openLegalModal('terms'); setIsMobileMenuOpen(false); }} 
+                    style={{ background: 'none', border: 'none', color: 'inherit', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Terms of Service
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Global Legal & Compliance Modal (Privacy Policy & Terms of Service) */}
+        <LegalModal 
+          isOpen={legalModalOpen} 
+          onClose={() => {
+            setLegalModalOpen(false);
+            if (window.location.hash.includes('privacy') || window.location.hash.includes('terms')) {
+              window.location.hash = '';
+            }
+          }} 
+          initialDoc={legalModalDoc} 
+        />
       </div>
     </AuroraBackground>
   );

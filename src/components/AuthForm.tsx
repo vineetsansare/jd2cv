@@ -9,9 +9,10 @@ interface AuthFormProps {
   onSuccess: () => void;
   theme?: 'light' | 'dark';
   onThemeToggle?: () => void;
+  onOpenLegal?: (doc: 'privacy' | 'terms') => void;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', onThemeToggle }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', onThemeToggle, onOpenLegal }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -402,6 +403,25 @@ export const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, theme = 'dark', o
                     style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontWeight: 600, padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     {isSignUp ? 'Sign In' : 'Sign Up'}
+                  </button>
+                </div>
+
+                <div style={{ textAlign: 'center', marginTop: '1.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  By continuing, you agree to JD2CV's{' '}
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegal?.('terms')}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', padding: 0, cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}
+                  >
+                    Terms of Service
+                  </button>
+                  {' and '}
+                  <button
+                    type="button"
+                    onClick={() => onOpenLegal?.('privacy')}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', padding: 0, cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}
+                  >
+                    Privacy Policy
                   </button>
                 </div>
               </>

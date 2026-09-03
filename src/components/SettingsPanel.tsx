@@ -12,6 +12,7 @@ interface SettingsPanelProps {
   onLogout: () => void;
   onUpdateAvatar?: (avatarUrl: string) => Promise<void>;
   onOpenPricingModal?: () => void;
+  onOpenLegal?: (doc: 'privacy' | 'terms') => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
@@ -20,7 +21,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   userProfile,
   onLogout,
   onUpdateAvatar,
-  onOpenPricingModal
+  onOpenPricingModal,
+  onOpenLegal
 }) => {
   const [keyInput, setKeyInput] = useState('');
   const [savedKeys, setSavedKeys] = useState<{ gemini: boolean; openai: boolean; anthropic: boolean }>({
@@ -491,6 +493,28 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <span>{successMsg}</span>
             </div>
           )}
+
+          {/* Legal & Compliance Quick Links */}
+          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+            <span style={{ color: 'var(--text-muted)' }}>Compliance & Privacy:</span>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => onOpenLegal?.('privacy')}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit', padding: 0 }}
+              >
+                Privacy Policy
+              </button>
+              <span style={{ color: 'var(--text-muted)' }}>•</span>
+              <button
+                type="button"
+                onClick={() => onOpenLegal?.('terms')}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit', padding: 0 }}
+              >
+                Terms of Service
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
