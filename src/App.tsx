@@ -19,7 +19,7 @@ import {
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
 import { LiquidCard } from './components/ui/LiquidCard';
-import { UploadIllustration, AICoachIllustration, EmptyStateIllustration } from './components/ui/Illustrations';
+import { UploadIllustration, AICoachIllustration } from './components/ui/Illustrations';
 import { CVHistoryPanel } from './components/CVHistoryPanel';
 import type { GenerationRecord } from './components/CVHistoryPanel';
 import { DEFAULT_PROVIDER, DEFAULT_MODEL } from './utils/models';
@@ -1196,7 +1196,7 @@ function App() {
         <section className="entrance-fade" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h2 style={{ fontSize: '2.1rem', margin: 0, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-              Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
+              Welcome, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
             </h2>
             <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
               You have 2 pending ATS optimizations and 3 new job matches today.
@@ -1606,269 +1606,387 @@ function App() {
       );
     }
 
+    const isStep1Done = contextCVs.length > 0 && activeCVIndices.length > 0;
+    const isStep2Done = jobDescription.trim().length >= 30;
+    const isStep3Ready = isStep1Done && isStep2Done && !generating;
+
     return (
       <div className="entrance-fade" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Header Section */}
         <div>
           <h2 style={{ fontSize: '2.1rem', margin: 0, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            Welcome back, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
+            Welcome, {userProfile?.full_name?.split(' ')[0] || 'Vineet'} 👋😎
           </h2>
           <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.95rem' }}>
             Ready to land your next role? Optimize your resume for any job description in seconds.
           </p>
         </div>
 
-        {/* 1-2-3 Instruction Steps */}
+        {/* 1-2-3 Instruction Steps with Live Status Glowing Running Border */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
-          <LiquidCard variant="glass" padding="sm" hoverEffect={true} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(37,99,235,0.2)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>1</div>
-            <div>
-              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Select Profiles</h4>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Check the resumes in the left column to provide your career history context.</p>
+          {/* Step 1 */}
+          <div 
+            className={`step-card-status ${isStep1Done ? 'is-done' : 'is-pending'}`} 
+            style={{ padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}
+          >
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              background: isStep1Done ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', 
+              color: isStep1Done ? '#10b981' : '#f59e0b', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontWeight: 800, 
+              fontSize: '0.85rem', 
+              flexShrink: 0 
+            }}>
+              {isStep1Done ? '✓' : '1'}
             </div>
-          </LiquidCard>
-          <LiquidCard variant="glass" padding="sm" hoverEffect={true} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(124,58,237,0.2)', color: 'var(--accent-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>2</div>
-            <div>
-              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Paste Target JD</h4>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Paste the full text of the job description you are applying for.</p>
+            <div style={{ flexGrow: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>Step 1: Upload Base Resume</h4>
+                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: isStep1Done ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: isStep1Done ? '#10b981' : '#f59e0b' }}>
+                  {isStep1Done ? 'Ready ✓' : 'Pending'}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Upload a base resume for the AI to understand your career timeline better.
+              </p>
             </div>
-          </LiquidCard>
-          <LiquidCard variant="glass" padding="sm" hoverEffect={true} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16,185,129,0.2)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.85rem', flexShrink: 0 }}>3</div>
-            <div>
-              <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>Run AI Customizer</h4>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Set target length or focus area, and hit generate to output optimized resume.</p>
+          </div>
+
+          {/* Step 2 */}
+          <div 
+            className={`step-card-status ${isStep2Done ? 'is-done' : 'is-pending'}`} 
+            style={{ padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}
+          >
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              background: isStep2Done ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', 
+              color: isStep2Done ? '#10b981' : '#f59e0b', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontWeight: 800, 
+              fontSize: '0.85rem', 
+              flexShrink: 0 
+            }}>
+              {isStep2Done ? '✓' : '2'}
             </div>
-          </LiquidCard>
+            <div style={{ flexGrow: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>Step 2: Paste Target JD</h4>
+                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: isStep2Done ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: isStep2Done ? '#10b981' : '#f59e0b' }}>
+                  {isStep2Done ? 'Ready ✓' : 'Pending'}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Paste the full text of the job description you are applying for.
+              </p>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div 
+            className={`step-card-status ${isStep3Ready ? 'is-ready' : 'is-pending'}`} 
+            style={{ padding: '1.1rem 1.25rem', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}
+          >
+            <div style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '50%', 
+              background: isStep3Ready ? 'rgba(124, 58, 237, 0.25)' : 'rgba(245, 158, 11, 0.2)', 
+              color: isStep3Ready ? '#c084fc' : '#f59e0b', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontWeight: 800, 
+              fontSize: '0.85rem', 
+              flexShrink: 0 
+            }}>
+              {isStep3Ready ? '⚡' : '3'}
+            </div>
+            <div style={{ flexGrow: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)' }}>Step 3: Run AI Customizer</h4>
+                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: '12px', background: isStep3Ready ? 'rgba(124, 58, 237, 0.2)' : 'rgba(245, 158, 11, 0.15)', color: isStep3Ready ? '#c084fc' : '#f59e0b' }}>
+                  {isStep3Ready ? 'Ready to Generate 🚀' : 'Waiting'}
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Set the desired length of your CV and the Focus/ Future aspiration and hit Generate.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Split Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'flex-start' }} className="responsive-split">
+        {/* 2-Column Balanced Equal Grid */}
+        <div className="workspace-equal-grid">
           
-          {/* Left Checkbox List & Quick Upload */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="glass-card" style={{ padding: '1.5rem', background: 'var(--card-bg)' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FileText size={16} />
-                <span>1. Select Resumes ({activeCVIndices.length})</span>
-              </h3>
-
-              {/* Upload Dropzone */}
-              <div style={{ marginBottom: '1.25rem' }}>
-                <label className="saas-upload-dropzone" style={{ padding: '1.25rem 0.5rem', minHeight: '120px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <input 
-                    type="file" 
-                    accept=".pdf,.txt,.md" 
-                    onChange={handleFileUpload} 
-                    style={{ display: 'none' }} 
-                    multiple 
-                  />
-                  <UploadIllustration size={48} className="mb-2" />
-                  <span style={{ fontSize: '12px', fontWeight: 700, display: 'block', marginTop: '0.5rem' }}>Upload Resume Profile</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>PDF, TXT, MD up to 10MB</span>
-                </label>
+          {/* Left Column: 1. Base Resume */}
+          <div className="glass-card" style={{ padding: '1.75rem', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', boxSizing: 'border-box' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileText size={18} style={{ color: 'var(--accent-primary)' }} />
+                  <span>1. Base Resume Profile</span>
+                </h3>
+                {contextCVs.length > 0 && (
+                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: '12px' }}>
+                    Active Base Loaded ✓
+                  </span>
+                )}
               </div>
 
-              {/* Checkboxes */}
+              {/* Base Resume Presentation */}
               {contextCVs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
-                  <EmptyStateIllustration size={64} style={{ margin: '0 auto 0.5rem' }} />
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                    No resumes uploaded yet. Upload one above.
+                <div>
+                  <label className="saas-upload-dropzone" style={{ padding: '2.5rem 1.5rem', minHeight: '200px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--card-border)', borderRadius: '16px', background: 'var(--bg-secondary)', transition: 'all 0.2s' }}>
+                    <input 
+                      type="file" 
+                      accept=".pdf,.txt,.md" 
+                      onChange={handleFileUpload} 
+                      style={{ display: 'none' }} 
+                    />
+                    <UploadIllustration size={56} className="mb-2" />
+                    <span style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginTop: '0.75rem', color: 'var(--text-primary)' }}>Upload Master Base Resume</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>PDF, TXT or MD up to 10MB</span>
+                  </label>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.5 }}>
+                    Upload your primary resume. The AI will use your factual career history and tailor it specifically for each job.
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
-                  {contextCVs.map((cv, index) => (
-                    <label 
-                      key={index} 
-                      className="cv-badge" 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.75rem', 
-                        padding: '0.75rem', 
-                        borderRadius: '8px', 
-                        border: activeCVIndices.includes(index) ? '1px solid var(--accent-primary)' : '1px solid var(--card-border)',
-                        background: activeCVIndices.includes(index) ? 'rgba(37,99,235,0.02)' : 'transparent',
-                        cursor: 'pointer',
-                        width: '100%',
-                        maxWidth: '100%',
-                        boxSizing: 'border-box',
-                        overflow: 'hidden'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={activeCVIndices.includes(index)}
-                        onChange={() => handleToggleCVIndex(index)}
-                        style={{ width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--accent-primary)' }}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{
+                    padding: '1.25rem',
+                    borderRadius: '14px',
+                    border: '1.5px solid rgba(16, 185, 129, 0.35)',
+                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(17, 23, 38, 0.65) 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '1rem'
+                  }}>
+                    <div style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                    }}>
+                      <FileText size={22} />
+                    </div>
+                    <div style={{ flexGrow: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={contextCVs[0]?.name}>
+                        {contextCVs[0]?.name}
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Primary Master Career History • {contextCVs[0]?.text?.length ? `${Math.round(contextCVs[0].text.length / 5)} words` : 'Ready'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                    <label className="btn btn-secondary" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.65rem 1rem', fontSize: '0.82rem' }}>
+                      <input 
+                        type="file" 
+                        accept=".pdf,.txt,.md" 
+                        onChange={handleFileUpload} 
+                        style={{ display: 'none' }} 
                       />
-                      <div style={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={cv.name}>{cv.name}</span>
-                        <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>Baseline Resume</span>
-                      </div>
+                      <Upload size={14} />
+                      <span>Replace with New PDF</span>
                     </label>
-                  ))}
+                    <button
+                      type="button"
+                      className="btn btn-secondary"
+                      onClick={() => setActiveTab('resumes')}
+                      style={{ width: 'auto', padding: '0.65rem 1rem', fontSize: '0.82rem' }}
+                      title="Manage stored resumes"
+                    >
+                      All Resumes ({contextCVs.length})
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Checklist */}
-            <div className="glass-card" style={{ padding: '1.25rem', background: 'var(--bg-secondary)', border: '1px dashed var(--card-border)' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
-                <AlertCircle size={14} />
-                <span>Setup Checklist</span>
-              </h4>
-              <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                <li style={{ color: contextCVs.length > 0 ? '#10b981' : 'inherit' }}>
-                  Upload at least 1 CV profile
-                </li>
-                <li style={{ color: activeCVIndices.length > 0 ? '#10b981' : 'inherit' }}>
-                  Select at least 1 baseline CV checklist
-                </li>
-                <li style={{ color: jobDescription.trim().length > 0 ? '#10b981' : 'inherit' }}>
-                  Paste the target Job Description (JD)
-                </li>
-              </ul>
+            {/* Explanatory Pro-Tip */}
+            <div style={{
+              marginTop: '1.75rem',
+              padding: '0.85rem 1rem',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid var(--card-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.65rem',
+              fontSize: '0.8rem',
+              color: 'var(--text-secondary)'
+            }}>
+              <Sparkles size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+              <span>Your base resume provides the timeline anchor; the AI highlights target skills for the JD.</span>
             </div>
           </div>
 
-          {/* Right Inputs Area */}
-          <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--card-bg)' }}>
-            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles size={16} />
-              <span>2. Target Role & Focus</span>
-            </h3>
+          {/* Right Column: 2. Target Role & Focus */}
+          <div className="glass-card" style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%', background: 'var(--card-bg)', boxSizing: 'border-box' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={18} style={{ color: 'var(--accent-secondary)' }} />
+                  <span>2. Target Role & Focus</span>
+                </h3>
+                {isStep2Done && (
+                  <span style={{ fontSize: '11px', color: '#10b981', fontWeight: 700, background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: '12px' }}>
+                    JD Loaded ✓
+                  </span>
+                )}
+              </div>
 
-            <div className="form-group">
-              <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>Paste Job Description (JD) *</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 400 }}>Cmd+Enter / Ctrl+Enter to generate</span>
-              </label>
-              <textarea
-                placeholder="Paste the complete job description of the role you are applying to. This helps the AI extract key skills, keywords, and responsibilities to optimize your resume."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                style={{ minHeight: '220px', fontSize: '0.85rem', lineHeight: '1.5' }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="responsive-fields">
-              <div className="form-group">
-                <label>Future Aspirations / Focus (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Focus on Tech Lead aspects; prioritize React stack."
-                  value={aspirations}
-                  onChange={(e) => setAspirations(e.target.value)}
-                  style={{ fontSize: '0.85rem' }}
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>Paste Job Description (JD) *</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Cmd+Enter to generate</span>
+                </label>
+                <textarea
+                  placeholder="Paste the complete job description of the role you are applying to. This helps the AI extract key skills, keywords, and responsibilities to optimize your resume."
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  style={{ minHeight: '180px', fontSize: '0.85rem', lineHeight: '1.5' }}
                 />
               </div>
-              
-              <div className="form-group">
-                <label>Output Format & Length</label>
-                <select
-                  value={targetLength}
-                  onChange={(e) => setTargetLength(e.target.value as TargetLength)}
-                  style={{ fontSize: '0.85rem' }}
-                >
-                  <option value="1-page">1-Page ATS optimized sheet</option>
-                  <option value="2-page">2-Page standard document</option>
-                  <option value="3-page">3-Page comprehensive CV profile</option>
-                </select>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="responsive-fields">
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Future Aspirations / Focus (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Focus on Tech Lead; React stack."
+                    value={aspirations}
+                    onChange={(e) => setAspirations(e.target.value)}
+                    style={{ fontSize: '0.85rem' }}
+                  />
+                </div>
+                
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem' }}>Output Format & Length</label>
+                  <select
+                    value={targetLength}
+                    onChange={(e) => setTargetLength(e.target.value as TargetLength)}
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    <option value="1-page">1-Page ATS optimized sheet</option>
+                    <option value="2-page">2-Page standard document</option>
+                    <option value="3-page">3-Page comprehensive CV profile</option>
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* API Key missing notification */}
-            {!isKeyConfigured && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: '#fbbf24',
-                fontSize: '0.85rem',
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.25)',
-                padding: '0.75rem 1rem',
-                borderRadius: '10px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                  <span>API Key required for active provider.</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('settings')}
-                  className="btn btn-secondary"
-                  style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600 }}
-                >
-                  Go to Settings →
-                </button>
-              </div>
-            )}
-
-            {error && (
-              <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.6rem',
-                color: '#f87171',
-                fontSize: '0.85rem',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                padding: '0.85rem 1rem',
-                borderRadius: '10px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                  <span>
-                    {error === 'API_KEY_REQUIRED'
-                      ? 'An API Key is required on the BYOK plan. Please add your Gemini, OpenAI, or Anthropic API key in Settings.'
-                      : error}
-                  </span>
-                </div>
-                {(error === 'API_KEY_REQUIRED' || error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('load failed')) && (
+            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* API Key missing notification */}
+              {!isKeyConfigured && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  color: '#fbbf24',
+                  fontSize: '0.85rem',
+                  background: 'rgba(245, 158, 11, 0.1)',
+                  border: '1px solid rgba(245, 158, 11, 0.25)',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                    <span>API Key required for active provider.</span>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setActiveTab('settings')}
                     className="btn btn-secondary"
-                    style={{
-                      alignSelf: 'flex-start',
-                      padding: '0.35rem 0.85rem',
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.35rem'
-                    }}
+                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600 }}
                   >
-                    <span>Go to Settings →</span>
+                    Go to Settings →
                   </button>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            <button
-              className="btn btn-primary btn-mobile-full"
-              onClick={handleGenerate}
-              style={{ 
-                background: 'var(--accent-secondary)', 
-                alignSelf: 'flex-end', 
-                padding: '0.75rem 2rem', 
-                fontSize: '0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem'
-              }}
-              disabled={!canSubmit}
-            >
-              <Sparkles size={16} />
-              <span>Generate Optimized CV</span>
-            </button>
+              {error && (
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                  color: '#f87171',
+                  fontSize: '0.85rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                  padding: '0.85rem 1rem',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                    <span>
+                      {error === 'API_KEY_REQUIRED'
+                        ? 'An API Key is required on the BYOK plan. Please add your Gemini, OpenAI, or Anthropic API key in Settings.'
+                        : error}
+                    </span>
+                  </div>
+                  {(error === 'API_KEY_REQUIRED' || error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('load failed')) && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('settings')}
+                      className="btn btn-secondary"
+                      style={{
+                        alignSelf: 'flex-start',
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        background: 'rgba(255, 255, 255, 0.08)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem'
+                      }}
+                    >
+                      <span>Go to Settings →</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              <button
+                className="btn btn-primary btn-mobile-full"
+                onClick={handleGenerate}
+                style={{ 
+                  background: isStep3Ready ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : 'var(--accent-secondary)', 
+                  padding: '0.85rem 2rem', 
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  width: '100%',
+                  boxShadow: isStep3Ready ? '0 4px 20px rgba(124, 58, 237, 0.35)' : 'none',
+                  transition: 'all 0.2s ease'
+                }}
+                disabled={!canSubmit}
+              >
+                <Sparkles size={18} />
+                <span>Generate Optimized CV</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

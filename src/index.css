@@ -2233,5 +2233,80 @@ body.is-printing-cv canvas {
   }
 }
 
+/* Dynamic Step Card Status Animations */
+@keyframes borderRunningGlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
 
+.step-card-status {
+  position: relative;
+  border-radius: 16px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+}
 
+.step-card-status.is-done {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(17, 23, 38, 0.8) 100%) !important;
+  box-shadow: 0 0 18px rgba(16, 185, 129, 0.12);
+}
+
+.step-card-status.is-done::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, #10b981, #34d399, #059669, #34d399, #10b981);
+  background-size: 200% 200%;
+  animation: borderRunningGlow 2.5s linear infinite;
+}
+
+.step-card-status.is-pending {
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.04) 0%, rgba(17, 23, 38, 0.75) 100%) !important;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.08);
+}
+
+.step-card-status.is-ready {
+  border-color: rgba(124, 58, 237, 0.7) !important;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(16, 185, 129, 0.08) 100%) !important;
+  box-shadow: 0 0 22px rgba(124, 58, 237, 0.22);
+}
+
+.step-card-status.is-ready::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  background: linear-gradient(90deg, #7c3aed, #3b82f6, #10b981, #7c3aed);
+  background-size: 200% 200%;
+  animation: borderRunningGlow 2s linear infinite;
+}
+
+/* Equal 2-Column Responsive Workspace Grid */
+.workspace-equal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+@media (max-width: 900px) {
+  .workspace-equal-grid {
+    grid-template-columns: 1fr;
+  }
+}
