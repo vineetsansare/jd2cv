@@ -228,8 +228,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
       // Standalone Fallback Verification
       if (!loggedIn) {
         if (
-          (userClean === 'admin' && (passClean === 'admin123' || passClean === 'vineet123' || passClean === 'jd2cv2026')) ||
-          (userClean === 'vineetsansare@gmail.com' && passClean === 'admin123')
+          (userClean === 'admin' && (passClean === '@dmin190488' || passClean === 'admin123' || passClean === 'vineet123')) ||
+          (userClean === 'vineetsansare@gmail.com' && passClean === '@dmin190488')
         ) {
           token = 'jd2cv_adm_' + btoa(`${userClean}_${Date.now()}`);
           loggedIn = true;

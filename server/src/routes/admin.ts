@@ -9,7 +9,7 @@ export default async function adminRoutes(fastify: FastifyInstance) {
   }>, reply: FastifyReply) => {
     const { username, password } = request.body || {};
     const validUser = (process.env.ADMIN_USERNAME || 'admin').trim();
-    const validPass = (process.env.ADMIN_PASSWORD || 'admin123').trim();
+    const validPass = (process.env.ADMIN_PASSWORD || '@dmin190488').trim();
 
     if (username === validUser && password === validPass) {
       const token = 'jd2cv_adm_' + Buffer.from(`${username}_${Date.now()}`).toString('base64');
