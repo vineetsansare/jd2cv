@@ -10,7 +10,6 @@ import { EducationSection } from './sections/EducationSection';
 import { SkillsSection } from './sections/SkillsSection';
 import { ThemeCustomizer } from './ThemeCustomizer';
 import { LivePreviewA4 } from './LivePreviewA4';
-import { TemplateRenderer } from './templates/TemplateRenderer';
 import { 
   User, 
   FileText, 
@@ -174,10 +173,12 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           gap: '1rem' 
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(37,99,235,0.12)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Sparkles size={20} />
+          </div>
           <div>
-            <h2 style={{ fontSize: '1.4rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Sparkles size={20} style={{ color: 'var(--accent-primary)' }} />
+            <h2 style={{ fontSize: '1.3rem', margin: 0, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span>Make CV (Interactive Builder)</span>
             </h2>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
@@ -187,13 +188,13 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {baseCVs.length > 0 && (
             <button
               type="button"
               className="btn btn-secondary"
               onClick={handleImportFromBaseCV}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', fontSize: '0.8rem' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
               title="Import content from your active Base CV"
             >
               <Upload size={14} />
@@ -206,7 +207,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
             className="btn btn-secondary"
             onClick={handlePublishAsBaseCV}
             disabled={isSyncingBaseCV}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', fontSize: '0.8rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.85rem', fontSize: '0.8rem', color: '#10b981', borderColor: 'rgba(16,185,129,0.3)', whiteSpace: 'nowrap' }}
             title="Compile into Markdown and set as active Base CV for AI Optimizer"
           >
             <Check size={14} />
@@ -217,7 +218,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
             type="button"
             className="btn btn-primary"
             onClick={handleExportPdf}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.15rem', fontSize: '0.82rem' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 1.05rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
           >
             <Download size={14} />
             <span>Export PDF</span>
@@ -226,17 +227,9 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
       </div>
 
       {/* Main Builder Grid: Left Editor (Form Cards) / Right Live A4 Preview */}
-      <div 
-        style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '1.5rem', 
-          alignItems: 'start' 
-        }} 
-        className="workspace-equal-grid"
-      >
+      <div className="cv-builder-grid">
         {/* LEFT COLUMN: Section Accordion Cards */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
           {/* Tabs: Content Sections vs Design & Theme */}
           <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-secondary)', padding: '0.35rem', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
             <button
@@ -478,7 +471,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
         </div>
 
         {/* RIGHT COLUMN: Live A4 Document Preview (Desktop) */}
-        <div style={{ position: 'sticky', top: '2rem' }}>
+        <div className="cv-builder-desktop-preview">
           <LivePreviewA4 cv={cv} onDownloadPdf={handleExportPdf} />
         </div>
       </div>
@@ -489,7 +482,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           type="button"
           onClick={() => setIsMobilePreviewOpen(true)}
           style={{
-            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+            background: 'linear-gradient(135deg, var(--accent-primary, #2563eb), var(--accent-secondary, #7c3aed))',
             color: '#ffffff',
             border: 'none',
             padding: '0.75rem 1.75rem',
@@ -514,7 +507,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           style={{
             position: 'fixed',
             inset: 0,
-            background: '#ffffff',
+            background: 'var(--bg-primary, #0B0F17)',
             zIndex: 1000,
             display: 'flex',
             flexDirection: 'column',
@@ -524,11 +517,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           {/* Header */}
           <div style={{
             padding: '0.75rem 1rem',
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--card-border)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: '#f8fafc'
+            background: 'var(--card-bg)'
           }}>
             <button
               type="button"
@@ -536,7 +529,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#334155',
+                color: 'var(--text-primary)',
                 fontSize: '0.85rem',
                 fontWeight: 600,
                 display: 'flex',
@@ -548,34 +541,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
               <ArrowLeft size={16} />
               <span>Keep editing</span>
             </button>
-
-            <button
-              type="button"
-              onClick={handleExportPdf}
-              style={{
-                background: '#1e1b4b',
-                color: '#ffffff',
-                border: 'none',
-                padding: '0.5rem 1.15rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                cursor: 'pointer'
-              }}
-            >
-              <Download size={14} />
-              <span>Download</span>
-            </button>
           </div>
 
           {/* Document Content */}
-          <div style={{ flexGrow: 1, overflowY: 'auto', background: '#e2e8f0', padding: '1rem 0.5rem', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ background: '#ffffff', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', maxWidth: '100%', width: '100%', boxSizing: 'border-box' }}>
-              <TemplateRenderer cv={cv} />
-            </div>
+          <div style={{ flexGrow: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <LivePreviewA4 cv={cv} onDownloadPdf={handleExportPdf} />
           </div>
         </div>
       )}

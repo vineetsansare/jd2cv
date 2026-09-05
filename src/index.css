@@ -2852,14 +2852,41 @@ body.is-printing-cv canvas {
   letter-spacing: 0.02em;
 }
 
-/* Make CV Builder Floating Mobile Preview Pill */
+/* Make CV Builder Responsive Layout */
+.cv-builder-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 1.5rem;
+  align-items: start;
+  width: 100%;
+}
+
+.cv-builder-desktop-preview {
+  position: sticky;
+  top: 2rem;
+  width: 100%;
+  min-width: 0;
+}
+
 .mobile-only-preview-pill {
   display: none !important;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
+  .cv-builder-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .cv-builder-desktop-preview {
+    display: none !important;
+  }
   .mobile-only-preview-pill {
     display: flex !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .mobile-only-preview-pill {
+    display: none !important;
   }
 }
 
