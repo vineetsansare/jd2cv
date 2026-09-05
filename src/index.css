@@ -2852,3 +2852,20 @@ body.is-printing-cv canvas {
   letter-spacing: 0.02em;
 }
 
+/* Make CV Builder Floating Mobile Preview Pill */
+.mobile-only-preview-pill {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .mobile-only-preview-pill {
+    display: flex !important;
+  }
+}
+
+.cv-a4-document {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+}
+

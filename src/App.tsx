@@ -17,13 +17,14 @@ import {
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Upload, Plus, Download, Trash2,
   Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X, MessageSquare,
-  Check, CheckCircle2
+  Check, CheckCircle2, FilePlus
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
 import { LiquidCard } from './components/ui/LiquidCard';
 import { UploadIllustration, AICoachIllustration } from './components/ui/Illustrations';
 import { CVHistoryPanel } from './components/CVHistoryPanel';
+import { CVBuilderPanel } from './components/cv-builder/CVBuilderPanel';
 import type { GenerationRecord } from './components/CVHistoryPanel';
 import { DEFAULT_PROVIDER, DEFAULT_MODEL } from './utils/models';
 
@@ -384,7 +385,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'workspace' | 'quick-optimize' | 'resumes' | 'history' | 'applications' | 'reports' | 'settings' | 'contact'>('quick-optimize');
+  const [activeTab, setActiveTab] = useState<'workspace' | 'quick-optimize' | 'make-cv' | 'resumes' | 'history' | 'applications' | 'reports' | 'settings' | 'contact'>('quick-optimize');
   const [generations, setGenerations] = useState<GenerationRecord[]>([]);
   const [generationsLoading, setGenerationsLoading] = useState(false);
   const [isCustomizing, setIsCustomizing] = useState(false);
@@ -1107,6 +1108,15 @@ function App() {
             >
               <Sparkles size={18} style={{ color: 'var(--accent-secondary)' }} />
               {!sidebarCollapsed && <span className="font-label-sm">AI Optimize CV</span>}
+            </button>
+
+            <button 
+              className={`tab ${activeTab === 'make-cv' && !isCustomizing ? 'active nav-item-active' : ''}`} 
+              onClick={() => { setActiveTab('make-cv'); setIsCustomizing(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', width: '100%', border: 'none', background: 'none', color: 'inherit', textAlign: 'left', borderRadius: '8px', cursor: 'pointer' }}
+            >
+              <FilePlus size={18} style={{ color: 'var(--accent-primary)' }} />
+              {!sidebarCollapsed && <span className="font-label-sm">Make CV</span>}
             </button>
 
             <button 
@@ -3002,6 +3012,16 @@ function App() {
               <>
                 {activeTab === 'workspace' && renderWorkspaceTab()}
                 {activeTab === 'quick-optimize' && renderQuickOptimizeTab()}
+                {activeTab === 'make-cv' && (
+                  <CVBuilderPanel
+                    userProfile={userProfile}
+                    baseCVs={contextCVs}
+                    onSetAsBaseCV={async (markdown: string, filename: string) => {
+                      await handleAddCV(filename, markdown);
+                    }}
+                    theme={theme}
+                  />
+                )}
                 {activeTab === 'resumes' && renderResumesTab()}
                 
                 {activeTab === 'history' && (
@@ -3166,6 +3186,14 @@ function App() {
                 >
                   <Sparkles size={18} />
                   <span>AI Workspace</span>
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-drawer-item ${activeTab === 'make-cv' ? 'active' : ''}`}
+                  onClick={() => { setActiveTab('make-cv'); setIsCustomizing(false); setIsMobileMenuOpen(false); }}
+                >
+                  <FilePlus size={18} />
+                  <span>Make CV</span>
                 </button>
                 <button
                   type="button"
