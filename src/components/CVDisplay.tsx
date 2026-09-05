@@ -317,6 +317,54 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
       <div className="cv-display-content" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', marginTop: '1rem' }}>
         {activeTab === 'preview' && (
           <>
+            {preservedDocxBlob && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.12))',
+                border: '1px solid rgba(99, 102, 241, 0.35)',
+                borderRadius: '12px',
+                padding: '0.9rem 1.25rem',
+                marginBottom: '1rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Sparkles size={22} style={{ color: '#818cf8', flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                      ✨ 100% Layout-Preserved Word Document (.docx) Ready!
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                      Your original document's custom layout, multi-column tables, colors, and fonts have been preserved.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadDocx}
+                  className="btn btn-primary"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.55rem 1.15rem',
+                    fontSize: '0.88rem',
+                    fontWeight: 600,
+                    background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Download size={16} />
+                  <span>Download Optimized Word CV (.docx)</span>
+                </button>
+              </div>
+            )}
+
             <CVThemeSelector 
               themeConfig={themeConfig} 
               onChangeThemeConfig={setThemeConfig} 

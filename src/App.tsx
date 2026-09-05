@@ -16,7 +16,8 @@ import {
   Sparkles, Sun, Moon, AlertCircle,
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Upload, Plus, Download, Trash2,
-  Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X, MessageSquare
+  Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X, MessageSquare,
+  Check, CheckCircle2
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
@@ -29,6 +30,40 @@ import { DEFAULT_PROVIDER, DEFAULT_MODEL } from './utils/models';
 const LOCAL_STORAGE_KEY_CONFIG = 'cv_builder_llm_config';
 const LOCAL_STORAGE_KEY_THEME = 'cv_builder_theme';
 const LOCAL_STORAGE_KEY_SIDEBAR = 'cv_builder_sidebar_collapsed';
+const LOCAL_STORAGE_KEY_LAYOUT_MODE = 'cv_builder_layout_mode';
+
+const saveDocxBufferToSession = (buffer: ArrayBuffer, filename: string) => {
+  try {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    const chunk = 8192;
+    for (let i = 0; i < bytes.byteLength; i += chunk) {
+      binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunk)));
+    }
+    const base64 = window.btoa(binary);
+    sessionStorage.setItem('cached_docx_buffer', base64);
+    sessionStorage.setItem('cached_docx_name', filename);
+  } catch (e) {
+    console.warn('Could not cache docx buffer in sessionStorage:', e);
+  }
+};
+
+const loadDocxBufferFromSession = (): { buffer: ArrayBuffer; name: string } | null => {
+  try {
+    const base64 = sessionStorage.getItem('cached_docx_buffer');
+    const name = sessionStorage.getItem('cached_docx_name');
+    if (!base64 || !name) return null;
+    const binary = window.atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return { buffer: bytes.buffer, name };
+  } catch (e) {
+    console.warn('Could not restore docx buffer from sessionStorage:', e);
+    return null;
+  }
+};
 
 const DEFAULT_CONFIG: LLMConfig = {
   provider: DEFAULT_PROVIDER,
@@ -331,7 +366,15 @@ function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [aspirations, setAspirations] = useState('');
   const [targetLength, setTargetLength] = useState<TargetLength>('2-page');
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>('preserve-layout');
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
+    const saved = localStorage.getItem(LOCAL_STORAGE_KEY_LAYOUT_MODE);
+    return (saved === 'our-template' || saved === 'preserve-layout') ? saved : 'preserve-layout';
+  });
+
+  const handleSetLayoutMode = (mode: LayoutMode) => {
+    setLayoutMode(mode);
+    localStorage.setItem(LOCAL_STORAGE_KEY_LAYOUT_MODE, mode);
+  };
   const [preservedDocxBlob, setPreservedDocxBlob] = useState<Blob | null>(null);
   const [uploadedDocxBuffer, setUploadedDocxBuffer] = useState<ArrayBuffer | null>(null);
   const [extractedPhotoUrl, setExtractedPhotoUrl] = useState<string | undefined>(undefined);
@@ -463,6 +506,11 @@ function App() {
     if (savedSidebar) {
       setSidebarCollapsed(JSON.parse(savedSidebar));
     }
+
+    const cachedDocx = loadDocxBufferFromSession();
+    if (cachedDocx) {
+      setUploadedDocxBuffer(cachedDocx.buffer);
+    }
   }, []);
 
   const applyTheme = (t: 'light' | 'dark') => {
@@ -541,6 +589,9 @@ function App() {
 
       setContextCVs([]);
       setActiveCVIndices([]);
+      setUploadedDocxBuffer(null);
+      sessionStorage.removeItem('cached_docx_buffer');
+      sessionStorage.removeItem('cached_docx_name');
       setError(null);
     } catch (err) {
       console.error('Failed to delete Base CV from cloud:', err);
@@ -579,11 +630,16 @@ function App() {
         let text = '';
         const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
 
+        if (layoutMode === 'preserve-layout' && !isDocx && (file.type === 'application/pdf' || file.name.endsWith('.pdf'))) {
+          throw new Error('Preserve Layout mode requires a Word (.docx) file to guarantee 100% layout and styling preservation. (In Apple Pages: choose File → Export To → Word. In Google Docs: choose File → Download → Microsoft Word). Alternatively, switch to "Standard ATS" mode to upload your PDF.');
+        }
+
         if (isDocx) {
           const arrayBuffer = await file.arrayBuffer();
           text = await extractDocxText(arrayBuffer);
           // Store the raw DOCX buffer for layout preservation pipeline
           setUploadedDocxBuffer(arrayBuffer.slice(0));
+          saveDocxBufferToSession(arrayBuffer, file.name);
         } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
           const arrayBuffer = await file.arrayBuffer();
           const parsedPdf = await parsePdf(arrayBuffer);
@@ -593,12 +649,15 @@ function App() {
           }
           if (parsedPdf.detectedTemplate) {
             setDetectedLayoutTemplate(parsedPdf.detectedTemplate);
-            setLayoutMode('preserve-layout');
           }
           setUploadedDocxBuffer(null);
+          sessionStorage.removeItem('cached_docx_buffer');
+          sessionStorage.removeItem('cached_docx_name');
         } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
           text = await file.text();
           setUploadedDocxBuffer(null);
+          sessionStorage.removeItem('cached_docx_buffer');
+          sessionStorage.removeItem('cached_docx_name');
         } else {
           throw new Error('Unsupported file type. Please upload PDF, DOCX, TXT, or Markdown files.');
         }
@@ -702,6 +761,11 @@ function App() {
 
     if (activeCVIndices.length === 0) {
       setError('Please select at least one CV from the context checkboxes to use as career history.');
+      return;
+    }
+
+    if (layoutMode === 'preserve-layout' && !uploadedDocxBuffer) {
+      setError('Preserve Layout workflow requires an uploaded Word (.docx) file. Please upload your .docx file (In Apple Pages: File → Export To → Word), or switch to "Standard ATS" mode to optimize your PDF.');
       return;
     }
 
@@ -1537,24 +1601,207 @@ function App() {
           type="file"
           ref={fileInputRef}
           onChange={handleFileUpload}
-          accept=".pdf,.docx,.txt,.md"
+          accept={layoutMode === 'preserve-layout' ? '.docx' : '.pdf,.docx,.txt,.md'}
           style={{ display: 'none' }}
         />
 
         {!hasBaseCV ? (
-          /* Empty State: Master Base CV Upload Box */
-          <div className="glass-card" style={{ padding: '3rem 2rem', textAlign: 'center', maxWidth: '650px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+          /* Empty State: Master Base CV Upload Box with Upfront Workflow Choice */
+          <div className="glass-card" style={{ padding: '2.5rem 2rem', maxWidth: '820px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+            {/* Upfront Workflow Question Header */}
+            <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: '20px', padding: '4px 12px', marginBottom: '0.75rem' }}>
+                <Sparkles size={14} style={{ color: '#818cf8' }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#a5b4fc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Workflow Selection</span>
+              </div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>
+                Do you want to preserve the layout of your CV?
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--text-secondary)', maxWidth: '580px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.45 }}>
+                Choose your preferred optimization workflow before uploading your document.
+              </p>
+            </div>
+
+            {/* 2-Card Mode Selector */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+              {/* Option 1: Yes, Preserve Layout */}
+              <div
+                onClick={() => handleSetLayoutMode('preserve-layout')}
+                style={{
+                  padding: '1.35rem',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  border: layoutMode === 'preserve-layout' ? '2px solid #818cf8' : '1.5px solid var(--card-border)',
+                  background: layoutMode === 'preserve-layout'
+                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(139, 92, 246, 0.08) 100%)'
+                    : 'var(--bg-secondary)',
+                  boxShadow: layoutMode === 'preserve-layout' ? '0 0 24px rgba(99, 102, 241, 0.22)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '3px 9px',
+                    borderRadius: '20px',
+                    background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255, 255, 255, 0.05)',
+                    color: layoutMode === 'preserve-layout' ? '#a5b4fc' : 'var(--text-muted)',
+                    border: `1px solid ${layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.4)' : 'transparent'}`
+                  }}>
+                    ✨ 100% Visual Fidelity
+                  </span>
+                  <div style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    border: `2px solid ${layoutMode === 'preserve-layout' ? '#818cf8' : 'var(--card-border)'}`,
+                    background: layoutMode === 'preserve-layout' ? '#6366f1' : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {layoutMode === 'preserve-layout' && <Check size={13} color="#ffffff" strokeWidth={3} />}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    Yes, Preserve My Layout
+                  </h4>
+                  <span style={{ fontSize: '0.78rem', color: '#818cf8', fontWeight: 700 }}>
+                    *Works with Word .docx format
+                  </span>
+                </div>
+
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  Preserves your exact design, columns, colors, tables, and typography 100% by rewriting text directly inside the Word document XML.
+                </p>
+
+                <div style={{
+                  marginTop: 'auto',
+                  padding: '0.55rem 0.75rem',
+                  borderRadius: '10px',
+                  background: 'rgba(99, 102, 241, 0.1)',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.4
+                }}>
+                  🍏 <strong>Apple Pages / Google Docs:</strong> Choose <em>File → Export / Download → Word (.docx)</em>.
+                </div>
+              </div>
+
+              {/* Option 2: No, Standard ATS Format */}
+              <div
+                onClick={() => handleSetLayoutMode('our-template')}
+                style={{
+                  padding: '1.35rem',
+                  borderRadius: '16px',
+                  cursor: 'pointer',
+                  border: layoutMode === 'our-template' ? '2px solid #10b981' : '1.5px solid var(--card-border)',
+                  background: layoutMode === 'our-template'
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(5, 150, 105, 0.06) 100%)'
+                    : 'var(--bg-secondary)',
+                  boxShadow: layoutMode === 'our-template' ? '0 0 24px rgba(16, 185, 129, 0.18)' : 'none',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    padding: '3px 9px',
+                    borderRadius: '20px',
+                    background: layoutMode === 'our-template' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                    color: layoutMode === 'our-template' ? '#10b981' : 'var(--text-muted)',
+                    border: `1px solid ${layoutMode === 'our-template' ? 'rgba(16, 185, 129, 0.4)' : 'transparent'}`
+                  }}>
+                    📄 Standard ATS Format
+                  </span>
+                  <div style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    border: `2px solid ${layoutMode === 'our-template' ? '#10b981' : 'var(--card-border)'}`,
+                    background: layoutMode === 'our-template' ? '#10b981' : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {layoutMode === 'our-template' && <Check size={13} color="#ffffff" strokeWidth={3} />}
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                    No, Use Standard ATS Format
+                  </h4>
+                  <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 700 }}>
+                    Accepts PDF, DOCX, TXT, MD
+                  </span>
+                </div>
+
+                <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                  Restructures your experience into a clean single-column executive layout optimized for 95%+ ATS scanner compatibility (Workday, Greenhouse, Lever).
+                </p>
+
+                <div style={{
+                  marginTop: 'auto',
+                  padding: '0.55rem 0.75rem',
+                  borderRadius: '10px',
+                  background: 'rgba(16, 185, 129, 0.08)',
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.4
+                }}>
+                  💼 <strong>Best for:</strong> Corporate portals, MAANG / tech applications & printable PDF.
+                </div>
+              </div>
+            </div>
+
+            {/* Dynamic Dropzone based on Layout Mode */}
             <div 
               className="file-upload-zone" 
               onClick={triggerFileInput} 
-              style={{ borderStyle: 'dashed', padding: '2.5rem 1.5rem', cursor: 'pointer', borderRadius: '16px', background: 'var(--bg-secondary)', transition: 'all 0.2s' }}
+              style={{
+                borderStyle: 'dashed',
+                padding: '2.5rem 1.5rem',
+                cursor: 'pointer',
+                borderRadius: '16px',
+                background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-secondary)',
+                borderColor: layoutMode === 'preserve-layout' ? '#818cf8' : 'var(--card-border)',
+                transition: 'all 0.2s',
+                textAlign: 'center'
+              }}
             >
-              <Upload size={36} style={{ margin: '0 auto 0.75rem', color: 'var(--accent-primary)' }} />
-              <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                {parsingFile ? 'Extracting text...' : 'Upload Your Master Base CV'}
+              {layoutMode === 'preserve-layout' ? (
+                <Sparkles size={38} style={{ margin: '0 auto 0.75rem', color: '#818cf8' }} />
+              ) : (
+                <Upload size={38} style={{ margin: '0 auto 0.75rem', color: 'var(--accent-primary)' }} />
+              )}
+              <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                {parsingFile 
+                  ? 'Extracting text...' 
+                  : layoutMode === 'preserve-layout'
+                  ? 'Upload Your Word (.docx) Master CV'
+                  : 'Upload Your Master Base CV'}
               </h4>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                Drag & Drop or Click to browse (Supports PDF, TXT, and Markdown up to 10MB)
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+                {layoutMode === 'preserve-layout'
+                  ? 'Drag & Drop or Click to browse (Requires .docx format up to 10MB)'
+                  : 'Drag & Drop or Click to browse (Supports PDF, DOCX, TXT, and Markdown up to 10MB)'}
               </p>
             </div>
 
@@ -1571,6 +1818,92 @@ function App() {
         ) : (
           /* Active Base CV Dashboard */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Active Optimization Workflow Banner & Switcher */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              padding: '1.1rem 1.5rem',
+              borderRadius: '16px',
+              background: layoutMode === 'preserve-layout'
+                ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(139, 92, 246, 0.08) 100%)'
+                : 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%)',
+              border: `1.5px solid ${layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.35)' : 'rgba(16, 185, 129, 0.3)'}`,
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                    Active Workflow
+                  </span>
+                  <span style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(16, 185, 129, 0.2)',
+                    color: layoutMode === 'preserve-layout' ? '#a5b4fc' : '#10b981'
+                  }}>
+                    {layoutMode === 'preserve-layout' ? '🌟 Preserve Layout (Word .docx)' : '📄 Standard ATS Format'}
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  {layoutMode === 'preserve-layout' ? (
+                    uploadedDocxBuffer ? (
+                      <span style={{ color: '#10b981', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <CheckCircle2 size={14} /> Word (.docx) loaded — Ready for 100% layout preservation.
+                      </span>
+                    ) : (
+                      <span style={{ color: '#fbbf24', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <AlertCircle size={14} /> Base CV was uploaded as a PDF. Upload a Word (.docx) file to preserve layout 100%.
+                      </span>
+                    )
+                  ) : (
+                    <span>Standard single-column executive format for recruiter ATS systems.</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Toggle Switcher Buttons */}
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleSetLayoutMode('preserve-layout')}
+                  className="btn"
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    border: layoutMode === 'preserve-layout' ? '1.5px solid #818cf8' : '1px solid var(--card-border)',
+                    background: layoutMode === 'preserve-layout' ? '#4f46e5' : 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🌟 Preserve Layout (.docx)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetLayoutMode('our-template')}
+                  className="btn"
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    border: layoutMode === 'our-template' ? '1.5px solid #10b981' : '1px solid var(--card-border)',
+                    background: layoutMode === 'our-template' ? '#059669' : 'rgba(255, 255, 255, 0.05)',
+                    color: '#ffffff',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📄 Standard ATS
+                </button>
+              </div>
+            </div>
+
             {/* Master Base CV Overview Card */}
             <div className="glass-card" style={{ padding: '1.75rem 2rem', background: 'var(--card-bg)', border: '1.5px solid rgba(16, 185, 129, 0.4)', borderRadius: '18px', boxShadow: '0 0 24px rgba(16, 185, 129, 0.08)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
@@ -1619,7 +1952,7 @@ function App() {
                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.25rem', fontSize: '0.85rem' }}
                   >
                     <Upload size={16} />
-                    <span>{parsingFile ? 'Replacing...' : 'Replace with New CV'}</span>
+                    <span>{parsingFile ? 'Replacing...' : layoutMode === 'preserve-layout' ? 'Replace with Word (.docx)' : 'Replace with New CV'}</span>
                   </button>
                   
                   <button 
@@ -1889,19 +2222,107 @@ function App() {
               {/* Base Resume Presentation */}
               {contextCVs.length === 0 ? (
                 <div>
-                  <label className="saas-upload-dropzone" style={{ padding: '2.5rem 1.5rem', minHeight: '200px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--card-border)', borderRadius: '16px', background: 'var(--bg-secondary)', transition: 'all 0.2s' }}>
+                  {/* Upfront Workflow Question */}
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                      <Sparkles size={15} style={{ color: 'var(--accent-primary)' }} />
+                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Do you want to preserve your CV layout?
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1rem' }}>
+                      <div
+                        onClick={() => handleSetLayoutMode('preserve-layout')}
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          border: layoutMode === 'preserve-layout' ? '2px solid #818cf8' : '1px solid var(--card-border)',
+                          background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-secondary)',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>🌟 Preserve Layout</span>
+                          {layoutMode === 'preserve-layout' && <Check size={12} color="#818cf8" strokeWidth={3} />}
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#818cf8', fontWeight: 600 }}>*Requires Word .docx</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>100% design & color fidelity</span>
+                      </div>
+
+                      <div
+                        onClick={() => handleSetLayoutMode('our-template')}
+                        style={{
+                          padding: '0.75rem',
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          border: layoutMode === 'our-template' ? '2px solid #10b981' : '1px solid var(--card-border)',
+                          background: layoutMode === 'our-template' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-secondary)',
+                          transition: 'all 0.2s',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>📄 Standard ATS</span>
+                          {layoutMode === 'our-template' && <Check size={12} color="#10b981" strokeWidth={3} />}
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: '#10b981', fontWeight: 600 }}>PDF, Word, TXT</span>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Single-column scanner format</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <label 
+                    className="saas-upload-dropzone" 
+                    style={{ 
+                      padding: '2rem 1.5rem', 
+                      minHeight: '180px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      border: '2px dashed var(--card-border)', 
+                      borderColor: layoutMode === 'preserve-layout' ? '#818cf8' : 'var(--card-border)',
+                      borderRadius: '16px', 
+                      background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.05)' : 'var(--bg-secondary)', 
+                      transition: 'all 0.2s' 
+                    }}
+                  >
                     <input 
                       type="file" 
-                      accept=".pdf,.docx,.txt,.md" 
+                      accept={layoutMode === 'preserve-layout' ? '.docx' : '.pdf,.docx,.txt,.md'} 
                       onChange={handleFileUpload} 
                       style={{ display: 'none' }} 
                     />
-                    <UploadIllustration size={56} className="mb-2" />
-                    <span style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginTop: '0.75rem', color: 'var(--text-primary)' }}>Upload Master Base Resume</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>PDF, TXT or MD up to 10MB</span>
+                    {layoutMode === 'preserve-layout' ? (
+                      <Sparkles size={46} style={{ color: '#818cf8', marginBottom: '0.5rem' }} />
+                    ) : (
+                      <UploadIllustration size={46} className="mb-2" />
+                    )}
+                    <span style={{ fontSize: '13px', fontWeight: 700, display: 'block', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                      {parsingFile 
+                        ? 'Extracting text...' 
+                        : layoutMode === 'preserve-layout'
+                        ? 'Upload Word (.docx) Master Resume'
+                        : 'Upload Master Base Resume'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      {layoutMode === 'preserve-layout'
+                        ? 'Word .docx only (Pages users: File > Export To > Word)'
+                        : 'PDF, DOCX, TXT or MD up to 10MB'}
+                    </span>
                   </label>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '1rem', lineHeight: 1.5 }}>
-                    Upload your primary resume. The AI will use your factual career history and tailor it specifically for each job.
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.85rem', lineHeight: 1.45 }}>
+                    {layoutMode === 'preserve-layout'
+                      ? 'Upload your Word .docx resume to keep your exact columns, colors, and layout 100% intact.'
+                      : 'Upload your primary resume. The AI will use your factual career history and reformat it for ATS screening.'}
                   </p>
                 </div>
               ) : (
@@ -1939,17 +2360,58 @@ function App() {
                     </div>
                   </div>
 
+                  {/* Active Workflow Status pill & warning */}
+                  {layoutMode === 'preserve-layout' ? (
+                    uploadedDocxBuffer ? (
+                      <div style={{ fontSize: '0.78rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+                        <CheckCircle2 size={14} />
+                        <span>Word (.docx) loaded — 100% layout preservation enabled</span>
+                      </div>
+                    ) : (
+                      <div style={{
+                        padding: '0.75rem 0.9rem',
+                        borderRadius: '10px',
+                        background: 'rgba(245, 158, 11, 0.1)',
+                        border: '1px solid rgba(245, 158, 11, 0.25)',
+                        fontSize: '0.78rem',
+                        color: '#fbbf24',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}>
+                        <div>
+                          ⚠️ <strong>Word document required:</strong> You have 'Preserve Layout' selected, but your Base CV was uploaded as a PDF. Upload a Word (.docx) file to preserve your layout 100%, or switch to Standard ATS.
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          <label className="btn btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', background: '#d97706' }}>
+                            <input type="file" accept=".docx" onChange={handleFileUpload} style={{ display: 'none' }} />
+                            <Upload size={12} />
+                            <span>Upload Word (.docx)</span>
+                          </label>
+                          <button type="button" className="btn btn-secondary" onClick={() => handleSetLayoutMode('our-template')} style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }}>
+                            Switch to Standard ATS
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <div style={{ fontSize: '0.78rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+                      <CheckCircle2 size={14} />
+                      <span>Standard ATS Mode active</span>
+                    </div>
+                  )}
+
                   {/* Actions */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
                     <label className="btn btn-secondary" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.65rem 1rem', fontSize: '0.82rem' }}>
                       <input 
                         type="file" 
-                        accept=".pdf,.docx,.txt,.md" 
+                        accept={layoutMode === 'preserve-layout' ? '.docx' : '.pdf,.docx,.txt,.md'} 
                         onChange={handleFileUpload} 
                         style={{ display: 'none' }} 
                       />
                       <Upload size={14} />
-                      <span>Replace with New PDF</span>
+                      <span>{layoutMode === 'preserve-layout' ? 'Replace with Word (.docx)' : 'Replace with New CV'}</span>
                     </label>
                     <button
                       type="button"
@@ -2037,35 +2499,117 @@ function App() {
                 </div>
               </div>
 
-              {/* Layout Mode Toggle */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
-                background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
-                border: `1px solid ${layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--card-border)'}`,
-                borderRadius: '10px',
-                transition: 'all 0.2s',
-                marginTop: '0.25rem'
-              }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
-                    <input
-                      type="checkbox"
-                      checked={layoutMode === 'preserve-layout'}
-                      onChange={(e) => setLayoutMode(e.target.checked ? 'preserve-layout' : 'our-template')}
-                      style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
-                    />
-                    <FileText size={15} style={{ color: layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
-                    <span>Preserve My CV Layout</span>
+              {/* Optimization Workflow Selection */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Sparkles size={15} style={{ color: 'var(--accent-primary)' }} />
+                    <span>Optimization Workflow</span>
                   </label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '2.6rem' }}>
-                    {layoutMode === 'preserve-layout'
-                      ? '✓ Preserves your original layout (left-rail timeline, boxed skill cards, and photo).'
-                      : 'Uses standard ATS-optimized template. Check to preserve your uploaded CV\'s original format.'}
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    Preserve layout vs ATS
                   </span>
                 </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  {/* Preserve Layout Button Card */}
+                  <div
+                    onClick={() => handleSetLayoutMode('preserve-layout')}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      border: layoutMode === 'preserve-layout' ? '2px solid #818cf8' : '1px solid var(--card-border)',
+                      background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-secondary)',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        🌟 Preserve Layout
+                      </span>
+                      {layoutMode === 'preserve-layout' && (
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#6366f1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={10} color="#ffffff" strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#818cf8', fontWeight: 600 }}>
+                      *Works with Word (.docx)
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                      {uploadedDocxBuffer ? '✓ Word doc ready' : 'Requires .docx format'}
+                    </span>
+                  </div>
+
+                  {/* Standard ATS Button Card */}
+                  <div
+                    onClick={() => handleSetLayoutMode('our-template')}
+                    style={{
+                      padding: '0.85rem 1rem',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      border: layoutMode === 'our-template' ? '2px solid #10b981' : '1px solid var(--card-border)',
+                      background: layoutMode === 'our-template' ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-secondary)',
+                      transition: 'all 0.2s',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        📄 Standard ATS
+                      </span>
+                      {layoutMode === 'our-template' && (
+                        <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Check size={10} color="#ffffff" strokeWidth={3} />
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: 600 }}>
+                      PDF, DOCX, TXT, MD
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+                      Single-column scanner format
+                    </span>
+                  </div>
+                </div>
+
+                {layoutMode === 'preserve-layout' && !uploadedDocxBuffer && contextCVs.length > 0 && (
+                  <div style={{
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '8px',
+                    background: 'rgba(245, 158, 11, 0.1)',
+                    border: '1px solid rgba(245, 158, 11, 0.25)',
+                    fontSize: '0.75rem',
+                    color: '#fbbf24',
+                    lineHeight: 1.4,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.5rem',
+                    marginTop: '0.25rem'
+                  }}>
+                    <span>⚠️ Base CV is a PDF. Upload Word (.docx) for layout preservation.</span>
+                    <label style={{
+                      padding: '0.3rem 0.6rem',
+                      background: '#d97706',
+                      color: '#ffffff',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: '0.72rem',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      <input type="file" accept=".docx" onChange={handleFileUpload} style={{ display: 'none' }} />
+                      Upload .docx
+                    </label>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -2161,6 +2705,12 @@ function App() {
                 <Sparkles size={18} />
                 <span>Generate Optimized CV</span>
               </button>
+
+              {layoutMode === 'preserve-layout' && !uploadedDocxBuffer && (
+                <div style={{ fontSize: '0.75rem', color: '#fbbf24', textAlign: 'center', marginTop: '0.25rem' }}>
+                  * Layout Preservation requires an uploaded Word (.docx) file.
+                </div>
+              )}
             </div>
           </div>
         </div>

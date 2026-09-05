@@ -22,31 +22,56 @@ export interface ContentReplacements {
 /**
  * Replace text content in a <w:p> XML element while preserving all formatting.
  * 
- * Strategy: We distribute the new text across existing <w:r> (run) elements.
- * The first run gets the full new text; remaining runs get emptied but their
- * formatting XML is preserved (in case the document references those styles).
+ * Strategy:
+ * 1. Normalizes bullets: strips leading bullet markers if the paragraph has native Word bullets (<w:numPr>).
+ * 2. Formats bold text: converts **bold** segments into <w:r><w:rPr><w:b/></w:rPr><w:t> runs.
+ * 3. Preserves base run formatting (<w:rPr>) such as font family, size, and color.
+ * 4. Preserves paragraph properties (<w:pPr>).
  */
 function replaceTextInParagraphXml(pXml: string, newText: string): string {
   if (!newText.trim()) return pXml;
 
-  // Find all <w:t> elements within <w:r> elements
-  const tRegex = /(<w:t[^>]*>)([\s\S]*?)(<\/w:t>)/g;
-  let firstReplaced = false;
-  
-  const result = pXml.replace(tRegex, (_fullMatch, openTag, _oldText, closeTag) => {
-    if (!firstReplaced) {
-      firstReplaced = true;
-      // Ensure the <w:t> tag has xml:space="preserve" so whitespace is kept
-      const preserveTag = openTag.includes('xml:space')
-        ? openTag
-        : openTag.replace('<w:t', '<w:t xml:space="preserve"');
-      return `${preserveTag}${escapeXml(newText)}${closeTag}`;
-    }
-    // Empty out subsequent text runs but keep their run properties
-    return `${openTag}${closeTag}`;
-  });
+  // If paragraph has native Word bullet list (<w:numPr>), strip leading bullet symbols
+  let cleanText = newText;
+  if (pXml.includes('<w:numPr')) {
+    cleanText = cleanText.replace(/^[-*•]\s*/, '');
+  }
 
-  return result;
+  // Extract base run properties <w:rPr> from first run if present
+  const rPrMatch = pXml.match(/<w:rPr>([\s\S]*?)<\/w:rPr>/);
+  const baseRPr = rPrMatch ? rPrMatch[1].replace(/<w:b\s*\/?>|<w:b\s+[^>]*\/>/g, '') : '';
+
+  // Split text into normal and bold chunks: **bold**
+  const parts: { text: string; bold: boolean }[] = [];
+  const regex = /\*\*(.*?)\*\*/g;
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(cleanText)) !== null) {
+    if (match.index > lastIdx) {
+      parts.push({ text: cleanText.substring(lastIdx, match.index), bold: false });
+    }
+    parts.push({ text: match[1], bold: true });
+    lastIdx = regex.lastIndex;
+  }
+  if (lastIdx < cleanText.length) {
+    parts.push({ text: cleanText.substring(lastIdx), bold: false });
+  }
+
+  const runsXml = parts.map(p => {
+    const rPrContent = p.bold ? (baseRPr ? baseRPr + '<w:b/>' : '<w:b/>') : baseRPr;
+    const rPrTag = rPrContent ? `<w:rPr>${rPrContent}</w:rPr>` : '';
+    return `<w:r>${rPrTag}<w:t xml:space="preserve">${escapeXml(p.text)}</w:t></w:r>`;
+  }).join('');
+
+  // Extract <w:pPr>...</w:pPr> if present
+  const pPrMatch = pXml.match(/<w:pPr>[\s\S]*?<\/w:pPr>/);
+  const pPrXml = pPrMatch ? pPrMatch[0] : '';
+
+  // Get paragraph opening tag (with attributes if any)
+  const openTagMatch = pXml.match(/^<w:p[^>]*>/);
+  const openTag = openTagMatch ? openTagMatch[0] : '<w:p>';
+
+  return `${openTag}${pPrXml}${runsXml}</w:p>`;
 }
 
 /**
