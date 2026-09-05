@@ -1,13 +1,26 @@
 import React from 'react';
 import type { StructuredCV } from '../../../types/cvBuilder';
-import { Mail, Phone, MapPin, Globe, ExternalLink } from 'lucide-react';
+import { SECTION_ICONS } from '../SectionHeadingControl';
+import { Mail, Phone, MapPin, Globe, ExternalLink, FileText } from 'lucide-react';
 
 interface TemplateProps {
   cv: StructuredCV;
 }
 
 export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
-  const { theme, basics, summary, experience, education, skills, projects } = cv;
+  const { 
+    theme, 
+    basics, 
+    summary, 
+    experience, 
+    experienceMeta, 
+    education, 
+    educationMeta, 
+    skills, 
+    skillsMeta, 
+    projects 
+  } = cv;
+
   const accent = theme.accentColor || '#1e3a8a';
   const fontFamily = theme.fontFamily || 'Plus Jakarta Sans';
   
@@ -25,16 +38,66 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
   };
   const pagePadding = marginMap[theme.pageMargin || 'standard'];
 
-  // Helper to render markdown bolding in bullet text
+  // Rich text parser for Bold, Italic, Underline, and Links
   const renderRichText = (text: string) => {
     if (!text) return null;
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return parts.map((part, idx) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={idx} style={{ color: '#0f172a', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+
+    // Tokenize markdown constructs: **bold**, *italic*, <u>underline</u>, [link](url)
+    const tokens = text.split(/(\*\*.*?\*\*|\*.*?\*|<u>.*?<\/u>|\[.*?\]\(.*?\))/g);
+
+    return tokens.map((token, idx) => {
+      if (token.startsWith('**') && token.endsWith('**')) {
+        return <strong key={idx} style={{ color: '#0f172a', fontWeight: 700 }}>{token.slice(2, -2)}</strong>;
       }
-      return part;
+      if (token.startsWith('*') && token.endsWith('*') && !token.startsWith('**')) {
+        return <em key={idx} style={{ fontStyle: 'italic' }}>{token.slice(1, -1)}</em>;
+      }
+      if (token.startsWith('<u>') && token.endsWith('</u>')) {
+        return <u key={idx} style={{ textDecoration: 'underline' }}>{token.slice(3, -4)}</u>;
+      }
+      if (token.startsWith('[') && token.includes('](') && token.endsWith(')')) {
+        const match = token.match(/\[(.*?)\]\((.*?)\)/);
+        if (match) {
+          return (
+            <a key={idx} href={match[2]} target="_blank" rel="noreferrer" style={{ color: accent, textDecoration: 'underline' }}>
+              {match[1]}
+            </a>
+          );
+        }
+      }
+      return token;
     });
+  };
+
+  const renderSectionHeader = (title: string, iconKey: string = 'fileText', showIcon: boolean = true) => {
+    const IconComp = SECTION_ICONS[iconKey] || FileText;
+
+    return (
+      <h2 
+        style={{ 
+          fontSize: fs.h2, 
+          fontWeight: 700, 
+          color: '#0f172a', 
+          textTransform: 'uppercase', 
+          letterSpacing: '0.05em', 
+          borderBottom: `1.5px solid ${accent}`, 
+          paddingBottom: '0.35rem', 
+          marginBottom: '0.75rem', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '0.5rem' 
+        }}
+      >
+        {showIcon ? (
+          <span style={{ display: 'flex', alignItems: 'center', color: accent }}>
+            <IconComp size={15} />
+          </span>
+        ) : (
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }} />
+        )}
+        <span>{title}</span>
+      </h2>
+    );
   };
 
   // --------------------------------------------------------------------------
@@ -123,11 +186,8 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         {/* Executive Profile */}
         {summary.visible && summary.content && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1.5px solid ${accent}`, paddingBottom: '0.35rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }}></span>
-              {summary.title || 'Executive Profile'}
-            </h2>
-            <div style={{ color: '#334155', textAlign: 'justify', lineHeight: 1.6 }}>
+            {renderSectionHeader(summary.title || 'Executive Profile', summary.icon || 'fileText', summary.showIcon !== false)}
+            <div style={{ color: '#334155', textAlign: summary.alignment || 'justify', lineHeight: 1.6 }}>
               {renderRichText(summary.content)}
             </div>
           </div>
@@ -136,15 +196,11 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         {/* Professional Experience */}
         {experience.some(e => e.visible) && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1.5px solid ${accent}`, paddingBottom: '0.35rem', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }}></span>
-              Professional Experience
-            </h2>
+            {renderSectionHeader(experienceMeta?.title || 'Professional Experience', experienceMeta?.icon || 'briefcase', experienceMeta?.showIcon !== false)}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
               {experience.filter(e => e.visible).map((exp) => (
                 <div key={exp.id} style={{ position: 'relative', paddingLeft: '1.25rem', borderLeft: `2px solid ${accent}30` }}>
-                  {/* Timeline dot */}
                   <div style={{ position: 'absolute', left: '-5px', top: '4px', width: '8px', height: '8px', borderRadius: '50%', background: accent, border: '2px solid #ffffff' }} />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
@@ -161,7 +217,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
                   </div>
 
                   {exp.bullets && exp.bullets.length > 0 && (
-                    <ul style={{ margin: 0, paddingLeft: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    <ul style={{ margin: 0, paddingLeft: '1.15rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: exp.alignment || 'justify' }}>
                       {exp.bullets.map((bullet, bIdx) => (
                         <li key={bIdx} style={{ color: '#334155' }}>
                           {renderRichText(bullet)}
@@ -178,10 +234,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         {/* Education */}
         {education.some(e => e.visible) && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1.5px solid ${accent}`, paddingBottom: '0.35rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }}></span>
-              Education
-            </h2>
+            {renderSectionHeader(educationMeta?.title || 'Education', educationMeta?.icon || 'graduation', educationMeta?.showIcon !== false)}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {education.filter(e => e.visible).map((edu) => (
@@ -206,10 +259,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         {/* Technical Skills & Competencies */}
         {skills.some(s => s.visible && s.skills.length > 0) && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1.5px solid ${accent}`, paddingBottom: '0.35rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }}></span>
-              Technical Skills & Competencies
-            </h2>
+            {renderSectionHeader(skillsMeta?.title || 'Technical Skills & Competencies', skillsMeta?.icon || 'cpu', skillsMeta?.showIcon !== false)}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               {skills.filter(s => s.visible).map((cat) => (
@@ -241,13 +291,10 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
           </div>
         )}
 
-        {/* Projects & Certifications */}
+        {/* Projects */}
         {projects && projects.some(p => p.visible) && (
           <div style={{ marginBottom: '1.5rem' }}>
-            <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1.5px solid ${accent}`, paddingBottom: '0.35rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: accent }}></span>
-              Featured Projects
-            </h2>
+            {renderSectionHeader('Featured Projects', 'code', true)}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {projects.filter(p => p.visible).map((proj) => (
                 <div key={proj.id}>
@@ -293,7 +340,6 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         background: '#ffffff'
       }}
     >
-      {/* Centered Header */}
       <div style={{ textAlign: 'center', borderBottom: '1px solid #d1d5db', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
         <h1 style={{ margin: '0 0 0.25rem 0', fontSize: fs.name, fontWeight: 800, color: '#111827' }}>
           {basics.fullName}
@@ -311,21 +357,19 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         </div>
       </div>
 
-      {/* Summary */}
       {summary.visible && summary.content && (
         <div style={{ marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${accent}`, paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>
             {summary.title || 'Summary'}
           </h2>
-          <div style={{ color: '#374151', textAlign: 'justify' }}>{renderRichText(summary.content)}</div>
+          <div style={{ color: '#374151', textAlign: summary.alignment || 'justify' }}>{renderRichText(summary.content)}</div>
         </div>
       )}
 
-      {/* Experience */}
       {experience.some(e => e.visible) && (
         <div style={{ marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${accent}`, paddingBottom: '0.2rem', marginBottom: '0.65rem' }}>
-            Experience
+            {experienceMeta?.title || 'Experience'}
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
             {experience.filter(e => e.visible).map((exp) => (
@@ -338,7 +382,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
                   {exp.company} {exp.location && `, ${exp.location}`}
                 </div>
                 {exp.bullets && (
-                  <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  <ul style={{ margin: 0, paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: exp.alignment || 'justify' }}>
                     {exp.bullets.map((b, bIdx) => (
                       <li key={bIdx} style={{ color: '#374151' }}>{renderRichText(b)}</li>
                     ))}
@@ -350,11 +394,10 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         </div>
       )}
 
-      {/* Education & Skills */}
       {education.some(e => e.visible) && (
         <div style={{ marginBottom: '1.25rem' }}>
           <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${accent}`, paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>
-            Education
+            {educationMeta?.title || 'Education'}
           </h2>
           {education.filter(e => e.visible).map((edu) => (
             <div key={edu.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.35rem' }}>
@@ -370,7 +413,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
       {skills.some(s => s.visible) && (
         <div>
           <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${accent}`, paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>
-            Skills
+            {skillsMeta?.title || 'Skills'}
           </h2>
           {skills.filter(s => s.visible).map((cat) => (
             <div key={cat.id} style={{ marginBottom: '0.3rem' }}>

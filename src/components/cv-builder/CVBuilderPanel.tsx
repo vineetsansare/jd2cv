@@ -76,20 +76,42 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
     setCv(prev => ({ ...prev, basics, updatedAt: new Date().toISOString() }));
   };
 
-  const updateSummary = (summary: { title: string; content: string; visible: boolean }) => {
+  const updateSummary = (summary: {
+    title: string;
+    content: string;
+    visible: boolean;
+    icon?: string;
+    showIcon?: boolean;
+    alignment?: 'left' | 'center' | 'right' | 'justify';
+  }) => {
     setCv(prev => ({ ...prev, summary, updatedAt: new Date().toISOString() }));
   };
 
-  const updateExperience = (experience: WorkExperienceItem[]) => {
-    setCv(prev => ({ ...prev, experience, updatedAt: new Date().toISOString() }));
+  const updateExperience = (experience: WorkExperienceItem[], meta?: any) => {
+    setCv(prev => ({
+      ...prev,
+      experience,
+      experienceMeta: meta || prev.experienceMeta,
+      updatedAt: new Date().toISOString()
+    }));
   };
 
-  const updateEducation = (education: EducationItem[]) => {
-    setCv(prev => ({ ...prev, education, updatedAt: new Date().toISOString() }));
+  const updateEducation = (education: EducationItem[], meta?: any) => {
+    setCv(prev => ({
+      ...prev,
+      education,
+      educationMeta: meta || prev.educationMeta,
+      updatedAt: new Date().toISOString()
+    }));
   };
 
-  const updateSkills = (skills: SkillCategoryItem[]) => {
-    setCv(prev => ({ ...prev, skills, updatedAt: new Date().toISOString() }));
+  const updateSkills = (skills: SkillCategoryItem[], meta?: any) => {
+    setCv(prev => ({
+      ...prev,
+      skills,
+      skillsMeta: meta || prev.skillsMeta,
+      updatedAt: new Date().toISOString()
+    }));
   };
 
   const updateTheme = (theme: CVThemeSettings) => {
@@ -372,7 +394,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       <Briefcase size={16} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Professional Experience</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.experienceMeta?.title || 'Professional Experience'}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.experience.length} career positions</div>
                     </div>
                   </div>
@@ -381,7 +403,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
 
                 {expandedSection === 'experience' && (
                   <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <ExperienceSection experience={cv.experience} onChange={updateExperience} />
+                    <ExperienceSection meta={cv.experienceMeta} experience={cv.experience} onChange={updateExperience} />
                   </div>
                 )}
               </div>
@@ -405,7 +427,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       <GraduationCap size={16} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Education</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.educationMeta?.title || 'Education'}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.education.length} degrees / qualifications</div>
                     </div>
                   </div>
@@ -414,7 +436,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
 
                 {expandedSection === 'education' && (
                   <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <EducationSection education={cv.education} onChange={updateEducation} />
+                    <EducationSection meta={cv.educationMeta} education={cv.education} onChange={updateEducation} />
                   </div>
                 )}
               </div>
@@ -438,7 +460,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       <Cpu size={16} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Skills & Competencies</div>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.skillsMeta?.title || 'Skills & Competencies'}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.skills.length} categories</div>
                     </div>
                   </div>
@@ -447,7 +469,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
 
                 {expandedSection === 'skills' && (
                   <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <SkillsSection skills={cv.skills} onChange={updateSkills} />
+                    <SkillsSection meta={cv.skillsMeta} skills={cv.skills} onChange={updateSkills} />
                   </div>
                 )}
               </div>

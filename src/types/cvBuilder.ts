@@ -1,6 +1,7 @@
 export type LayoutDensity = 'compact' | 'standard' | 'spacious';
 export type PageFormat = 'a4' | 'letter';
 export type AvatarShape = 'circle' | 'rounded' | 'square';
+export type TextAlignment = 'left' | 'center' | 'right' | 'justify';
 export type TemplateId = 
   | 'modern-timeline' 
   | 'classic-ats' 
@@ -39,6 +40,7 @@ export interface WorkExperienceItem {
   isCurrent: boolean;
   bullets: string[];
   visible: boolean;
+  alignment?: TextAlignment;
 }
 
 export interface EducationItem {
@@ -50,6 +52,7 @@ export interface EducationItem {
   endDate: string;
   score?: string; // GPA or honors
   visible: boolean;
+  alignment?: TextAlignment;
 }
 
 export interface SkillCategoryItem {
@@ -70,6 +73,7 @@ export interface ProjectItem {
   bullets: string[];
   technologies: string[];
   visible: boolean;
+  alignment?: TextAlignment;
 }
 
 export interface CertificationItem {
@@ -81,28 +85,18 @@ export interface CertificationItem {
   visible: boolean;
 }
 
-export interface CustomSectionItem {
-  id: string;
-  title: string;
-  subtitle?: string;
-  date?: string;
-  location?: string;
-  bullets: string[];
-  visible: boolean;
-}
-
-export interface CustomSection {
-  id: string;
-  sectionTitle: string;
-  items: CustomSectionItem[];
-  visible: boolean;
+export interface SectionMeta {
+  title?: string;
+  icon?: string;
+  showIcon?: boolean;
+  alignment?: TextAlignment;
 }
 
 export interface CVThemeSettings {
   templateId: TemplateId;
   accentColor: string;
   fontFamily: 'Plus Jakarta Sans' | 'Inter' | 'Merriweather' | 'Roboto' | 'JetBrains Mono';
-  fontSize: LayoutDensity; // 'compact' | 'standard' | 'spacious'
+  fontSize: LayoutDensity;
   lineHeight: 'tight' | 'normal' | 'relaxed';
   pageMargin: 'compact' | 'standard' | 'spacious';
   showIcons: boolean;
@@ -117,12 +111,19 @@ export interface StructuredCV {
     title: string;
     content: string;
     visible: boolean;
+    icon?: string;
+    showIcon?: boolean;
+    alignment?: TextAlignment;
   };
+  experienceMeta?: SectionMeta;
   experience: WorkExperienceItem[];
+  educationMeta?: SectionMeta;
   education: EducationItem[];
+  skillsMeta?: SectionMeta;
   skills: SkillCategoryItem[];
+  projectsMeta?: SectionMeta;
   projects: ProjectItem[];
   certifications: CertificationItem[];
-  customSections: CustomSection[];
+  customSections: any[];
   theme: CVThemeSettings;
 }

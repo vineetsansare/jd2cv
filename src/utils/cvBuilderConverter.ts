@@ -116,14 +116,14 @@ export function structuredCVToMarkdown(cv: StructuredCV): string {
     cv.customSections.forEach(sec => {
       if (sec.visible && sec.items.length > 0) {
         parts.push(`## ${sec.sectionTitle}\n`);
-        sec.items.forEach(item => {
+        sec.items.forEach((item: any) => {
           if (item.visible) {
             parts.push(`### ${item.title}${item.subtitle ? ` — *${item.subtitle}*` : ''}`);
             if (item.date || item.location) {
               parts.push(`*${[item.date, item.location].filter(Boolean).join(' • ')}*`);
             }
             if (item.bullets && item.bullets.length > 0) {
-              item.bullets.forEach(b => {
+              item.bullets.forEach((b: any) => {
                 if (b.trim()) parts.push(`* ${b.trim()}`);
               });
             }
