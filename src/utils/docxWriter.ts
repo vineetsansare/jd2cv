@@ -7,7 +7,7 @@
  * paragraph properties (<w:pPr>), and structural elements intact.
  */
 
-import type { DocxParseResult, DocxParagraph } from './docxParser';
+import type { DocxParseResult } from './docxParser';
 import type { CVState } from './llm';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -75,33 +75,21 @@ function replaceTextInParagraphXml(pXml: string, newText: string): string {
 }
 
 /**
- * Replace text across multiple paragraphs in the DOCX body.
- * When the LLM returns more content items than original paragraphs in a section,
- * we clone the last paragraph's XML (preserving its style) for each extra item.
- * When it returns fewer, we keep the extra paragraphs but clear their text.
+ * Replace text across paragraphs in the DOCX XML using exact sequential paragraph indexing.
+ * This guarantees 100% precision with tables, multi-column layouts, and identical paragraph tags.
  */
-function applyReplacementsToBody(
-  bodyXml: string,
-  paragraphs: DocxParagraph[],
-  replacements: ContentReplacements
+export function applyDirectReplacementsToDocx(
+  documentXml: string,
+  replacements: Record<number, string>
 ): string {
-  let result = bodyXml;
-
-  // Process replacements in reverse order to preserve indices
-  const sortedIndices = Object.keys(replacements)
-    .map(Number)
-    .sort((a, b) => b - a);
-
-  for (const idx of sortedIndices) {
-    const para = paragraphs[idx];
-    if (!para) continue;
-
-    const newText = replacements[idx];
-    const newParagraphXml = replaceTextInParagraphXml(para.rawXml, newText);
-    result = result.replace(para.rawXml, newParagraphXml);
-  }
-
-  return result;
+  let pIndex = 0;
+  return documentXml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (pXml) => {
+    const currentIndex = pIndex++;
+    if (replacements[currentIndex] !== undefined && replacements[currentIndex] !== null) {
+      return replaceTextInParagraphXml(pXml, replacements[currentIndex]);
+    }
+    return pXml;
+  });
 }
 
 /** Escape special XML characters. */
@@ -211,33 +199,28 @@ export function buildReplacementsFromCVState(
  * Generate a new DOCX file with optimized content injected into the
  * original document's layout.
  *
+ * Supports both direct paragraph replacements Record<number, string>
+ * and structured CVState objects.
+ *
  * @param parseResult - The parsed DOCX (from docxParser.ts)
- * @param cvState - The LLM's structured output with optimized content
- * @returns ArrayBuffer of the new DOCX file
+ * @param replacementsOrCvState - Direct replacements map or CVState
+ * @returns Blob of the new DOCX file
  */
 export async function generateDocxWithPreservedLayout(
   parseResult: DocxParseResult,
-  cvState: CVState
+  replacementsOrCvState: Record<number, string> | CVState
 ): Promise<Blob> {
-  const replacements = buildReplacementsFromCVState(parseResult, cvState);
+  let replacements: Record<number, string>;
 
-  // Apply replacements to the document body
-  const bodyMatch = parseResult.documentXml.match(
-    /(<w:body>)([\s\S]*?)(<\/w:body>)/
-  );
-  if (!bodyMatch) {
-    throw new Error('Could not find <w:body> in document XML');
+  if (replacementsOrCvState && typeof replacementsOrCvState === 'object' && 'header' in replacementsOrCvState) {
+    replacements = buildReplacementsFromCVState(parseResult, replacementsOrCvState as CVState);
+  } else {
+    replacements = (replacementsOrCvState as Record<number, string>) || {};
   }
 
-  const newBodyContent = applyReplacementsToBody(
-    bodyMatch[2],
-    parseResult.allParagraphs,
+  const newDocumentXml = applyDirectReplacementsToDocx(
+    parseResult.documentXml,
     replacements
-  );
-
-  const newDocumentXml = parseResult.documentXml.replace(
-    bodyMatch[0],
-    `${bodyMatch[1]}${newBodyContent}${bodyMatch[3]}`
   );
 
   // Update the ZIP with the modified document.xml

@@ -7,7 +7,7 @@ import { ContactUsPanel } from './components/ContactUsPanel';
 import { AdminPortal } from './components/AdminPortal';
 import { LegalModal } from './components/LegalModal';
 import type { LegalDocType } from './components/LegalModal';
-import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus, generateStructuredCV, cvStateToMarkdown } from './utils/llm';
+import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus, generateStructuredCV, cvStateToMarkdown, optimizeDocxParagraphs } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength, LayoutMode } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
 import { parseDocx, extractDocxText } from './utils/docxParser';
@@ -781,39 +781,55 @@ function App() {
 
     try {
       if (layoutMode === 'preserve-layout') {
-        // ── Structured Pipeline (Layout Preservation) ──────────────────
-        const cvText = activeCVs.map(cv => cv.text).join('\n\n');
-        const structuredResult = await generateStructuredCV(
-          activeConfig, cvText, jobDescription, aspirations,
-          abortControllerRef.current.signal
-        );
-
-        // Convert structured state to Markdown for preview in existing UI
-        const markdown = cvStateToMarkdown(structuredResult.cvState);
-        const cvResult: CVGenerationResult = {
-          cvMarkdown: markdown,
-          atsScore: structuredResult.atsScore,
-          atsAnalysis: structuredResult.atsAnalysis,
-          humanFriendlyChanges: structuredResult.humanFriendlyChanges,
-          coverLetter: structuredResult.coverLetter,
-        };
-        setResult(cvResult);
-
-        // If user uploaded a DOCX, generate the layout-preserved DOCX file
+        // ── In-Place DOCX Exact Paragraph Mapping Pipeline ─────────────
         if (uploadedDocxBuffer) {
-          try {
-            const parsedDocx = await parseDocx(uploadedDocxBuffer);
-            const docxBlob = await generateDocxWithPreservedLayout(
-              parsedDocx, structuredResult.cvState
-            );
-            setPreservedDocxBlob(docxBlob);
-          } catch (docxErr) {
-            console.warn('DOCX layout preservation failed, preview still available:', docxErr);
-            setPreservedDocxBlob(null);
-          }
-        }
+          const parsedDocx = await parseDocx(uploadedDocxBuffer);
+          const indexedParagraphs = parsedDocx.allParagraphs
+            .map(p => ({ id: p.index, text: p.text.trim() }))
+            .filter(p => p.text.length > 0);
 
-        saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+          const docxOptResult = await optimizeDocxParagraphs(
+            activeConfig,
+            indexedParagraphs,
+            jobDescription,
+            aspirations,
+            abortControllerRef.current.signal
+          );
+
+          const docxBlob = await generateDocxWithPreservedLayout(
+            parsedDocx,
+            docxOptResult.replacements
+          );
+          setPreservedDocxBlob(docxBlob);
+
+          const cvResult: CVGenerationResult = {
+            cvMarkdown: docxOptResult.previewMarkdown,
+            atsScore: docxOptResult.atsScore,
+            atsAnalysis: docxOptResult.atsAnalysis,
+            humanFriendlyChanges: docxOptResult.humanFriendlyChanges,
+            coverLetter: docxOptResult.coverLetter,
+          };
+          setResult(cvResult);
+          saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+        } else {
+          // Fallback if no DOCX buffer available
+          const cvText = activeCVs.map(cv => cv.text).join('\n\n');
+          const structuredResult = await generateStructuredCV(
+            activeConfig, cvText, jobDescription, aspirations,
+            abortControllerRef.current.signal
+          );
+
+          const markdown = cvStateToMarkdown(structuredResult.cvState);
+          const cvResult: CVGenerationResult = {
+            cvMarkdown: markdown,
+            atsScore: structuredResult.atsScore,
+            atsAnalysis: structuredResult.atsAnalysis,
+            humanFriendlyChanges: structuredResult.humanFriendlyChanges,
+            coverLetter: structuredResult.coverLetter,
+          };
+          setResult(cvResult);
+          saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+        }
       } else {
         // ── Original Markdown Pipeline ─────────────────────────────────
         const cvResult = await generateCustomizedCV(activeConfig, activeCVs, jobDescription, aspirations, targetLength, abortControllerRef.current.signal);

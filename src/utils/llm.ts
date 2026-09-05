@@ -769,3 +769,151 @@ export function cvStateToMarkdown(state: CVState): string {
 
   return lines.join('\n');
 }
+
+export interface DocxOptimizationResult {
+  replacements: Record<number, string>;
+  atsScore: number;
+  atsAnalysis: ATSAnalysis;
+  humanFriendlyChanges: string[];
+  coverLetter: string;
+  previewMarkdown: string;
+}
+
+/**
+ * Exact in-place paragraph slot optimization for DOCX files.
+ *
+ * Receives the indexed non-empty paragraphs of the user's uploaded DOCX,
+ * instructs the LLM to optimize bullets and skills for the target JD while
+ * strictly preserving headings, contact info, dates, and non-work sections.
+ */
+export async function optimizeDocxParagraphs(
+  config: LLMConfig,
+  paragraphs: { id: number; text: string }[],
+  jobDescription: string,
+  aspirations: string,
+  signal?: AbortSignal
+): Promise<DocxOptimizationResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('You must be signed in to perform this action.');
+  }
+
+  const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
+  if (!apiKey) {
+    throw new Error('API_KEY_REQUIRED');
+  }
+
+  const prompt = `You are a World-Class Executive Resume Architect & ATS Optimization Specialist.
+You are tasked with optimizing an existing resume for a specific Job Description by replacing its exact paragraph contents IN-PLACE.
+
+=== TARGET JOB DESCRIPTION ===
+${jobDescription || 'Optimize for high-impact leadership, quantified achievements, and target industry relevance.'}
+
+=== USER ASPIRATIONS / CONTEXT ===
+${aspirations || 'None provided'}
+
+=== ORIGINAL DOCUMENT PARAGRAPHS (INDEXED) ===
+${JSON.stringify(paragraphs, null, 2)}
+
+=== YOUR INSTRUCTIONS ===
+1. You must return an optimized JSON object containing the exact replacements for each paragraph ID.
+2. CRITICAL PRESERVATION RULES:
+   - SECTION HEADINGS & LABELS (e.g., "+ Work experience", "+ Education", "+ Contact", "+ Skills", "+ Hobbies", "Languages", "References", etc.): MUST remain 100% UNCHANGED in the replacements map (return the exact same string).
+   - CONTACT INFO & DATES & INSTITUTIONS: Keep email, phone, location, links, company names, institution names, degree titles, and employment dates factually accurate to the original document.
+   - HOBBIES & INTERESTS: Keep factually intact; do not wipe them out.
+   - HEADLINE / TARGET TITLE: You may fine-tune the candidate's subtitle/title to perfectly match the target JD.
+3. CONTENT OPTIMIZATION RULES:
+   - EXPERIENCE BULLET POINTS: Heavily tailor bullet points to the target Job Description using the Google X-Y-Z formula ("Accomplished [X], measured by [Y], by doing [Z]").
+   - BOLD KEYWORDS & METRICS: Use markdown **bold** syntax (e.g. **$1.2M**, **React**, **reduced latency by 45%**) on impactful metrics and keywords so the DOCX generator bolds them automatically!
+   - SKILLS: Replace each individual skill paragraph with 1 concise, tailored skill/competency that directly targets the JD. Maintain the 1-to-1 paragraph mapping.
+4. RETURN FORMAT:
+Return a strictly valid JSON object matching this schema:
+{
+  "replacements": {
+    "0": "Alexander Martensson",
+    "1": "Target Title",
+    ...
+  },
+  "atsScore": 88,
+  "atsAnalysis": {
+    "matchedKeywords": ["keyword1", "keyword2"],
+    "missingKeywords": ["keyword3"],
+    "strengths": ["Clear metric-driven impact"],
+    "weaknesses": ["Minor gaps in specific tooling"],
+    "actionItems": ["Highlight target skills in interview"]
+  },
+  "humanFriendlyChanges": [
+    "Transformed clinical experience bullets with Google X-Y-Z metric formula",
+    "Aligned skill tags directly with target role requirements",
+    "Preserved original document layout, headings, and color styling"
+  ],
+  "coverLetter": "Compelling 3-paragraph cover letter tailored to the job description."
+}`;
+
+  let rawJson: any;
+
+  if (config.provider === 'openai') {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: config.model || 'gpt-4o',
+        messages: [
+          { role: 'system', content: 'You are an expert resume optimizer. Return ONLY valid JSON.' },
+          { role: 'user', content: prompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+      }),
+      signal,
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    rawJson = JSON.parse(data.choices[0].message.content);
+  } else {
+    const contents = [
+      { role: 'user', parts: [{ text: `${prompt}\n\nReturn ONLY a valid JSON object matching the requested schema.` }] }
+    ];
+    rawJson = await callGeminiWithFailover(apiKey, contents, signal);
+  }
+
+  const numReplacements: Record<number, string> = {};
+  if (rawJson && rawJson.replacements && typeof rawJson.replacements === 'object') {
+    for (const [k, v] of Object.entries(rawJson.replacements)) {
+      numReplacements[Number(k)] = String(v);
+    }
+  }
+
+  // Generate a clean preview markdown string from the replaced paragraphs
+  const previewLines: string[] = [];
+  paragraphs.forEach(p => {
+    const text = numReplacements[p.id] ?? p.text;
+    if (text && text.trim()) {
+      previewLines.push(text);
+    }
+  });
+  const previewMarkdown = previewLines.join('\n\n');
+
+  return {
+    replacements: numReplacements,
+    atsScore: typeof rawJson?.atsScore === 'number' ? rawJson.atsScore : 85,
+    atsAnalysis: rawJson?.atsAnalysis || {
+      matchedKeywords: [],
+      missingKeywords: [],
+      strengths: [],
+      weaknesses: [],
+      actionItems: [],
+    },
+    humanFriendlyChanges: rawJson?.humanFriendlyChanges || [],
+    coverLetter: rawJson?.coverLetter || '',
+    previewMarkdown,
+  };
+}

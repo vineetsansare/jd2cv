@@ -72,13 +72,15 @@ const SECTION_PATTERNS: { pattern: RegExp; id: string }[] = [
   { pattern: /^publications?$/i, id: 'publications' },
   { pattern: /^languages?$/i, id: 'languages' },
   { pattern: /^(personal\s+)?interests?(\s*&\s*hobbies)?$/i, id: 'interests' },
+  { pattern: /^hobbies(\s*&\s*interests)?$/i, id: 'hobbies' },
+  { pattern: /^contact(\s*info(rmation)?)?$/i, id: 'contact' },
   { pattern: /^references?$/i, id: 'references' },
   { pattern: /^(key\s+)?(achievements?|accomplishments?)$/i, id: 'achievements' },
   { pattern: /^objective$/i, id: 'objective' },
 ];
 
 function detectSectionId(text: string): string | null {
-  const clean = text.replace(/[^a-zA-Z\s&]/g, '').trim();
+  const clean = text.replace(/^[\s+*•\-:|]+/, '').replace(/[^a-zA-Z\s&]/g, '').trim();
   for (const { pattern, id } of SECTION_PATTERNS) {
     if (pattern.test(clean)) return id;
   }
