@@ -7,9 +7,11 @@ import { ContactUsPanel } from './components/ContactUsPanel';
 import { AdminPortal } from './components/AdminPortal';
 import { LegalModal } from './components/LegalModal';
 import type { LegalDocType } from './components/LegalModal';
-import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus } from './utils/llm';
-import type { LLMConfig, CVGenerationResult, TargetLength } from './utils/llm';
+import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus, generateStructuredCV, cvStateToMarkdown } from './utils/llm';
+import type { LLMConfig, CVGenerationResult, TargetLength, LayoutMode } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
+import { parseDocx, extractDocxText } from './utils/docxParser';
+import { generateDocxWithPreservedLayout } from './utils/docxWriter';
 import { 
   Sparkles, Sun, Moon, AlertCircle,
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
@@ -329,6 +331,11 @@ function App() {
   const [jobDescription, setJobDescription] = useState('');
   const [aspirations, setAspirations] = useState('');
   const [targetLength, setTargetLength] = useState<TargetLength>('2-page');
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('preserve-layout');
+  const [preservedDocxBlob, setPreservedDocxBlob] = useState<Blob | null>(null);
+  const [uploadedDocxBuffer, setUploadedDocxBuffer] = useState<ArrayBuffer | null>(null);
+  const [extractedPhotoUrl, setExtractedPhotoUrl] = useState<string | undefined>(undefined);
+  const [detectedLayoutTemplate, setDetectedLayoutTemplate] = useState<'modern-timeline' | 'classic-ats' | 'split-sidebar-right'>('modern-timeline');
   
   // Theme & Layout States
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -570,13 +577,30 @@ function App() {
       const file = files[i];
       try {
         let text = '';
-        if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+        const isDocx = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
+
+        if (isDocx) {
           const arrayBuffer = await file.arrayBuffer();
-          text = await parsePdf(arrayBuffer);
+          text = await extractDocxText(arrayBuffer);
+          // Store the raw DOCX buffer for layout preservation pipeline
+          setUploadedDocxBuffer(arrayBuffer.slice(0));
+        } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+          const arrayBuffer = await file.arrayBuffer();
+          const parsedPdf = await parsePdf(arrayBuffer);
+          text = parsedPdf.text;
+          if (parsedPdf.photoUrl) {
+            setExtractedPhotoUrl(parsedPdf.photoUrl);
+          }
+          if (parsedPdf.detectedTemplate) {
+            setDetectedLayoutTemplate(parsedPdf.detectedTemplate);
+            setLayoutMode('preserve-layout');
+          }
+          setUploadedDocxBuffer(null);
         } else if (file.type === 'text/plain' || file.name.endsWith('.txt') || file.name.endsWith('.md')) {
           text = await file.text();
+          setUploadedDocxBuffer(null);
         } else {
-          throw new Error('Unsupported file type. Please upload PDF, TXT, or Markdown files.');
+          throw new Error('Unsupported file type. Please upload PDF, DOCX, TXT, or Markdown files.');
         }
 
         if (!text.trim()) {
@@ -692,11 +716,47 @@ function App() {
       : config;
 
     try {
-      const cvResult = await generateCustomizedCV(activeConfig, activeCVs, jobDescription, aspirations, targetLength, abortControllerRef.current.signal);
-      setResult(cvResult);
-      
-      // Save generation to history & increment generation_count in Supabase
-      saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+      if (layoutMode === 'preserve-layout') {
+        // ── Structured Pipeline (Layout Preservation) ──────────────────
+        const cvText = activeCVs.map(cv => cv.text).join('\n\n');
+        const structuredResult = await generateStructuredCV(
+          activeConfig, cvText, jobDescription, aspirations,
+          abortControllerRef.current.signal
+        );
+
+        // Convert structured state to Markdown for preview in existing UI
+        const markdown = cvStateToMarkdown(structuredResult.cvState);
+        const cvResult: CVGenerationResult = {
+          cvMarkdown: markdown,
+          atsScore: structuredResult.atsScore,
+          atsAnalysis: structuredResult.atsAnalysis,
+          humanFriendlyChanges: structuredResult.humanFriendlyChanges,
+          coverLetter: structuredResult.coverLetter,
+        };
+        setResult(cvResult);
+
+        // If user uploaded a DOCX, generate the layout-preserved DOCX file
+        if (uploadedDocxBuffer) {
+          try {
+            const parsedDocx = await parseDocx(uploadedDocxBuffer);
+            const docxBlob = await generateDocxWithPreservedLayout(
+              parsedDocx, structuredResult.cvState
+            );
+            setPreservedDocxBlob(docxBlob);
+          } catch (docxErr) {
+            console.warn('DOCX layout preservation failed, preview still available:', docxErr);
+            setPreservedDocxBlob(null);
+          }
+        }
+
+        saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+      } else {
+        // ── Original Markdown Pipeline ─────────────────────────────────
+        const cvResult = await generateCustomizedCV(activeConfig, activeCVs, jobDescription, aspirations, targetLength, abortControllerRef.current.signal);
+        setResult(cvResult);
+        setPreservedDocxBlob(null);
+        saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
+      }
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('CV generation cancelled by user.');
@@ -1477,7 +1537,7 @@ function App() {
           type="file"
           ref={fileInputRef}
           onChange={handleFileUpload}
-          accept=".pdf,.txt,.md"
+          accept=".pdf,.docx,.txt,.md"
           style={{ display: 'none' }}
         />
 
@@ -1682,6 +1742,9 @@ function App() {
             onAutoFix={handleAutoFix}
             userProfile={userProfile}
             jobDescription={jobDescription}
+            preservedDocxBlob={preservedDocxBlob}
+            initialTemplate={layoutMode === 'preserve-layout' ? detectedLayoutTemplate : 'classic-ats'}
+            extractedPhotoUrl={extractedPhotoUrl}
           />
         </div>
       );
@@ -1829,7 +1892,7 @@ function App() {
                   <label className="saas-upload-dropzone" style={{ padding: '2.5rem 1.5rem', minHeight: '200px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--card-border)', borderRadius: '16px', background: 'var(--bg-secondary)', transition: 'all 0.2s' }}>
                     <input 
                       type="file" 
-                      accept=".pdf,.txt,.md" 
+                      accept=".pdf,.docx,.txt,.md" 
                       onChange={handleFileUpload} 
                       style={{ display: 'none' }} 
                     />
@@ -1881,7 +1944,7 @@ function App() {
                     <label className="btn btn-secondary" style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.65rem 1rem', fontSize: '0.82rem' }}>
                       <input 
                         type="file" 
-                        accept=".pdf,.txt,.md" 
+                        accept=".pdf,.docx,.txt,.md" 
                         onChange={handleFileUpload} 
                         style={{ display: 'none' }} 
                       />
@@ -1971,6 +2034,37 @@ function App() {
                     <option value="2-page">2-Page standard document</option>
                     <option value="3-page">3-Page comprehensive CV profile</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Layout Mode Toggle */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 1rem',
+                background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
+                border: `1px solid ${layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--card-border)'}`,
+                borderRadius: '10px',
+                transition: 'all 0.2s',
+                marginTop: '0.25rem'
+              }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={layoutMode === 'preserve-layout'}
+                      onChange={(e) => setLayoutMode(e.target.checked ? 'preserve-layout' : 'our-template')}
+                      style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+                    />
+                    <FileText size={15} style={{ color: layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
+                    <span>Preserve My CV Layout</span>
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', paddingLeft: '2.6rem' }}>
+                    {layoutMode === 'preserve-layout'
+                      ? '✓ Preserves your original layout (left-rail timeline, boxed skill cards, and photo).'
+                      : 'Uses standard ATS-optimized template. Check to preserve your uploaded CV\'s original format.'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -2256,6 +2350,9 @@ function App() {
                 userProfile={userProfile}
                 jobDescription={jobDescription}
                 targetLength={targetLength}
+                preservedDocxBlob={preservedDocxBlob}
+                initialTemplate={layoutMode === 'preserve-layout' ? detectedLayoutTemplate : 'classic-ats'}
+                extractedPhotoUrl={extractedPhotoUrl}
               />
             )}
           </div>

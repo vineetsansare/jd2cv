@@ -25,10 +25,76 @@ export interface CVGenerationResult {
 
 export type TargetLength = '1-page' | '2-page' | 'comprehensive';
 
+/** Controls whether the CV generation preserves the user's uploaded layout or uses our template. */
+export type LayoutMode = 'our-template' | 'preserve-layout';
+
+// ─── Structured CV State (for Layout Preservation Pipeline) ──────────────────
+
+/** A single experience entry in the structured CV. */
+export interface CVStateExperience {
+  id: string;
+  role: string;
+  company: string;
+  dates: string;
+  location: string;
+  bullets: string[];
+}
+
+/** A skill category in the structured CV. */
+export interface CVStateSkillCategory {
+  category: string;
+  items: string[];
+}
+
+/** An education entry in the structured CV. */
+export interface CVStateEducation {
+  degree: string;
+  school: string;
+  dates: string;
+  location?: string;
+}
+
+/** An award entry in the structured CV. */
+export interface CVStateAward {
+  title: string;
+  year: string;
+  organization?: string;
+}
+
+/** Complete structured state of a CV — used for layout preservation pipeline. */
+export interface CVState {
+  header: {
+    name: string;
+    title: string;
+  };
+  contact?: {
+    email?: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+  };
+  summary: string;
+  experience: CVStateExperience[];
+  skills: CVStateSkillCategory[];
+  education: CVStateEducation[];
+  awards?: CVStateAward[];
+  /** Catch-all for any other sections detected in the user's CV. */
+  additionalSections?: { id: string; title: string; content: string[] }[];
+}
+
+/** Result from the structured CV generation pipeline. */
+export interface StructuredCVResult {
+  cvState: CVState;
+  atsScore: number;
+  atsAnalysis: ATSAnalysis;
+  humanFriendlyChanges: string[];
+  coverLetter: string;
+}
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
 const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42S19vaTEwamZzU0xEYVlmSlNmcERYSFNRendDSzc5a056aFNfem43VTVvcGc=');
 
-async function callGeminiWithFailover(apiKey: string, contents: any[]): Promise<any> {
+async function callGeminiWithFailover(apiKey: string, contents: any[], signal?: AbortSignal): Promise<any> {
   let lastError: any = null;
 
   for (const model of CANDIDATE_GEMINI_MODELS) {
@@ -42,7 +108,8 @@ async function callGeminiWithFailover(apiKey: string, contents: any[]): Promise<
           generationConfig: {
             responseMimeType: 'application/json'
           }
-        })
+        }),
+        signal
       });
 
       if (resp.ok) {
@@ -225,7 +292,7 @@ Two concise, high-impact sentences highlighting core leadership and domain exper
 For every job role use EXACT format:
 ### Job Title | MM/YYYY – Present (or MM/YYYY – MM/YYYY)
 *Company Name | City, Country*
-- Bullet points starting with strong action verbs using Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]") with **Key Tech / Skill** bolded.
+- Bullet points starting with strong action verbs using Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]"). In EVERY bullet point, strategically bold 2-4 critical phrases using **bold** (e.g., quantifiable metrics like **30% surge**, **25,000+ accounts**, and tech like **MVVM**, **CI/CD**, **WebdriverIO**).
 
 ## TECHNICAL SKILLS & COMPETENCIES
 - **Mobile & Architecture**: React Native, Android, iOS, Swift, Kotlin...
@@ -462,4 +529,243 @@ export async function getSavedAPIKeysStatus(): Promise<{ gemini: boolean; openai
   }
 
   return response.json();
+}
+
+// ─── Structured CV Generation (Layout Preservation Pipeline) ─────────────────
+
+const STRUCTURED_CV_SCHEMA_DESCRIPTION = `{
+  "header": { "name": "Full name", "title": "Target job title" },
+  "contact": { "email": "...", "phone": "...", "location": "...", "linkedin": "..." },
+  "summary": "2-3 sentence executive summary",
+  "experience": [
+    {
+      "id": "exp_0",
+      "role": "Job Title",
+      "company": "Company Name",
+      "dates": "MM/YYYY – MM/YYYY",
+      "location": "City, Country",
+      "bullets": ["Achievement 1", "Achievement 2", "Achievement 3"]
+    }
+  ],
+  "skills": [
+    { "category": "Category Name", "items": ["Skill1", "Skill2"] }
+  ],
+  "education": [
+    { "degree": "Degree Name", "school": "University", "dates": "YYYY – YYYY", "location": "City" }
+  ],
+  "awards": [
+    { "title": "Award Name", "year": "YYYY", "organization": "Org Name" }
+  ],
+  "additionalSections": [
+    { "id": "section_id", "title": "Section Title", "content": ["Paragraph 1", "Paragraph 2"] }
+  ],
+  "atsScore": 85,
+  "atsAnalysis": {
+    "matchedKeywords": [], "missingKeywords": [],
+    "strengths": [], "weaknesses": [], "actionItems": []
+  },
+  "humanFriendlyChanges": ["Change 1", "Change 2"],
+  "coverLetter": "Short 3-paragraph cover letter"
+}`;
+
+/**
+ * Two-pass structured CV generation for the layout preservation pipeline.
+ *
+ * Pass 1: Digitize the uploaded CV text into a structured CVState JSON.
+ * Pass 2: Optimize the CVState content for the target Job Description.
+ *
+ * This function replaces `generateCustomizedCV` when the user chooses
+ * "Preserve my CV layout".
+ */
+export async function generateStructuredCV(
+  config: LLMConfig,
+  cvText: string,
+  jobDescription: string,
+  aspirations: string,
+  signal?: AbortSignal
+): Promise<StructuredCVResult> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('You must be signed in to perform this action.');
+  }
+
+  const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
+  if (!apiKey) {
+    throw new Error('API_KEY_REQUIRED');
+  }
+
+  // ── Unified Structured Extraction & Optimization (High-Speed) ─────────
+
+  const unifiedPrompt = `You are a World-Class Executive Resume Architect & ATS Optimization Specialist.
+
+Given this BASE RESUME and TARGET JOB DESCRIPTION, extract the candidate's career history and optimize ALL bullets, executive summary, and skills to align directly with the JD while maintaining 100% factual accuracy.
+
+BASE RESUME TEXT:
+${cvText}
+
+TARGET JOB DESCRIPTION:
+${jobDescription}
+
+${aspirations ? `USER ASPIRATIONS: ${aspirations}\n` : ''}
+OUTPUT SPECIFICATION:
+Return valid JSON matching this EXACT schema:
+${STRUCTURED_CV_SCHEMA_DESCRIPTION}
+
+RULES:
+1. FACTUAL TRUTH: Retain exact real company names, job titles, education, and dates from the base resume. Never invent companies, roles, or degrees.
+2. REFRAME BULLETS WITH STRATEGIC KEYWORD BOLDING: Rewrite experience bullets using the Google X-Y-Z formula ("Accomplished [X] as measured by [Y], by doing [Z]") to emphasize capabilities matching the JD.
+CRITICAL BOLDING RULE: In EVERY single bullet point, you MUST bold 2-4 key phrases using markdown **bold**:
+- Bold quantifiable metrics, numbers, percentages & scale (e.g. **30% engagement surge**, **25,000+ accounts**, **AED 200M+ in trading turnover**, **40% reduction**, **90%+ code coverage**, **25+ technical hires**, **40–50% faster**, **200+ engineers**).
+- Bold key architectures, technologies & patterns (e.g. **MVVM architectures**, **WebdriverIO**, **Generative AI tools**, **Swift frameworks**, **Fastlane and Jenkins**, **CI/CD pipelines**, **OAuth, GDPR, and PCI-DSS**, **security-by-design**).
+- Bold high-impact leadership milestones and awards (e.g. **greenfield delivery**, **ENBD GEM Award (2023)**).
+Every bullet point must have rich, prominent bolding just like a top-tier executive resume.
+3. SKILLS DOMAINS: Group skills into clear categories matching the candidate's expertise and JD priorities (e.g. Leadership & Management, Architecture & Design, DevOps & Automation, Programming & Tech Stack, AI Tools).
+4. EXECUTIVE SUMMARY: Write a compelling 2-3 sentence executive profile addressing the target role.
+5. ATS SCORE & ANALYSIS: Calculate a realistic match score (0-100) and populate matched/missing keywords, strengths, weaknesses, action items.
+6. COVER LETTER: Include a concise, professional 3-paragraph cover letter under 150 words.`;
+
+  let optimizedResult: any;
+
+  if (config.provider === 'openai' && config.apiKey) {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`
+      },
+      body: JSON.stringify({
+        model: config.model || 'gpt-4o-mini',
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'user', content: unifiedPrompt }
+        ]
+      }),
+      signal
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `OpenAI API Error: ${resp.statusText}`);
+    }
+    const data = await resp.json();
+    optimizedResult = JSON.parse(data.choices[0].message.content);
+  } else {
+    const contents = [
+      { role: 'user', parts: [{ text: `${unifiedPrompt}\n\nReturn valid JSON matching schema.` }] }
+    ];
+    optimizedResult = await callGeminiWithFailover(apiKey, contents, signal);
+  }
+
+  // ── Normalize and return ───────────────────────────────────────────────
+
+  const resultCvState: CVState = {
+    header: optimizedResult.header || { name: '', title: '' },
+    contact: optimizedResult.contact,
+    summary: optimizedResult.summary || '',
+    experience: optimizedResult.experience || [],
+    skills: optimizedResult.skills || [],
+    education: optimizedResult.education || [],
+    awards: optimizedResult.awards,
+    additionalSections: optimizedResult.additionalSections,
+  };
+
+  return {
+    cvState: resultCvState,
+    atsScore: typeof optimizedResult.atsScore === 'number' ? optimizedResult.atsScore : 75,
+    atsAnalysis: optimizedResult.atsAnalysis || {
+      matchedKeywords: [],
+      missingKeywords: [],
+      strengths: [],
+      weaknesses: [],
+      actionItems: [],
+    },
+    humanFriendlyChanges: optimizedResult.humanFriendlyChanges || [],
+    coverLetter: optimizedResult.coverLetter || '',
+  };
+}
+
+/**
+ * Convert a CVState back to Markdown format (for preview in the existing UI).
+ * This allows the structured pipeline to integrate with the current
+ * Markdown-based preview and print flow.
+ */
+export function cvStateToMarkdown(state: CVState): string {
+  const lines: string[] = [];
+
+  // Header
+  lines.push(`# ${state.header.name}`);
+  lines.push(`*${state.header.title}*`);
+
+  // Contact row
+  if (state.contact) {
+    const contactParts: string[] = [];
+    if (state.contact.email) contactParts.push(state.contact.email);
+    if (state.contact.phone) contactParts.push(state.contact.phone);
+    if (state.contact.location) contactParts.push(state.contact.location);
+    if (state.contact.linkedin) contactParts.push(state.contact.linkedin);
+    if (contactParts.length > 0) {
+      lines.push(contactParts.join(' | '));
+    }
+  }
+  lines.push('');
+
+  // Summary
+  if (state.summary) {
+    lines.push('## Executive Profile');
+    lines.push(state.summary);
+    lines.push('');
+  }
+
+  // Experience
+  if (state.experience.length > 0) {
+    lines.push('## Professional Experience');
+    for (const exp of state.experience) {
+      lines.push(`### ${exp.role} | ${exp.dates}`);
+      lines.push(`*${exp.company} | ${exp.location}*`);
+      for (const bullet of exp.bullets) {
+        lines.push(`- ${bullet}`);
+      }
+      lines.push('');
+    }
+  }
+
+  // Skills
+  if (state.skills.length > 0) {
+    lines.push('## Technical Skills & Competencies');
+    for (const skill of state.skills) {
+      lines.push(`- **${skill.category}** — ${skill.items.join(', ')}`);
+    }
+    lines.push('');
+  }
+
+  // Education
+  if (state.education.length > 0) {
+    lines.push('## Education');
+    for (const edu of state.education) {
+      lines.push(`### ${edu.degree} | ${edu.dates}`);
+      lines.push(`*${edu.school}${edu.location ? ` | ${edu.location}` : ''}*`);
+      lines.push('');
+    }
+  }
+
+  // Awards
+  if (state.awards && state.awards.length > 0) {
+    lines.push('## Awards & Recognition');
+    for (const award of state.awards) {
+      lines.push(`### ${award.title} | ${award.year}${award.organization ? ` | ${award.organization}` : ''}`);
+    }
+    lines.push('');
+  }
+
+  // Additional sections (e.g. Core Impact & Career Highlights)
+  if (state.additionalSections) {
+    for (const section of state.additionalSections) {
+      lines.push(`## ${section.title}`);
+      for (const content of section.content) {
+        lines.push(content.startsWith('-') || content.startsWith('•') ? content : `- ${content}`);
+      }
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n');
 }

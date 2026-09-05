@@ -1,5 +1,7 @@
 import React from 'react';
-import { Palette, User, Check, Layers } from 'lucide-react';
+import { Palette, User, Check, Layers, Sparkles, ExternalLink } from 'lucide-react';
+
+export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sidebar-right';
 
 export interface CVThemeConfig {
   accentColor: string;
@@ -7,6 +9,8 @@ export interface CVThemeConfig {
   showPhoto: boolean;
   photoUrl?: string;
   layoutDensity?: 'compact' | 'standard';
+  template?: CVLayoutTemplate;
+  showLinkIcons?: boolean;
 }
 
 export const ACCENT_THEMES = [
@@ -151,6 +155,88 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
           }}
         >
           Standard Spacing
+        </button>
+      </div>
+
+      {/* Middle-Right: Template Layout Switcher (Preserved Layout vs Classic ATS) */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'var(--bg-secondary)', padding: '0.2rem 0.35rem', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+        <Sparkles size={14} style={{ color: 'var(--accent-primary)', marginLeft: '0.35rem' }} />
+        <button
+          type="button"
+          onClick={() => onChangeThemeConfig({ ...themeConfig, template: 'split-sidebar-right' })}
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            background: themeConfig.template === 'split-sidebar-right' ? 'var(--accent-primary)' : 'transparent',
+            color: themeConfig.template === 'split-sidebar-right' ? '#ffffff' : 'var(--text-secondary)'
+          }}
+          title="Split Layout: Dark navy right sidebar, pill-shaped skill badges & wide tracked headers"
+        >
+          🌟 Dark Sidebar
+        </button>
+        <button
+          type="button"
+          onClick={() => onChangeThemeConfig({ ...themeConfig, template: 'modern-timeline' })}
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            background: themeConfig.template === 'modern-timeline' ? 'var(--accent-primary)' : 'transparent',
+            color: themeConfig.template === 'modern-timeline' ? '#ffffff' : 'var(--text-secondary)'
+          }}
+          title="Left-Rail Timeline: Boxed skill cards, left dates & zigzag dividers"
+        >
+          🌟 Modern Timeline
+        </button>
+        <button
+          type="button"
+          onClick={() => onChangeThemeConfig({ ...themeConfig, template: 'classic-ats' })}
+          style={{
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.25rem 0.6rem',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            background: themeConfig.template === 'classic-ats' ? 'var(--accent-primary)' : 'transparent',
+            color: themeConfig.template === 'classic-ats' ? '#ffffff' : 'var(--text-secondary)'
+          }}
+          title="Classic ATS format with centered double-line section headers"
+        >
+          📄 Classic ATS
+        </button>
+      </div>
+
+      {/* Link Icons Toggle (Allows removing link icons from final output) */}
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => onChangeThemeConfig({ ...themeConfig, showLinkIcons: themeConfig.showLinkIcons === false ? true : false })}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            padding: '0.35rem 0.65rem',
+            borderRadius: '8px',
+            border: `1px solid ${themeConfig.showLinkIcons === false ? 'var(--card-border)' : 'var(--accent-primary)'}`,
+            background: themeConfig.showLinkIcons === false ? 'var(--bg-secondary)' : 'rgba(37, 99, 235, 0.12)',
+            color: themeConfig.showLinkIcons === false ? 'var(--text-muted)' : 'var(--accent-primary)',
+            cursor: 'pointer',
+            transition: 'all 0.15s'
+          }}
+          title={themeConfig.showLinkIcons === false ? 'Click to show company link icons' : 'Click to remove company link icons (↗) from the output'}
+        >
+          <ExternalLink size={13} />
+          <span>{themeConfig.showLinkIcons === false ? 'Link Icons: Off' : 'Link Icons: On'}</span>
         </button>
       </div>
 

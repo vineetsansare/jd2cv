@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Eye, FileEdit, BarChart3, Sparkles, Printer, Copy, Check, Mail } from 'lucide-react';
+import { Eye, FileEdit, BarChart3, Sparkles, Printer, Copy, Check, Mail, Download } from 'lucide-react';
 import type { CVGenerationResult, TargetLength } from '../utils/llm';
 import { parseMarkdownToHtml, stripMarkdown } from '../utils/mdParser';
 import { LiquidCard } from './ui/LiquidCard';
 import { CVThemeSelector } from './CVThemeSelector';
 import type { CVThemeConfig } from './CVThemeSelector';
+import { downloadBlob } from '../utils/docxWriter';
 
 import { printCvDocument } from '../utils/printHelper';
 
@@ -15,6 +16,9 @@ interface CVDisplayProps {
   userProfile?: any;
   jobDescription?: string;
   targetLength?: TargetLength;
+  preservedDocxBlob?: Blob | null;
+  initialTemplate?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right';
+  extractedPhotoUrl?: string;
 }
 
 type TabType = 'preview' | 'editor' | 'ats' | 'tweaks' | 'cover';
@@ -25,20 +29,34 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   onAutoFix,
   userProfile,
   jobDescription,
-  targetLength
+  targetLength,
+  preservedDocxBlob,
+  initialTemplate = 'modern-timeline',
+  extractedPhotoUrl
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('preview');
   const [copied, setCopied] = useState<'markdown' | 'text' | 'cover' | null>(null);
+  const candidatePhoto = extractedPhotoUrl || userProfile?.avatar_url || '';
   const [themeConfig, setThemeConfig] = useState<CVThemeConfig>({
-    accentColor: '#475569',
-    themeName: 'Slate Charcoal',
-    showPhoto: false,
-    photoUrl: userProfile?.avatar_url || '',
-    layoutDensity: targetLength === '1-page' ? 'compact' : 'standard'
+    accentColor: initialTemplate === 'split-sidebar-right' ? '#1c202d' : initialTemplate === 'modern-timeline' ? '#2563eb' : '#475569',
+    themeName: initialTemplate === 'split-sidebar-right' ? 'Slate Charcoal' : initialTemplate === 'modern-timeline' ? 'Sapphire Blue' : 'Slate Charcoal',
+    showPhoto: !!candidatePhoto,
+    photoUrl: candidatePhoto,
+    layoutDensity: targetLength === '1-page' ? 'compact' : 'standard',
+    template: initialTemplate,
+    showLinkIcons: true
   });
 
   const [mobileScale, setMobileScale] = useState<number>(1);
+  const [isLiveEditing, setIsLiveEditing] = useState<boolean>(false);
+  const [editedHtml, setEditedHtml] = useState<string | null>(null);
   const sheetContainerRef = React.useRef<HTMLDivElement>(null);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setEditedHtml(null);
+    setIsLiveEditing(false);
+  }, [result.cvMarkdown]);
 
   React.useEffect(() => {
     const updateScale = () => {
@@ -75,6 +93,12 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     navigator.clipboard.writeText(result.coverLetter || '');
     setCopied('cover');
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleDownloadDocx = () => {
+    if (!preservedDocxBlob) return;
+    const firstName = userProfile?.full_name?.split(' ')[0] || 'Resume';
+    downloadBlob(preservedDocxBlob, `${firstName}_CV_Optimized.docx`);
   };
 
   const handlePrint = () => {
@@ -131,8 +155,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     
     const filename = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
 
-    // Execute isolated iframe print engine
-    printCvDocument(result.cvMarkdown, themeConfig, filename);
+    // Execute isolated iframe print engine (preserves any visual direct edits)
+    printCvDocument(result.cvMarkdown, themeConfig, filename, editedHtml || undefined);
   };
 
   // Helper to calculate circular stroke values
@@ -242,6 +266,28 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
 
               <button
                 type="button"
+                className={`btn ${isLiveEditing ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  if (isLiveEditing && sheetRef.current) {
+                    setEditedHtml(sheetRef.current.innerHTML);
+                  }
+                  setIsLiveEditing(!isLiveEditing);
+                }}
+                style={{
+                  padding: '0.4rem 0.8rem',
+                  fontSize: '0.85rem',
+                  width: 'auto',
+                  background: isLiveEditing ? 'linear-gradient(135deg, #10b981, #059669)' : undefined,
+                  borderColor: isLiveEditing ? '#10b981' : undefined
+                }}
+                title="Directly edit text, bullets, or delete link icons right on the page"
+              >
+                {isLiveEditing ? <Check size={14} /> : <FileEdit size={14} />}
+                <span>{isLiveEditing ? 'Done Editing' : '✏️ Direct Edit'}</span>
+              </button>
+
+              <button
+                type="button"
                 className="btn btn-primary"
                 onClick={handlePrint}
                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'auto' }}
@@ -250,6 +296,19 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                 <Printer size={14} />
                 <span>Print / PDF</span>
               </button>
+
+              {preservedDocxBlob && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleDownloadDocx}
+                  style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'auto', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}
+                  title="Download DOCX with your original layout preserved"
+                >
+                  <Download size={14} />
+                  <span>Download DOCX</span>
+                </button>
+              )}
             </>
           )}
         </div>
@@ -263,6 +322,41 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               onChangeThemeConfig={setThemeConfig} 
               userAvatarUrl={userProfile?.avatar_url} 
             />
+
+            {isLiveEditing && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.65rem 1.1rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(37, 99, 235, 0.1))',
+                border: '1px solid #10b981',
+                borderRadius: '10px',
+                marginBottom: '1rem',
+                fontSize: '0.85rem',
+                color: 'var(--text-primary)',
+                boxShadow: '0 0 16px rgba(16, 185, 129, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileEdit size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span><strong>Visual Direct Edit Active:</strong> Click any text, bullet point, or link icon (↗) to edit or delete directly on the page. Your visual edits are preserved in your PDF!</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', background: '#10b981', borderColor: '#10b981' }}
+                  onClick={() => {
+                    if (sheetRef.current) {
+                      setEditedHtml(sheetRef.current.innerHTML);
+                    }
+                    setIsLiveEditing(false);
+                  }}
+                >
+                  <Check size={13} /> Save Visual Edit
+                </button>
+              </div>
+            )}
+
             <div className="print-pane" ref={sheetContainerRef} style={{ background: 'var(--bg-primary)', padding: mobileScale < 1 ? '1rem 0' : '2rem 1rem', borderRadius: 'var(--border-radius-md)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowX: 'auto', border: '1px solid var(--card-border)' }}>
               <div 
                 className="mobile-sheet-scaler"
@@ -275,8 +369,14 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                 }}
               >
                 <div 
-                  className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''}`} 
-                  dangerouslySetInnerHTML={{ __html: parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
+                  ref={sheetRef}
+                  className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''} ${isLiveEditing ? 'live-editing-active' : ''}`} 
+                  contentEditable={isLiveEditing}
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => {
+                    setEditedHtml(e.currentTarget.innerHTML);
+                  }}
+                  dangerouslySetInnerHTML={{ __html: editedHtml || parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
                 />
               </div>
             </div>

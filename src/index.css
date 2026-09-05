@@ -2310,3 +2310,545 @@ body.is-printing-cv canvas {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Modern Timeline Layout Preview Styles (Vineet / Executive Style)
+   ========================================================================== */
+.resume-preview-sheet .modern-timeline-wrapper {
+  color: #111827;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.35;
+}
+
+.resume-preview-sheet .modern-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.35rem;
+}
+
+.resume-preview-sheet .modern-avatar-col {
+  flex-shrink: 0;
+}
+
+.resume-preview-sheet .modern-avatar-headshot {
+  width: 100px;
+  height: 115px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.resume-preview-sheet .modern-header-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.resume-preview-sheet .modern-header-col h1 {
+  font-size: 22pt !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  color: #111827 !important;
+  margin: 0 0 0.15rem 0 !important;
+  letter-spacing: -0.02em !important;
+}
+
+.resume-preview-sheet .modern-subtitle {
+  font-size: 11.5pt;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  margin: 0 0 0.5rem 0;
+}
+
+.resume-preview-sheet .modern-contact-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  font-size: 9pt;
+  color: #374151;
+}
+
+.resume-preview-sheet .modern-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.resume-preview-sheet .modern-contact-item a {
+  color: #374151;
+  text-decoration: none;
+}
+
+.resume-preview-sheet .modern-contact-item svg {
+  color: #4b5563;
+  vertical-align: middle;
+}
+
+.resume-preview-sheet .modern-section-title {
+  font-size: 12pt !important;
+  font-weight: 700 !important;
+  text-align: left !important;
+  text-transform: none !important;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  color: #111827 !important;
+  margin-top: 1.15rem !important;
+  margin-bottom: 0.5rem !important;
+  letter-spacing: -0.01em !important;
+  display: block !important;
+}
+
+.resume-preview-sheet .modern-timeline-entry {
+  display: flex;
+  margin-bottom: 0.75rem;
+}
+
+.resume-preview-sheet .modern-timeline-left {
+  width: 145px;
+  min-width: 145px;
+  flex-shrink: 0;
+  padding-right: 1rem;
+}
+
+.resume-preview-sheet .timeline-date {
+  font-size: 9pt;
+  font-weight: 500;
+  color: #111827;
+  line-height: 1.3;
+}
+
+.resume-preview-sheet .timeline-location {
+  font-size: 8.5pt;
+  color: #4b5563;
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.resume-preview-sheet .modern-timeline-right {
+  flex: 1;
+  min-width: 0;
+}
+
+.resume-preview-sheet .timeline-company-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.resume-preview-sheet .timeline-company {
+  font-size: 9.8pt;
+  font-weight: 600;
+  color: var(--cv-accent-color, #2563eb);
+}
+
+.resume-preview-sheet .timeline-link-icon {
+  display: inline-block;
+  font-size: 8pt;
+  color: var(--cv-accent-color, #2563eb);
+  opacity: 0.85;
+  transition: transform 0.15s ease;
+}
+
+.resume-preview-sheet .timeline-link-icon:hover {
+  transform: translate(1px, -1px);
+}
+
+.resume-preview-sheet .timeline-role {
+  font-size: 9.2pt;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.2rem;
+}
+
+.resume-preview-sheet .timeline-degree {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: #111827;
+}
+
+.resume-preview-sheet .timeline-school {
+  font-size: 9pt;
+  font-weight: 600;
+  color: var(--cv-accent-color, #2563eb);
+}
+
+.resume-preview-sheet .zigzag-divider {
+  width: 100%;
+  height: 5px;
+  margin-top: 3px;
+  margin-bottom: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='5' viewBox='0 0 10 5'%3E%3Cpath d='M0 3.5 L 2.5 1 L 5 3.5 L 7.5 1 L 10 3.5' fill='none' stroke='%23cbd5e1' stroke-width='1.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: repeat-x;
+  background-size: 10px 5px;
+}
+
+.resume-preview-sheet.live-editing-active {
+  outline: 2px dashed var(--accent-primary) !important;
+  outline-offset: 4px;
+  cursor: text;
+}
+
+.resume-preview-sheet .timeline-award-title {
+  font-size: 9.5pt;
+  font-weight: 600;
+  color: #111827;
+}
+
+.resume-preview-sheet .timeline-award-org {
+  font-size: 9pt;
+  color: #374151;
+}
+
+.resume-preview-sheet .timeline-bullets {
+  margin: 0.15rem 0 0 0 !important;
+  padding-left: 1.1rem !important;
+}
+
+.resume-preview-sheet .timeline-bullets li {
+  font-size: 9pt !important;
+  line-height: 1.35 !important;
+  margin-bottom: 0.2rem !important;
+  text-align: justify !important;
+}
+
+.resume-preview-sheet .modern-skills-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.resume-preview-sheet .modern-skill-card {
+  border: 1px solid #111827 !important;
+  border-radius: 6px !important;
+  padding: 6px 12px !important;
+  font-size: 8.8pt !important;
+  line-height: 1.35 !important;
+  text-align: justify !important;
+  background: #ffffff !important;
+  color: #1f2937 !important;
+}
+
+.resume-preview-sheet .modern-skill-card strong.skill-category {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   Split-Sidebar-Right Layout Preview Styles (Aug 2024 / Dark Sidebar Archetype)
+   ========================================================================== */
+.resume-preview-sheet .split-sidebar-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  min-height: 100%;
+  background: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #111827;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+/* Main Left Column (~68%) */
+.resume-preview-sheet .split-main-col {
+  padding: 1.75rem 1.5rem 1.75rem 1.75rem;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.resume-preview-sheet .split-header {
+  margin-bottom: 1.15rem;
+}
+
+.resume-preview-sheet .split-name {
+  font-size: 20pt !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.20em !important;
+  text-transform: uppercase !important;
+  color: #1c202d !important;
+  margin: 0 0 0.25rem 0 !important;
+  line-height: 1.15 !important;
+}
+
+.resume-preview-sheet .split-subtitle {
+  font-size: 9.8pt;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 0.55rem;
+}
+
+.resume-preview-sheet .split-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.85rem;
+  font-size: 8.5pt;
+  color: #475569;
+}
+
+.resume-preview-sheet .split-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.resume-preview-sheet .split-contact-item a {
+  color: #475569;
+  text-decoration: none;
+}
+
+.resume-preview-sheet .split-contact-sep {
+  color: #cbd5e1;
+  font-size: 8pt;
+}
+
+/* Main Section Heading */
+.resume-preview-sheet .split-section {
+  margin-bottom: 1.15rem;
+}
+
+.resume-preview-sheet .split-section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.resume-preview-sheet .split-section-title {
+  font-size: 11pt !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: #1c202d !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.resume-preview-sheet .split-section-rule {
+  flex: 1;
+  height: 1px;
+  background: #cbd5e1;
+}
+
+.resume-preview-sheet .split-paragraph {
+  font-size: 9pt;
+  line-height: 1.42;
+  color: #334155;
+  margin: 0 0 0.5rem 0;
+  text-align: justify;
+}
+
+.resume-preview-sheet .split-paragraph strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* Split Roles (Experience) */
+.resume-preview-sheet .split-role-entry {
+  margin-bottom: 0.85rem;
+}
+
+.resume-preview-sheet .split-role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.15rem;
+}
+
+.resume-preview-sheet .split-role-title {
+  font-size: 9.8pt;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.resume-preview-sheet .split-role-dates {
+  font-size: 8.8pt;
+  font-weight: 600;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.resume-preview-sheet .split-role-company {
+  font-size: 9pt;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 0.35rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.resume-preview-sheet .split-company-name {
+  font-weight: 600;
+  color: #334155;
+}
+
+.resume-preview-sheet .split-company-loc {
+  color: #64748b;
+}
+
+.resume-preview-sheet .split-bullets {
+  margin: 0 0 0.5rem 0 !important;
+  padding-left: 1.15rem !important;
+}
+
+.resume-preview-sheet .split-bullets li {
+  font-size: 8.8pt !important;
+  line-height: 1.4 !important;
+  color: #334155 !important;
+  margin-bottom: 0.25rem !important;
+  text-align: justify !important;
+}
+
+.resume-preview-sheet .split-bullets li strong {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+/* Right Sidebar Column (~32%) */
+.resume-preview-sheet .split-sidebar-col {
+  background: var(--cv-sidebar-bg, #1c202d);
+  color: #ffffff;
+  padding: 1.75rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.resume-preview-sheet .sidebar-avatar-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.resume-preview-sheet .sidebar-avatar-img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+.resume-preview-sheet .sidebar-linkedin-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.resume-preview-sheet .sidebar-linkedin-btn {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+  font-size: 8pt;
+  font-weight: 600;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.resume-preview-sheet .sidebar-linkedin-btn:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.resume-preview-sheet .sidebar-section {
+  margin-bottom: 1.25rem;
+}
+
+.resume-preview-sheet .sidebar-section-header {
+  margin-bottom: 0.65rem;
+}
+
+.resume-preview-sheet .sidebar-section-title {
+  font-size: 9.5pt;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+}
+
+.resume-preview-sheet .sidebar-section-rule {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Sidebar Entries (Education / Awards) */
+.resume-preview-sheet .sidebar-entry {
+  margin-bottom: 0.75rem;
+}
+
+.resume-preview-sheet .sidebar-entry-dates {
+  font-size: 8pt;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 0.15rem;
+}
+
+.resume-preview-sheet .sidebar-entry-title {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.resume-preview-sheet .sidebar-entry-subtitle {
+  font-size: 8.2pt;
+  color: #cbd5e1;
+  margin-top: 0.1rem;
+}
+
+.resume-preview-sheet .sidebar-bullet-item {
+  font-size: 8.5pt;
+  color: #e2e8f0;
+  margin-bottom: 0.35rem;
+  line-height: 1.35;
+}
+
+/* Sidebar Skill Pills / Badges */
+.resume-preview-sheet .sidebar-category-group {
+  margin-bottom: 0.75rem;
+}
+
+.resume-preview-sheet .sidebar-category-name {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.resume-preview-sheet .sidebar-pill-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.4rem;
+  margin-bottom: 0.35rem;
+}
+
+.resume-preview-sheet .sidebar-pill-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 8pt;
+  font-weight: 500;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9999px;
+  padding: 0.18rem 0.55rem;
+  letter-spacing: 0.02em;
+}
+

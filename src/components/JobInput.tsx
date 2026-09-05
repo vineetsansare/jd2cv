@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowRight, Briefcase, Target, AlertCircle, FileText, FileDown } from 'lucide-react';
-import type { LLMConfig, TargetLength } from '../utils/llm';
+import type { LLMConfig, TargetLength, LayoutMode } from '../utils/llm';
 
 interface JobInputProps {
   jobDescription: string;
@@ -9,6 +9,8 @@ interface JobInputProps {
   onChangeAspirations: (asp: string) => void;
   targetLength: TargetLength;
   onChangeTargetLength: (len: TargetLength) => void;
+  layoutMode?: LayoutMode;
+  onChangeLayoutMode?: (mode: LayoutMode) => void;
   config: LLMConfig;
   contextCVs: { name: string; text: string }[];
   activeCVIndices: number[];
@@ -25,6 +27,8 @@ export const JobInput: React.FC<JobInputProps> = ({
   onChangeAspirations,
   targetLength,
   onChangeTargetLength,
+  layoutMode = 'our-template',
+  onChangeLayoutMode,
   config: _config,
   contextCVs,
   activeCVIndices,
@@ -121,6 +125,37 @@ export const JobInput: React.FC<JobInputProps> = ({
           </select>
         </div>
       </div>
+
+      {onChangeLayoutMode && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.75rem 1rem',
+          background: layoutMode === 'preserve-layout' ? 'rgba(99, 102, 241, 0.08)' : 'var(--bg-secondary)',
+          border: `1px solid ${layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--card-border)'}`,
+          borderRadius: 'var(--border-radius-md)',
+          transition: 'all 0.2s'
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <label style={{ fontWeight: 600, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+              <input
+                type="checkbox"
+                checked={layoutMode === 'preserve-layout'}
+                onChange={(e) => onChangeLayoutMode(e.target.checked ? 'preserve-layout' : 'our-template')}
+                style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)', cursor: 'pointer' }}
+              />
+              <FileText size={15} style={{ color: layoutMode === 'preserve-layout' ? 'var(--accent-primary)' : 'var(--text-muted)' }} />
+              <span>Preserve My CV Layout</span>
+            </label>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', paddingLeft: '2.1rem' }}>
+              {layoutMode === 'preserve-layout'
+                ? 'Maintains original fonts, colors, and layout from uploaded DOCX.'
+                : 'Uses standard ATS-optimized template.'}
+            </span>
+          </div>
+        </div>
+      )}
 
       {contextCVs.length > 0 && (
         <div className="form-group">
