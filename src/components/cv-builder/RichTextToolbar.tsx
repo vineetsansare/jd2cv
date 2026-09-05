@@ -18,56 +18,114 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
   alignment = 'left',
   onAlignmentChange
 }) => {
-  const wrapSelection = (prefix: string, suffix: string = prefix, defaultPlaceholder: string = 'text') => {
+  const wrapSelection = (prefix: string, suffix: string = prefix) => {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
     if (!textarea) return;
 
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
     const selected = value.substring(start, end);
-    const contentToWrap = selected || defaultPlaceholder;
-    const replacement = `${prefix}${contentToWrap}${suffix}`;
 
+    if (selected.length > 0) {
+      // Wrap the active selection cleanly
+      const replacement = `${prefix}${selected}${suffix}`;
+      const newValue = value.substring(0, start) + replacement + value.substring(end);
+      onChange(newValue);
+
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+      }, 0);
+    } else {
+      // No text selected: insert tokens and put cursor right in between without dummy text
+      const replacement = `${prefix}${suffix}`;
+      const newValue = value.substring(0, start) + replacement + value.substring(end);
+      onChange(newValue);
+
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + prefix.length, start + prefix.length);
+      }, 0);
+    }
+  };
+
+  const handleBold = () => wrapSelection('**', '**');
+  const handleItalic = () => wrapSelection('*', '*');
+  const handleUnderline = () => wrapSelection('<u>', '</u>');
+  
+  const handleLink = () => {
+    const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+    const start = textarea?.selectionStart ?? 0;
+    const end = textarea?.selectionEnd ?? 0;
+    const selected = value.substring(start, end);
+
+    const url = prompt('Enter URL (e.g. https://github.com):', 'https://');
+    if (!url) return;
+
+    const label = selected || 'link';
+    const replacement = `[${label}](${url})`;
     const newValue = value.substring(0, start) + replacement + value.substring(end);
     onChange(newValue);
 
     setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length + contentToWrap.length);
-    }, 10);
-  };
-
-  const handleBold = () => wrapSelection('**', '**', 'bold text');
-  const handleItalic = () => wrapSelection('*', '*', 'italic text');
-  const handleUnderline = () => wrapSelection('<u>', '</u>', 'underlined text');
-  const handleLink = () => {
-    const url = prompt('Enter URL (e.g. https://github.com):', 'https://');
-    if (!url) return;
-    wrapSelection('[', `](${url})`, 'link text');
+      textarea?.focus();
+      textarea?.setSelectionRange(start + 1, start + 1 + label.length);
+    }, 0);
   };
 
   const handleBullet = () => {
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
     if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
+
+    const start = textarea.selectionStart ?? 0;
+    const end = textarea.selectionEnd ?? 0;
+
+    if (!value || value.trim().length === 0) {
+      onChange('* ');
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(2, 2);
+      }, 0);
+      return;
+    }
+
     const lines = value.split('\n');
     let charCount = 0;
+    let modified = false;
+
     const updatedLines = lines.map((line) => {
       const lineStart = charCount;
       const lineEnd = charCount + line.length;
-      charCount += line.length + 1; // +1 for newline
+      charCount += line.length + 1; // +1 for \n
 
-      if (lineEnd >= start && lineStart <= end) {
+      // Check if line intersects with selection/cursor
+      if ((start >= lineStart && start <= lineEnd) || (end >= lineStart && end <= lineEnd) || (lineStart >= start && lineEnd <= end)) {
+        modified = true;
         if (line.trim().startsWith('* ')) {
-          return line.replace(/^\s*\*\s*/, '');
+          return line.replace(/^(\s*)\*\s?/, '$1');
+        } else if (line.trim().startsWith('- ')) {
+          return line.replace(/^(\s*)-\s?/, '$1');
+        } else {
+          return `* ${line}`;
         }
-        return `* ${line}`;
       }
       return line;
     });
 
-    onChange(updatedLines.join('\n'));
+    if (modified) {
+      onChange(updatedLines.join('\n'));
+      setTimeout(() => {
+        textarea.focus();
+      }, 0);
+    } else {
+      // If cursor is at very end
+      const newValue = `${value}\n* `;
+      onChange(newValue);
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(newValue.length, newValue.length);
+      }, 0);
+    }
   };
 
   return (
@@ -89,6 +147,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleBold}
           className="toolbar-btn"
           title="Bold (**text**)"
@@ -109,6 +168,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleItalic}
           className="toolbar-btn"
           title="Italic (*text*)"
@@ -129,9 +189,10 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleUnderline}
           className="toolbar-btn"
-          title="Underline"
+          title="Underline (<u>text</u>)"
           style={{
             padding: '0.35rem 0.5rem',
             background: 'none',
@@ -151,6 +212,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleBullet}
           className="toolbar-btn"
           title="Bullet List (* item)"
@@ -171,6 +233,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
 
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleLink}
           className="toolbar-btn"
           title="Insert Link ([text](url))"
@@ -190,7 +253,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
         </button>
       </div>
 
-      {/* Text Alignment Tools (Matching FlowCV) */}
+      {/* Text Alignment Tools */}
       {onAlignmentChange && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'var(--card-bg)', padding: '2px', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
           {(['left', 'center', 'right', 'justify'] as const).map((align) => {
@@ -201,6 +264,7 @@ export const RichTextToolbar: React.FC<RichTextToolbarProps> = ({
               <button
                 key={align}
                 type="button"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={() => onAlignmentChange(align)}
                 title={`Align ${align.charAt(0).toUpperCase() + align.slice(1)}`}
                 style={{

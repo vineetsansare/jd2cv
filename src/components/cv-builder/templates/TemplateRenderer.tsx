@@ -69,6 +69,68 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
     });
   };
 
+  // Multi-line rich content parser supporting paragraphs and bullet lists
+  const renderRichContent = (content: string, alignment?: string) => {
+    if (!content) return null;
+
+    const lines = content.split('\n');
+    const elements: React.ReactNode[] = [];
+    let currentBullets: string[] = [];
+
+    const flushBullets = (keyIdx: number) => {
+      if (currentBullets.length > 0) {
+        elements.push(
+          <ul 
+            key={`ul-${keyIdx}`} 
+            style={{ 
+              margin: '0.4rem 0', 
+              paddingLeft: '1.25rem', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '0.25rem',
+              textAlign: (alignment as any) || 'inherit' 
+            }}
+          >
+            {currentBullets.map((b, bIdx) => (
+              <li key={bIdx} style={{ color: '#334155' }}>
+                {renderRichText(b)}
+              </li>
+            ))}
+          </ul>
+        );
+        currentBullets = [];
+      }
+    };
+
+    lines.forEach((line, idx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('* ') || trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+        const bulletText = trimmed.replace(/^[\*\-•]\s*/, '');
+        currentBullets.push(bulletText);
+      } else {
+        flushBullets(idx);
+        if (trimmed.length > 0) {
+          elements.push(
+            <p 
+              key={`p-${idx}`} 
+              style={{ 
+                margin: '0 0 0.5rem 0', 
+                textAlign: (alignment as any) || 'inherit', 
+                lineHeight: 1.6 
+              }}
+            >
+              {renderRichText(line)}
+            </p>
+          );
+        }
+      }
+    });
+
+    flushBullets(lines.length);
+
+    return <>{elements}</>;
+  };
+
   const renderSectionHeader = (title: string, iconKey: string = 'fileText', showIcon: boolean = true) => {
     const IconComp = SECTION_ICONS[iconKey] || FileText;
 
@@ -101,7 +163,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
   };
 
   // --------------------------------------------------------------------------
-  // 1. MODERN TIMELINE TEMPLATE (FlowCV Signature Style)
+  // 1. MODERN TIMELINE TEMPLATE
   // --------------------------------------------------------------------------
   if (theme.templateId === 'modern-timeline' || !theme.templateId) {
     return (
@@ -187,8 +249,8 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
         {summary.visible && summary.content && (
           <div style={{ marginBottom: '1.5rem' }}>
             {renderSectionHeader(summary.title || 'Executive Profile', summary.icon || 'fileText', summary.showIcon !== false)}
-            <div style={{ color: '#334155', textAlign: summary.alignment || 'justify', lineHeight: 1.6 }}>
-              {renderRichText(summary.content)}
+            <div style={{ color: '#334155', textAlign: (summary.alignment as any) || 'justify', lineHeight: 1.6 }}>
+              {renderRichContent(summary.content, summary.alignment)}
             </div>
           </div>
         )}
@@ -362,7 +424,7 @@ export const TemplateRenderer: React.FC<TemplateProps> = ({ cv }) => {
           <h2 style={{ fontSize: fs.h2, fontWeight: 700, color: accent, textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: `1px solid ${accent}`, paddingBottom: '0.2rem', marginBottom: '0.5rem' }}>
             {summary.title || 'Summary'}
           </h2>
-          <div style={{ color: '#374151', textAlign: summary.alignment || 'justify' }}>{renderRichText(summary.content)}</div>
+          <div style={{ color: '#374151', textAlign: (summary.alignment as any) || 'justify' }}>{renderRichContent(summary.content, summary.alignment)}</div>
         </div>
       )}
 

@@ -103,7 +103,7 @@ export const SectionHeadingControl: React.FC<SectionHeadingControlProps> = ({
             <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
           </button>
 
-          {/* FlowCV Icon Picker Popover */}
+          {/* Section Icon Picker Popover */}
           {isIconDropdownOpen && (
             <div
               style={{
@@ -205,13 +205,13 @@ export const SectionHeadingControl: React.FC<SectionHeadingControlProps> = ({
           />
         </div>
 
-        {/* Done Button (FlowCV Pink Accent) */}
+        {/* Done Button */}
         <div style={{ alignSelf: 'flex-end' }}>
           <button
             type="button"
             onClick={handleDone}
             style={{
-              background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+              background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
               color: '#ffffff',
               border: 'none',
               borderRadius: '8px',
@@ -222,7 +222,7 @@ export const SectionHeadingControl: React.FC<SectionHeadingControlProps> = ({
               alignItems: 'center',
               gap: '0.35rem',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(244, 63, 94, 0.35)'
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
             }}
           >
             <Check size={16} />

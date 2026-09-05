@@ -202,7 +202,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
           type="button"
           onClick={() => setEditingCategoryIndex(null)}
           style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
             color: '#ffffff',
             border: 'none',
             borderRadius: '10px',
@@ -214,7 +214,7 @@ export const SkillsSection: React.FC<SkillsSectionProps> = ({
             justifyContent: 'center',
             gap: '0.4rem',
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(244, 63, 94, 0.4)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
             marginTop: '0.5rem'
           }}
         >

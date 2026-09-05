@@ -294,7 +294,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
               <ThemeCustomizer theme={cv.theme} onChange={updateTheme} />
             </div>
           ) : (
-            /* Content Sections (FlowCV Accordion) */
+            /* Content Sections Accordion */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {/* 1. Header & Personal Info */}
               <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -483,7 +483,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
         </div>
       </div>
 
-      {/* Floating Bottom Pill Button on Mobile (Matching FlowCV Mobile UX) */}
+      {/* Floating Bottom Pill Button on Mobile */}
       <div className="mobile-only-preview-pill" style={{ position: 'fixed', bottom: '1.5rem', left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 90 }}>
         <button
           type="button"
@@ -508,7 +508,7 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
         </button>
       </div>
 
-      {/* Full-Screen Mobile Preview Modal (Matching FlowCV Screenshot 5) */}
+      {/* Full-Screen Mobile Preview Modal */}
       {isMobilePreviewOpen && (
         <div 
           style={{

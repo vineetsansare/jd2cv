@@ -84,7 +84,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
     onChange(updated, meta);
   };
 
-  // Full "Edit Entry" mode (FlowCV Screenshot 4 & 5)
+  // Full "Edit Entry" mode
   if (editingEntryIndex !== null && experience[editingEntryIndex]) {
     const currentExp = experience[editingEntryIndex];
 
@@ -302,7 +302,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
           type="button"
           onClick={() => setEditingEntryIndex(null)}
           style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
             color: '#ffffff',
             border: 'none',
             borderRadius: '10px',
@@ -314,7 +314,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
             justifyContent: 'center',
             gap: '0.4rem',
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(244, 63, 94, 0.4)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
             marginTop: '0.5rem'
           }}
         >
@@ -325,7 +325,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
     );
   }
 
-  // Overview / Section Accordion List (FlowCV Screenshot 5)
+  // Overview / Section Accordion List
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {/* Header Row / Edit Heading */}
@@ -436,7 +436,7 @@ export const ExperienceSection: React.FC<ExperienceSectionProps> = ({
         ))}
       </div>
 
-      {/* Add Entry Button (FlowCV style) */}
+      {/* Add Entry Button */}
       <button
         type="button"
         onClick={addExperience}

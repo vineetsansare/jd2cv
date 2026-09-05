@@ -18,7 +18,7 @@ const COLOR_PALETTE = [
 ];
 
 const TEMPLATES: { id: TemplateId; name: string; desc: string; ats: string }[] = [
-  { id: 'modern-timeline', name: 'Modern Timeline', desc: 'FlowCV signature style with date rail & photo header', ats: '98%' },
+  { id: 'modern-timeline', name: 'Modern Timeline', desc: 'Timeline style with left date rail & photo header', ats: '98%' },
   { id: 'classic-ats', name: 'Classic ATS Clean', desc: 'Single column centered standard with 100% ATS score', ats: '100%' },
   { id: 'tech-linear', name: 'Tech Linear', desc: 'Monospace headers & tabular engineering alignment', ats: '99%' },
   { id: 'classic-serif', name: 'Classic Serif', desc: 'Executive Merriweather typography for leadership', ats: '100%' },

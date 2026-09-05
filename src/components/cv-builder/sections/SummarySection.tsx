@@ -36,7 +36,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
   const [isEditingEntry, setIsEditingEntry] = useState(false);
   const [showTips, setShowTips] = useState(false);
 
-  // When in full "Edit Entry" mode (FlowCV Screenshot 4)
+  // When in full "Edit Entry" mode
   if (isEditingEntry) {
     return (
       <div 
@@ -98,7 +98,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
         {/* Tips Box */}
         {showTips && (
           <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: 'rgba(37,99,235,0.06)', border: '1px solid rgba(37,99,235,0.2)', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-            💡 <strong>FlowCV Pro Tip:</strong> Keep your executive summary to 3-5 punchy sentences. Bold your years of experience, leadership scope, and signature domains (e.g. <strong>15+ years delivering fintech platforms</strong>).
+            💡 <strong>Pro Tip:</strong> Keep your executive summary to 3-5 punchy sentences. Bold your years of experience, leadership scope, and signature domains (e.g. <strong>15+ years delivering fintech platforms</strong>).
           </div>
         )}
 
@@ -128,18 +128,18 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
               lineHeight: 1.6,
               borderRadius: '0 0 10px 10px',
               borderTop: 'none',
-              textAlign: summary.alignment || 'justify',
+              textAlign: (summary.alignment as any) || 'justify',
               boxSizing: 'border-box'
             }}
           />
         </div>
 
-        {/* Done Button (FlowCV Pink Accent) */}
+        {/* Done Button */}
         <button
           type="button"
           onClick={() => setIsEditingEntry(false)}
           style={{
-            background: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 100%)',
+            background: 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)',
             color: '#ffffff',
             border: 'none',
             borderRadius: '10px',
@@ -151,7 +151,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
             justifyContent: 'center',
             gap: '0.4rem',
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(244, 63, 94, 0.4)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
             marginTop: '0.5rem'
           }}
         >
@@ -162,7 +162,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
     );
   }
 
-  // Normal / Overview State (FlowCV Screenshot 1 & 2)
+  // Normal / Overview State
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
       {/* Header Row: Title or Heading Editor */}
@@ -216,7 +216,7 @@ export const SummarySection: React.FC<SummarySectionProps> = ({ summary, onChang
         </div>
       )}
 
-      {/* Entry Row Card (FlowCV Item Card with drag dots) */}
+      {/* Entry Row Card with drag handle */}
       {summary.content ? (
         <div
           onClick={() => setIsEditingEntry(true)}
