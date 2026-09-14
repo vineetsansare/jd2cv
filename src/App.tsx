@@ -7,7 +7,7 @@ import { ContactUsPanel } from './components/ContactUsPanel';
 import { AdminPortal } from './components/AdminPortal';
 import { LegalModal } from './components/LegalModal';
 import type { LegalDocType } from './components/LegalModal';
-import { generateCustomizedCV, autoFixCV, getSavedAPIKeysStatus, generateStructuredCV, cvStateToMarkdown, optimizeDocxParagraphs } from './utils/llm';
+import { generateCustomizedCV, autoFixCV, generateStructuredCV, cvStateToMarkdown, optimizeDocxParagraphs, createCreditCheckout, completeCreditPurchase } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength, LayoutMode } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
 import { parseDocx, extractDocxText } from './utils/docxParser';
@@ -17,7 +17,7 @@ import {
   FileText, Settings, LogOut, ChevronLeft, ChevronRight,
   Upload, Plus, Download, Trash2,
   Copy, ArrowRight, Zap, ArrowLeft, History, Menu, X, MessageSquare,
-  FilePlus
+  FilePlus, Coins
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
@@ -81,7 +81,8 @@ interface UserProfile {
   id?: string;
   email: string;
   full_name?: string;
-  plan: 'free' | 'byok' | 'pro';
+  plan: 'free' | 'pro';
+  credits_balance?: number;
   generation_count: number;
   avatar_url?: string;
   is_admin?: boolean;
@@ -136,7 +137,22 @@ const checkLegalRoute = (): LegalDocType | null => {
 
 function App() {
   const [session, setSession] = useState<any>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
+    const storedAvatar = typeof window !== 'undefined' ? localStorage.getItem('user_avatar_url') : null;
+    if (storedAvatar) {
+      return {
+        id: 'local',
+        email: '',
+        full_name: 'User',
+        plan: 'free',
+        credits_balance: 10,
+        generation_count: 0,
+        avatar_url: storedAvatar,
+        is_admin: false
+      };
+    }
+    return null;
+  });
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(checkIsAdminRoute);
   const [legalModalOpen, setLegalModalOpen] = useState<boolean>(() => checkLegalRoute() !== null);
   const [legalModalDoc, setLegalModalDoc] = useState<LegalDocType>(() => checkLegalRoute() || 'privacy');
@@ -197,7 +213,7 @@ function App() {
         setSession(session);
         if (session) {
           loadUserData(session);
-          if (window.location.hash || window.location.search) {
+          if (window.location.hash || (window.location.search && !window.location.search.includes('genId='))) {
             window.history.replaceState(null, '', window.location.pathname);
           }
         }
@@ -254,7 +270,7 @@ function App() {
       while (retryCount < 2) {
         const { data } = await supabase
           .from('profiles')
-          .select('id, email, full_name, plan, generation_count, avatar_url, is_admin')
+          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url, is_admin')
           .eq('id', currentSession.user.id)
           .maybeSingle();
 
@@ -277,6 +293,7 @@ function App() {
           email: currentSession.user.email,
           full_name: defaultName,
           plan: 'free' as const,
+          credits_balance: 10,
           generation_count: 0,
           avatar_url: defaultAvatar,
           is_admin: false
@@ -285,23 +302,30 @@ function App() {
         const { data: upserted } = await supabase
           .from('profiles')
           .upsert(newProfile, { onConflict: 'id' })
-          .select('id, email, full_name, plan, generation_count, avatar_url, is_admin')
+          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url, is_admin')
           .single();
 
         profile = upserted || newProfile;
       }
 
-      const plan = (profile.plan as 'free' | 'byok' | 'pro') || 'free';
+      const plan: 'free' | 'pro' = profile.plan === 'pro' ? 'pro' : 'free';
       const userEmail = profile.email || currentSession.user.email || '';
       const isAdmin = checkIsAdmin(userEmail, profile.is_admin);
+
+      const storedAvatar = localStorage.getItem('user_avatar_url') || '';
+      const resolvedAvatar = profile.avatar_url || currentSession.user.user_metadata?.avatar_url || storedAvatar || '';
+      if (resolvedAvatar) {
+        localStorage.setItem('user_avatar_url', resolvedAvatar);
+      }
 
       setUserProfile({
         id: profile.id || currentSession.user.id,
         email: userEmail,
         full_name: profile.full_name || currentSession.user.user_metadata?.full_name || 'User',
         plan,
+        credits_balance: typeof profile.credits_balance === 'number' ? profile.credits_balance : 10,
         generation_count: profile.generation_count || 0,
-        avatar_url: profile.avatar_url || currentSession.user.user_metadata?.avatar_url || '',
+        avatar_url: resolvedAvatar,
         is_admin: isAdmin
       });
 
@@ -320,8 +344,6 @@ function App() {
           provider: 'gemini',
           model: 'gemini-2.5-flash'
         }));
-      } else if (plan === 'byok') {
-        getSavedAPIKeysStatus().then(setSavedKeys);
       }
 
       // Trigger welcome email for first-time signups
@@ -345,6 +367,37 @@ function App() {
 
       // Fetch user's recent CV generation history
       fetchRecentGenerations();
+
+      // Check for deep-linked generation ID (?genId=...) from ChatGPT / Claude MCP
+      const urlParams = new URLSearchParams(window.location.search);
+      const genId = urlParams.get('genId');
+      if (genId) {
+        try {
+          const { data: genData } = await supabase
+            .from('generations')
+            .select('*')
+            .eq('id', genId)
+            .eq('user_id', currentSession.user.id)
+            .maybeSingle();
+
+          if (genData) {
+            setResult({
+              cvMarkdown: genData.cv_markdown,
+              atsScore: genData.ats_score || 85,
+              atsAnalysis: genData.ats_analysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
+              humanFriendlyChanges: genData.human_changes || [],
+              coverLetter: genData.cover_letter || ''
+            });
+            if (genData.job_description) {
+              setJobDescription(genData.job_description);
+            }
+            setActiveTab('quick-optimize');
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } catch (deepLinkErr) {
+          console.error('Failed to load generation from deep link:', deepLinkErr);
+        }
+      }
     } catch (err) {
       console.error('Error loading session data:', err);
     } finally {
@@ -384,10 +437,10 @@ function App() {
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [customizerStep, setCustomizerStep] = useState(1);
   const [isPricingModalOpen, setIsPricingModalOpen] = useState(false);
-  const [pricingModalReason, setPricingModalReason] = useState<'limit_reached' | 'model_upgrade' | 'manual' | null>(null);
+  const [pricingModalReason, setPricingModalReason] = useState<'insufficient_credits' | 'limit_reached' | 'model_upgrade' | 'manual' | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleSelectPlan = async (newPlan: 'free' | 'byok' | 'pro') => {
+  const handleSelectPlan = async (newPlan: 'free' | 'pro') => {
     if (!session?.user?.id) return;
     try {
       const { error: updateError } = await supabase
@@ -405,18 +458,30 @@ function App() {
           provider: 'gemini',
           model: 'gemini-2.5-flash'
         }));
-      } else if (newPlan === 'byok') {
-        getSavedAPIKeysStatus().then(status => {
-          setSavedKeys(status);
-          const hasAnyKey = status.gemini || status.openai || status.anthropic;
-          if (!hasAnyKey) {
-            setActiveTab('settings');
-          }
-        });
       }
     } catch (err: any) {
       console.error('Failed to update plan in database:', err);
       setError(err.message || 'Failed to update subscription plan.');
+    }
+  };
+
+  const handlePurchasePack = async (packId: 'starter' | 'job_hunter' | 'power') => {
+    try {
+      const result = await createCreditCheckout(packId);
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+      } else {
+        // Direct fulfillment (e.g. dev mode or direct credit addition)
+        const completed = await completeCreditPurchase(packId);
+        if (completed.success) {
+          setUserProfile(prev => prev ? { ...prev, credits_balance: completed.newBalance } : null);
+          setIsPricingModalOpen(false);
+          alert(`Successfully purchased credits! Your new balance is ${completed.newBalance} credits.`);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to purchase credit pack:', err);
+      alert(err.message || 'Failed to process credit purchase. Please try again.');
     }
   };
 
@@ -451,29 +516,36 @@ function App() {
   const [parsingFile, setParsingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // BYOK Saved Keys Status
-  const [savedKeys, setSavedKeys] = useState<{ gemini: boolean; openai: boolean; anthropic: boolean }>({
-    gemini: false,
-    openai: false,
-    anthropic: false
-  });
-
 
 
   const handleUpdateAvatar = async (croppedDataUrl: string) => {
-    if (!session?.user?.id) return;
+    // 1. Immediately update userProfile in-memory state
+    setUserProfile((prev) => prev ? { ...prev, avatar_url: croppedDataUrl } : {
+      id: session?.user?.id || 'local-user',
+      email: session?.user?.email || '',
+      full_name: session?.user?.user_metadata?.full_name || 'User',
+      plan: 'free',
+      credits_balance: 10,
+      generation_count: 0,
+      avatar_url: croppedDataUrl,
+      is_admin: false
+    });
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({ avatar_url: croppedDataUrl })
-      .eq('id', session.user.id);
+    // 2. Persist in localStorage for cross-page & offline instant access
+    localStorage.setItem('user_avatar_url', croppedDataUrl);
+    setExtractedPhotoUrl(croppedDataUrl);
 
-    if (error) {
-      console.error('Failed to update avatar in database:', error);
-      throw error;
+    // 3. Persist to Supabase database if authenticated
+    if (session?.user?.id) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: croppedDataUrl })
+        .eq('id', session.user.id);
+
+      if (error) {
+        console.error('Failed to update avatar in database:', error);
+      }
     }
-
-    setUserProfile((prev) => prev ? { ...prev, avatar_url: croppedDataUrl } : prev);
   };
 
   // 3. Load configurations & theme from localStorage
@@ -638,7 +710,10 @@ function App() {
           const parsedPdf = await parsePdf(arrayBuffer);
           text = parsedPdf.text;
           if (parsedPdf.photoUrl) {
-            setExtractedPhotoUrl(parsedPdf.photoUrl);
+            const hasUserAvatar = userProfile?.avatar_url || localStorage.getItem('user_avatar_url');
+            if (!hasUserAvatar) {
+              setExtractedPhotoUrl(parsedPdf.photoUrl);
+            }
           }
           if (parsedPdf.detectedTemplate) {
             setDetectedLayoutTemplate(parsedPdf.detectedTemplate);
@@ -746,8 +821,9 @@ function App() {
   };
 
   const handleGenerate = async () => {
-    if (userProfile?.plan === 'free' && userProfile.generation_count >= 5) {
-      setPricingModalReason('limit_reached');
+    const currentCredits = userProfile?.credits_balance ?? 10;
+    if (currentCredits < 10) {
+      setPricingModalReason('insufficient_credits');
       setIsPricingModalOpen(true);
       return;
     }
@@ -768,9 +844,11 @@ function App() {
     
     const activeCVs = activeCVIndices.map((idx) => contextCVs[idx]);
 
-    const activeConfig = userProfile?.plan === 'free'
-      ? { ...config, provider: 'gemini' as const, model: 'gemini-flash-latest' }
-      : config;
+    const activeConfig = {
+      ...config,
+      provider: 'gemini' as const,
+      model: 'gemini-2.5-flash'
+    };
 
     try {
       if (layoutMode === 'preserve-layout') {
@@ -828,11 +906,19 @@ function App() {
         const cvResult = await generateCustomizedCV(activeConfig, activeCVs, jobDescription, aspirations, targetLength, abortControllerRef.current.signal);
         setResult(cvResult);
         setPreservedDocxBlob(null);
+        if ((cvResult as any).remainingCredits !== undefined) {
+          setUserProfile(prev => prev ? { ...prev, credits_balance: (cvResult as any).remainingCredits } : null);
+        }
         saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('CV generation cancelled by user.');
+        return;
+      }
+      if (err.limitReached) {
+        setPricingModalReason('insufficient_credits');
+        setIsPricingModalOpen(true);
         return;
       }
       console.error(err);
@@ -844,8 +930,9 @@ function App() {
   };
 
   const handleAutoFix = async () => {
-    if (userProfile?.plan === 'free' && userProfile.generation_count >= 5) {
-      setPricingModalReason('limit_reached');
+    const currentCredits = userProfile?.credits_balance ?? 10;
+    if (currentCredits < 5) {
+      setPricingModalReason('insufficient_credits');
       setIsPricingModalOpen(true);
       return;
     }
@@ -857,19 +944,30 @@ function App() {
     setError(null);
     abortControllerRef.current = new AbortController();
 
-    const activeConfig = userProfile?.plan === 'free'
-      ? { ...config, provider: 'gemini' as const, model: 'gemini-flash-latest' }
-      : config;
+    const activeConfig = {
+      ...config,
+      provider: 'gemini' as const,
+      model: 'gemini-2.5-flash'
+    };
 
     try {
       const fixedResult = await autoFixCV(activeConfig, result.cvMarkdown, jobDescription, result.atsAnalysis, abortControllerRef.current.signal);
       setResult(fixedResult);
+
+      if ((fixedResult as any).remainingCredits !== undefined) {
+        setUserProfile(prev => prev ? { ...prev, credits_balance: (fixedResult as any).remainingCredits } : null);
+      }
 
       // Save updated generation to history & increment count
       saveGenerationToHistory(fixedResult, jobDescription, activeConfig.provider, activeConfig.model);
     } catch (err: any) {
       if (err.name === 'AbortError') {
         console.log('Auto-fix cancelled by user.');
+        return;
+      }
+      if (err.limitReached) {
+        setPricingModalReason('insufficient_credits');
+        setIsPricingModalOpen(true);
         return;
       }
       console.error(err);
@@ -940,10 +1038,7 @@ function App() {
     }
   };
 
-  const isKeyConfigured = 
-    userProfile?.plan === 'pro' || 
-    userProfile?.plan === 'free' || 
-    (userProfile?.plan === 'byok' && savedKeys[config.provider]);
+  const isKeyConfigured = true;
 
   // Standalone Admin Route (e.g. /admin, /jd2cv/admin, or #/admin)
   if (isAdminRoute) {
@@ -1171,17 +1266,20 @@ function App() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <span className="font-label-sm" style={{ fontWeight: 800, color: userProfile?.plan === 'pro' ? '#c084fc' : userProfile?.plan === 'byok' ? '#a78bfa' : 'var(--text-primary)' }}>
-                    {userProfile?.plan === 'pro' ? '⭐ Pro Plan' : userProfile?.plan === 'byok' ? '🔑 BYOK Plan' : 'Free Tier'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span className="font-label-sm" style={{ fontWeight: 800, color: userProfile?.plan === 'pro' ? '#c084fc' : 'var(--text-primary)' }}>
+                    {userProfile?.plan === 'pro' ? '⭐ Pro Plan' : 'Free Plan'}
                   </span>
                   <span style={{ fontSize: '10px', color: 'var(--accent-primary)', fontWeight: 700, textDecoration: 'underline' }}>
-                    {userProfile?.plan === 'pro' ? 'Manage' : 'Upgrade'}
+                    Buy Credits
                   </span>
                 </div>
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                  {userProfile?.plan === 'free' ? `${userProfile.generation_count} of 5 free used` : 'Unlimited generations'}
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Coins size={12} color="#eab308" />
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    {userProfile?.credits_balance ?? 10} Credits
+                  </span>
+                </div>
               </div>
             )}
             
@@ -1251,6 +1349,30 @@ function App() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Live Credits Balance Button */}
+          <button
+            type="button"
+            onClick={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
+            style={{
+              background: 'rgba(234, 179, 8, 0.12)',
+              border: '1px solid rgba(234, 179, 8, 0.35)',
+              color: '#eab308',
+              padding: '0.35rem 0.85rem',
+              borderRadius: '999px',
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              transition: 'all 0.2s ease'
+            }}
+            title="Available AI Credits. Click to top up."
+          >
+            <Coins size={14} />
+            <span>{userProfile?.credits_balance ?? 10} CREDITS</span>
+          </button>
+
           {/* Plan Upgrade Pill */}
           <button
             type="button"
@@ -1503,24 +1625,33 @@ function App() {
           {/* Right Column widgets */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            {/* Widget 1: Plan Quota */}
+            {/* Widget 1: Credits & Balance */}
             <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Usage & Billing</h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600 }}>Credits & Balance</h4>
+                <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '99px', background: userProfile?.plan === 'pro' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(124, 58, 237, 0.1)', color: userProfile?.plan === 'pro' ? '#c084fc' : 'var(--accent-primary)' }}>
+                  {userProfile?.plan === 'pro' ? 'PRO PLAN' : 'FREE TIER'}
+                </span>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Customized CV count</span>
-                  <span style={{ fontWeight: 600 }}>
-                    {userProfile?.plan === 'free' ? `${userProfile.generation_count} / 5` : 'Unlimited'}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>Available Credits</span>
+                  <span style={{ fontWeight: 800, fontSize: '1.1rem', color: '#eab308', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Coins size={16} />
+                    {userProfile?.credits_balance ?? 10}
                   </span>
                 </div>
-                {userProfile?.plan === 'free' && (
-                  <div style={{ width: '100%', height: '5px', background: 'var(--bg-secondary)', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div style={{ width: `${(userProfile.generation_count / 5) * 100}%`, height: '100%', background: 'var(--accent-primary)' }}></div>
-                  </div>
-                )}
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+                  Generations burn 10 credits; 1-click ATS auto-fixes burn 5 credits. Parsing & PDF/DOCX downloads are free.
+                </div>
               </div>
-              <button className="btn btn-primary" onClick={() => setActiveTab('settings')} style={{ fontSize: '0.8rem', padding: '0.5rem 1rem' }}>
-                Manage Subscriptions
+              <button 
+                className="btn btn-primary" 
+                onClick={() => { setPricingModalReason('manual'); setIsPricingModalOpen(true); }} 
+                style={{ fontSize: '0.8rem', padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
+              >
+                <Coins size={14} />
+                <span>Buy Credits / Pricing</span>
               </button>
             </div>
 
@@ -2154,33 +2285,7 @@ function App() {
             </div>
 
             <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {/* API Key missing notification */}
-              {!isKeyConfigured && (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  color: '#fbbf24',
-                  fontSize: '0.85rem',
-                  background: 'rgba(245, 158, 11, 0.1)',
-                  border: '1px solid rgba(245, 158, 11, 0.25)',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '10px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                    <span>API Key required for active provider.</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('settings')}
-                    className="btn btn-secondary"
-                    style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 600 }}
-                  >
-                    Go to Settings →
-                  </button>
-                </div>
-              )}
+
 
               {error && (
                 <div style={{
@@ -2195,12 +2300,7 @@ function App() {
                   borderRadius: '10px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <AlertCircle size={16} style={{ flexShrink: 0 }} />
-                    <span>
-                      {error === 'API_KEY_REQUIRED'
-                        ? 'An API Key is required on the BYOK plan. Please add your Gemini, OpenAI, or Anthropic API key in Settings.'
-                        : error}
-                    </span>
+                    <span>{error}</span>
                   </div>
                   {(error === 'API_KEY_REQUIRED' || error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('load failed')) && (
                     <button
@@ -2393,12 +2493,7 @@ function App() {
               </div>
             </div>
 
-            {!isKeyConfigured && (
-              <div className="flex-row-gap" style={{ color: 'var(--danger)', fontSize: '0.85rem', background: 'rgba(186, 26, 26, 0.08)', padding: '0.75rem 1rem', borderRadius: '8px' }}>
-                <AlertCircle size={16} />
-                <span>API Key missing for active provider. Update keys in Settings tab.</span>
-              </div>
-            )}
+
           </div>
         )}
 
@@ -2654,6 +2749,8 @@ function App() {
           isOpen={isPricingModalOpen}
           onClose={() => setIsPricingModalOpen(false)}
           currentPlan={userProfile?.plan || 'free'}
+          creditsBalance={userProfile?.credits_balance ?? 10}
+          onPurchasePack={handlePurchasePack}
           onSelectPlan={handleSelectPlan}
           generationCount={userProfile?.generation_count || 0}
           triggerReason={pricingModalReason}
@@ -2683,6 +2780,30 @@ function App() {
                 </div>
                 <button type="button" onClick={() => setIsMobileMenuOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem' }}>
                   <X size={22} />
+                </button>
+              </div>
+
+              {/* Mobile Drawer Credit & Upgrade Strip */}
+              <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--card-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(234, 179, 8, 0.04)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#eab308', fontWeight: 700, fontSize: '0.85rem' }}>
+                  <Coins size={15} />
+                  <span>{userProfile?.credits_balance ?? 10} Credits</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setIsMobileMenuOpen(false); setPricingModalReason('manual'); setIsPricingModalOpen(true); }}
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Buy Credits
                 </button>
               </div>
 

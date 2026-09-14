@@ -1,14 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Settings, ShieldCheck, Zap, LogOut, CheckCircle2, Info, Camera, Sparkles } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Settings, ShieldCheck, Zap, LogOut, Camera, Sparkles, Coins, HelpCircle } from 'lucide-react';
 import type { LLMConfig } from '../utils/llm';
-import { saveUserAPIKey, deleteUserAPIKey, getSavedAPIKeysStatus } from '../utils/llm';
-import { PROVIDER_MODELS, type LLMProvider } from '../utils/models';
 import { AvatarCropperModal } from './AvatarCropperModal';
 
 interface SettingsPanelProps {
   config: LLMConfig;
   onChangeConfig: (config: LLMConfig) => void;
-  userProfile: { email: string; full_name?: string; plan: 'free' | 'byok' | 'pro'; generation_count: number; avatar_url?: string } | null;
+  userProfile: { 
+    email: string; 
+    full_name?: string; 
+    plan: 'free' | 'pro'; 
+    credits_balance?: number;
+    generation_count: number; 
+    avatar_url?: string;
+  } | null;
   onLogout: () => void;
   onUpdateAvatar?: (avatarUrl: string) => Promise<void>;
   onOpenPricingModal?: () => void;
@@ -16,21 +21,12 @@ interface SettingsPanelProps {
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
-  config,
-  onChangeConfig,
   userProfile,
   onLogout,
   onUpdateAvatar,
   onOpenPricingModal,
   onOpenLegal
 }) => {
-  const [keyInput, setKeyInput] = useState('');
-  const [savedKeys, setSavedKeys] = useState<{ gemini: boolean; openai: boolean; anthropic: boolean }>({
-    gemini: false,
-    openai: false,
-    anthropic: false
-  });
-  const [savingKey, setSavingKey] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -82,85 +78,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (userProfile?.plan === 'byok') {
-      fetchKeysStatus();
-    }
-  }, [userProfile, config.provider]);
-
-  const fetchKeysStatus = async () => {
-    try {
-      const status = await getSavedAPIKeysStatus();
-      setSavedKeys(status);
-    } catch (err) {
-      console.error('Failed to fetch keys status:', err);
-    }
-  };
-
-  const handleProviderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const provider = e.target.value as LLMProvider;
-    const defaultModel = PROVIDER_MODELS[provider]?.[0]?.id || 'gemini-2.5-flash';
-    onChangeConfig({
-      ...config,
-      provider,
-      model: defaultModel
-    });
-    setKeyInput('');
-    setErrorMsg('');
-    setSuccessMsg('');
-  };
-
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChangeConfig({
-      ...config,
-      model: e.target.value
-    });
-  };
-
-  const handleSaveKey = async () => {
-    if (!keyInput.trim()) return;
-    setSavingKey(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-    try {
-      await saveUserAPIKey(config.provider, keyInput.trim());
-      setSuccessMsg(`Successfully saved API key for ${config.provider.toUpperCase()}!`);
-      setKeyInput('');
-      fetchKeysStatus();
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Failed to save API key');
-    } finally {
-      setSavingKey(false);
-    }
-  };
-
-  const handleDeleteKey = async () => {
-    setSavingKey(true);
-    setErrorMsg('');
-    setSuccessMsg('');
-    try {
-      await deleteUserAPIKey(config.provider);
-      setSuccessMsg(`Deleted saved API key for ${config.provider.toUpperCase()}`);
-      fetchKeysStatus();
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Failed to delete API key');
-    } finally {
-      setSavingKey(false);
-    }
-  };
-
-  const isCurrentKeySaved = savedKeys[config.provider];
-  const activeModelInfo = PROVIDER_MODELS[config.provider]?.find((m) => m.id === config.model);
+  const currentCredits = userProfile?.credits_balance ?? 10;
+  const isPro = userProfile?.plan === 'pro';
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }} className="entrance-fade">
       
-      {/* Column 1: Profile & Plan */}
+      {/* Column 1: Profile & Billing */}
       <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: 'fit-content' }}>
         <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0 }}>
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Profile & Billing</h3>
+          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Profile & Credits</h3>
         </div>
 
         {userProfile && (
@@ -260,47 +187,42 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {/* Plan & Credits Box */}
+            <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Subscription Plan:</span>
                 <span style={{ 
                   fontSize: '0.85rem', 
                   fontWeight: 800, 
-                  color: userProfile.plan === 'pro' ? '#c084fc' : userProfile.plan === 'byok' ? '#a78bfa' : 'var(--text-primary)',
+                  color: isPro ? '#c084fc' : 'var(--text-primary)',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '0.35rem',
-                  background: userProfile.plan === 'pro' ? 'rgba(192, 132, 252, 0.15)' : userProfile.plan === 'byok' ? 'rgba(167, 139, 250, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                  background: isPro ? 'rgba(192, 132, 252, 0.15)' : 'rgba(255, 255, 255, 0.05)',
                   padding: '3px 10px',
                   borderRadius: '999px',
-                  border: userProfile.plan === 'pro' ? '1px solid rgba(192, 132, 252, 0.3)' : '1px solid var(--card-border)'
+                  border: isPro ? '1px solid rgba(192, 132, 252, 0.3)' : '1px solid var(--card-border)'
                 }}>
-                  {userProfile.plan === 'pro' ? <Zap size={12} fill="#c084fc" /> : <ShieldCheck size={12} />}
-                  {userProfile.plan.toUpperCase()}
+                  {isPro ? <Zap size={12} fill="#c084fc" /> : <ShieldCheck size={12} />}
+                  {isPro ? 'PRO TIER' : 'FREE TIER'}
                 </span>
               </div>
 
-              {userProfile.plan === 'free' && (
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Free Trial Balance:</span>
-                    <span style={{ fontSize: '0.8rem', fontWeight: 700, color: userProfile.generation_count >= 5 ? '#f87171' : 'var(--text-primary)' }}>
-                      {userProfile.generation_count} / 5 used
-                    </span>
-                  </div>
-                  <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '999px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${Math.min(100, (userProfile.generation_count / 5) * 100)}%`,
-                        height: '100%',
-                        background: userProfile.generation_count >= 5 ? '#ef4444' : 'linear-gradient(90deg, #7c3aed 0%, #10b981 100%)',
-                        borderRadius: '999px',
-                        transition: 'width 0.3s ease'
-                      }}
-                    />
+              {/* Credits Balance Display */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Coins size={18} style={{ color: currentCredits > 0 ? '#10b981' : '#f87171' }} />
+                  <div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Credit Balance</div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: currentCredits > 0 ? '#ffffff' : '#f87171' }}>
+                      {currentCredits} Credits
+                    </div>
                   </div>
                 </div>
-              )}
+                <div style={{ textAlign: 'right', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                  ~{Math.floor(currentCredits / 10)} CV tailorings
+                </div>
+              </div>
 
               {onOpenPricingModal && (
                 <button
@@ -309,17 +231,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   className="btn btn-primary"
                   style={{
                     width: '100%',
-                    padding: '0.6rem 1rem',
+                    padding: '0.65rem 1rem',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     justifyContent: 'center',
                     marginTop: '0.25rem',
-                    background: userProfile.plan === 'pro' ? 'var(--bg-tertiary)' : 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
-                    color: userProfile.plan === 'pro' ? 'var(--text-primary)' : '#ffffff',
-                    border: userProfile.plan === 'pro' ? '1px solid var(--card-border)' : 'none'
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
+                    color: '#ffffff',
+                    boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
                   }}
                 >
-                  {userProfile.plan === 'pro' ? 'Manage Subscription' : 'Upgrade Plan / Go BYOK'}
+                  <Coins size={14} />
+                  <span>Buy Credits / View Packs</span>
                 </button>
               )}
             </div>
@@ -337,165 +260,86 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         )}
       </div>
 
-      {/* Column 2: LLM Config & Secure Key Vault */}
+      {/* Column 2: AI Engine Architecture */}
       <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0 }}>
           <div className="flex-row-gap">
             <Settings size={20} className="text-accent-primary" />
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>LLM Engine Setup</h3>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>AI Engine & Security</h3>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="form-group">
-            <label htmlFor="llm-provider">Active Provider</label>
-            <select
-              id="llm-provider"
-              value={userProfile?.plan === 'free' ? 'gemini' : config.provider}
-              onChange={handleProviderChange}
-              disabled={userProfile?.plan === 'free'}
-            >
-              <option value="gemini">Google Gemini</option>
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-            </select>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Managed SaaS Badge */}
+          <div style={{ 
+            fontSize: '0.85rem', 
+            background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.08) 0%, rgba(99, 102, 241, 0.04) 100%)', 
+            border: '1px solid rgba(124, 58, 237, 0.2)', 
+            padding: '1rem', 
+            borderRadius: 'var(--border-radius-md)', 
+            color: 'var(--text-primary)', 
+            display: 'flex', 
+            flexDirection: 'column',
+            gap: '0.5rem' 
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, color: '#c084fc' }}>
+              <ShieldCheck size={18} />
+              <span>Zero-Config Managed AI Engine</span>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Powered by high-speed Google Gemini models. You do not need to provide or manage API keys — all inference is handled securely by the cloud platform.
+            </p>
           </div>
 
-          <div className="form-group">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-              <label htmlFor="llm-model" style={{ margin: 0 }}>Generation Model</label>
-              {userProfile?.plan !== 'free' && activeModelInfo?.tag && (
-                <span style={{
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  padding: '2px 8px',
-                  borderRadius: '999px',
-                  background: activeModelInfo.tag === 'Recommended' ? 'rgba(124, 58, 237, 0.15)' :
-                              activeModelInfo.tag === 'Flagship' ? 'rgba(59, 130, 246, 0.15)' :
-                              activeModelInfo.tag === 'Reasoning' ? 'rgba(234, 88, 12, 0.15)' :
-                              activeModelInfo.tag === 'Pro' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                  color: activeModelInfo.tag === 'Recommended' ? 'var(--accent-primary)' :
-                         activeModelInfo.tag === 'Flagship' ? '#3b82f6' :
-                         activeModelInfo.tag === 'Reasoning' ? '#ea580c' :
-                         activeModelInfo.tag === 'Pro' ? '#c084fc' : '#10b981',
-                  border: '1px solid currentColor'
-                }}>
-                  {activeModelInfo.tag}
-                </span>
-              )}
+          {/* Feature Burn Breakdown */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.85rem' }}>
+            <div style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Sparkles size={14} style={{ color: 'var(--accent-primary)' }} />
+              <span>Credit Usage Guide:</span>
             </div>
-            <select
-              id="llm-model"
-              value={userProfile?.plan === 'free' ? 'gemini-flash-latest' : config.model}
-              onChange={handleModelChange}
-              disabled={userProfile?.plan === 'free'}
-            >
-              {userProfile?.plan === 'free' ? (
-                <option value="gemini-flash-latest">Gemini Flash (Latest)</option>
-              ) : (
-                <>
-                  {PROVIDER_MODELS[config.provider]?.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} {m.tag ? `[${m.tag}]` : ''} ({m.id})
-                    </option>
-                  ))}
-                  {config.model && !PROVIDER_MODELS[config.provider]?.some((m) => m.id === config.model) && (
-                    <option value={config.model}>Custom Model ({config.model})</option>
-                  )}
-                </>
-              )}
-            </select>
-            {userProfile?.plan === 'free' ? (
-              <div style={{ fontSize: '0.8rem', color: 'var(--accent-primary)', marginTop: '0.35rem', display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                <Info size={14} />
-                <span>Free trial is powered by Gemini Flash. Upgrade or go BYOK to select others.</span>
-              </div>
-            ) : (
-              activeModelInfo?.description && (
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                  <Sparkles size={13} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
-                  <span>{activeModelInfo.description}</span>
-                </div>
-              )
-            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Full CV Tailoring + Cover Letter:</span>
+              <strong style={{ color: '#c084fc' }}>10 Credits</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>1-Click ATS Auto-Fix:</span>
+              <strong style={{ color: '#c084fc' }}>5 Credits</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>DOCX Layout Optimization:</span>
+              <strong style={{ color: '#c084fc' }}>10 Credits</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: '6px', border: '1px solid var(--card-border)' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Resume Upload & PDF/DOCX Exports:</span>
+              <strong style={{ color: '#10b981' }}>FREE (0 Credits)</strong>
+            </div>
           </div>
 
-          <hr style={{ borderColor: 'var(--card-border)' }} />
-
-          {/* Key Vault Management */}
-          {userProfile && userProfile.plan === 'byok' ? (
-            <div className="form-group">
-              <label htmlFor="llm-api-key" className="flex-row-between">
-                <span>BYOK Secure Key Vault</span>
-                {isCurrentKeySaved && (
-                  <span style={{ fontSize: '0.8rem', color: 'var(--accent-mint)', display: 'flex', alignItems: 'center', gap: '0.2rem', fontWeight: 600 }}>
-                    <CheckCircle2 size={12} style={{ color: '#10b981' }} /> Key Active
-                  </span>
-                )}
-              </label>
-
-              {isCurrentKeySaved ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.15)', padding: '0.5rem', borderRadius: '4px' }}>
-                    An encrypted key for {config.provider.toUpperCase()} is active on the server.
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleDeleteKey}
-                    disabled={savingKey}
-                    className="btn btn-secondary"
-                    style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.15)', color: '#ef4444' }}
-                  >
-                    Remove Saved Key
-                  </button>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <input
-                    id="llm-api-key"
-                    type="password"
-                    placeholder={`Enter your secure ${config.provider.toUpperCase()} key`}
-                    value={keyInput}
-                    onChange={(e) => setKeyInput(e.target.value)}
-                    style={{ flexGrow: 1 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSaveKey}
-                    disabled={savingKey || !keyInput.trim()}
-                    className="btn btn-primary"
-                    style={{ width: 'auto', padding: '0 1.25rem' }}
-                  >
-                    {savingKey ? 'Storing...' : 'Store'}
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div style={{ fontSize: '0.85rem', background: 'rgba(37, 99, 235, 0.05)', border: '1px solid rgba(37, 99, 235, 0.15)', padding: '0.75rem', borderRadius: 'var(--border-radius-md)', color: 'var(--accent-primary)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <ShieldCheck size={18} style={{ flexShrink: 0 }} />
-              <span>SaaS Managed Key Active (No setup required)</span>
-            </div>
-          )}
+          {/* Need Assistance Info */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)', background: 'rgba(255, 255, 255, 0.02)', padding: '0.75rem', borderRadius: '6px' }}>
+            <HelpCircle size={15} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>Need custom team plans or executive career reviews? Contact support anytime via the Help button.</span>
+          </div>
 
           {errorMsg && (
-            <div className="flex-row-gap" style={{ color: 'var(--danger)', fontSize: '0.8rem', background: 'rgba(186, 26, 26, 0.08)', padding: '0.75rem', borderRadius: 'var(--border-radius-md)' }}>
-              <Info size={14} style={{ flexShrink: 0 }} />
-              <span>{errorMsg}</span>
+            <div style={{ color: 'var(--danger)', fontSize: '0.8rem', background: 'rgba(186, 26, 26, 0.08)', padding: '0.75rem', borderRadius: 'var(--border-radius-md)' }}>
+              {errorMsg}
             </div>
           )}
 
           {successMsg && (
-            <div className="flex-row-gap" style={{ color: '#10b981', fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.08)', padding: '0.75rem', borderRadius: 'var(--border-radius-md)' }}>
-              <CheckCircle2 size={14} style={{ flexShrink: 0 }} />
-              <span>{successMsg}</span>
+            <div style={{ color: '#10b981', fontSize: '0.8rem', background: 'rgba(16, 185, 129, 0.08)', padding: '0.75rem', borderRadius: 'var(--border-radius-md)' }}>
+              {successMsg}
             </div>
           )}
 
           {/* Legal & Compliance Quick Links */}
-          <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+          <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
             <span style={{ color: 'var(--text-muted)' }}>Compliance & Privacy:</span>
             <div style={{ display: 'flex', gap: '0.75rem' }}>
               <button

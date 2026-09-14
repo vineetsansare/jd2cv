@@ -31,7 +31,8 @@ interface AdminPortalProps {
   userProfile?: {
     email: string;
     full_name?: string;
-    plan: 'free' | 'byok' | 'pro';
+    plan: 'free' | 'pro';
+    credits_balance?: number;
     generation_count: number;
     is_admin?: boolean;
   } | null;
@@ -45,7 +46,7 @@ interface AdminStats {
     signupsToday: number;
     signupsThisWeek: number;
     signupsThisMonth: number;
-    planBreakdown: { free: number; byok: number; pro: number };
+    planBreakdown: { free: number; pro: number };
   };
   generations: {
     total: number;
@@ -97,7 +98,8 @@ interface UserItem {
   email: string;
   full_name?: string;
   avatar_url?: string;
-  plan: 'free' | 'byok' | 'pro';
+  plan: 'free' | 'pro';
+  credits_balance?: number;
   generation_count: number;
   is_admin: boolean;
   created_at: string;
@@ -292,11 +294,10 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
       const { count: docCount } = await supabase.from('cv_documents').select('*', { count: 'exact', head: true });
 
       const totalUsers = profiles?.length || 0;
-      const planBreakdown = { free: 0, byok: 0, pro: 0 };
+      const planBreakdown = { free: 0, pro: 0 };
       (profiles || []).forEach(p => {
-        const pl = (p.plan as 'free' | 'byok' | 'pro') || 'free';
-        if (planBreakdown[pl] !== undefined) planBreakdown[pl]++;
-        else planBreakdown.free++;
+        const pl = p.plan === 'pro' ? 'pro' : 'free';
+        planBreakdown[pl]++;
       });
 
       const totalGenerations = gens?.length || 0;
@@ -564,7 +565,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
   };
 
   // Update Plan for User
-  const handleUpdateUserPlan = async (userId: string, newPlan: 'free' | 'byok' | 'pro') => {
+  const handleUpdateUserPlan = async (userId: string, newPlan: 'free' | 'pro') => {
     try {
       let updated = false;
       if (proxyUrl) {
@@ -1181,8 +1182,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
                 <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                   <span>Free: <strong style={{ color: '#fff' }}>{stats?.users.planBreakdown.free || 0}</strong></span>
                   <span>•</span>
-                  <span>BYOK: <strong style={{ color: '#3b82f6' }}>{stats?.users.planBreakdown.byok || 0}</strong></span>
-                  <span>•</span>
                   <span>Pro: <strong style={{ color: '#c084fc' }}>{stats?.users.planBreakdown.pro || 0}</strong></span>
                 </div>
               </div>
@@ -1416,7 +1415,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
                 >
                   <option value="all">All Plans</option>
                   <option value="free">Free</option>
-                  <option value="byok">BYOK</option>
                   <option value="pro">Pro</option>
                 </select>
 
@@ -1481,8 +1479,8 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
                                 fontSize: '0.75rem',
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
-                                background: u.plan === 'pro' ? 'rgba(168, 85, 247, 0.15)' : u.plan === 'byok' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(255, 255, 255, 0.08)',
-                                color: u.plan === 'pro' ? '#c084fc' : u.plan === 'byok' ? '#3b82f6' : 'var(--text-secondary)'
+                                background: u.plan === 'pro' ? 'rgba(168, 85, 247, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                                color: u.plan === 'pro' ? '#c084fc' : 'var(--text-secondary)'
                               }}>
                                 {u.plan}
                               </span>
@@ -1991,7 +1989,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
                     Quick Plan Tier Adjustment
                   </span>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    {(['free', 'byok', 'pro'] as const).map(p => (
+                    {(['free', 'pro'] as const).map(p => (
                       <button
                         key={p}
                         onClick={() => handleUpdateUserPlan(selectedUserDetail.profile.id, p)}

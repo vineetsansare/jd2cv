@@ -48,7 +48,7 @@ export default async function adminRoutes(fastify: FastifyInstance) {
       if (profilesErr) throw profilesErr;
 
       const totalUsers = profiles?.length || 0;
-      const planBreakdown = { free: 0, byok: 0, pro: 0 };
+      const planBreakdown = { free: 0, pro: 0 };
       const now = new Date();
       const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -59,12 +59,8 @@ export default async function adminRoutes(fastify: FastifyInstance) {
       let signupsThisMonth = 0;
 
       (profiles || []).forEach(p => {
-        const plan = (p.plan as 'free' | 'byok' | 'pro') || 'free';
-        if (planBreakdown[plan] !== undefined) {
-          planBreakdown[plan]++;
-        } else {
-          planBreakdown.free++;
-        }
+        const plan = p.plan === 'pro' ? 'pro' : 'free';
+        planBreakdown[plan]++;
 
         const createdAt = new Date(p.created_at);
         if (createdAt >= oneDayAgo) signupsToday++;
@@ -379,7 +375,7 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     try {
       let query = supabaseAdmin
         .from('profiles')
-        .select('id, email, full_name, avatar_url, plan, generation_count, is_admin, created_at, updated_at', { count: 'exact' });
+        .select('id, email, full_name, avatar_url, plan, credits_balance, generation_count, is_admin, created_at, updated_at', { count: 'exact' });
 
       if (plan && plan !== 'all') {
         query = query.eq('plan', plan);
@@ -481,14 +477,14 @@ export default async function adminRoutes(fastify: FastifyInstance) {
   // POST /api/admin/users/:id/update-plan - Set user plan
   fastify.post('/users/:id/update-plan', async (request: FastifyRequest<{
     Params: { id: string };
-    Body: { plan: 'free' | 'byok' | 'pro' }
+    Body: { plan: 'free' | 'pro' }
   }>, reply: FastifyReply) => {
     await requireAdmin(request, reply);
     const { id } = request.params;
     const { plan } = request.body;
 
-    if (!['free', 'byok', 'pro'].includes(plan)) {
-      return reply.status(400).send({ error: 'Invalid plan specified' });
+    if (!['free', 'pro'].includes(plan)) {
+      return reply.status(400).send({ error: 'Invalid plan specified. Allowed: free, pro' });
     }
 
     try {
@@ -502,6 +498,54 @@ export default async function adminRoutes(fastify: FastifyInstance) {
     } catch (err: any) {
       fastify.log.error(err);
       return reply.status(500).send({ error: err.message || 'Failed to update user plan' });
+    }
+  });
+
+  // POST /api/admin/users/:id/adjust-credits - Add or deduct credits directly
+  fastify.post('/users/:id/adjust-credits', async (request: FastifyRequest<{
+    Params: { id: string };
+    Body: { amount: number; reason?: string }
+  }>, reply: FastifyReply) => {
+    await requireAdmin(request, reply);
+    const { id } = request.params;
+    const { amount, reason = 'admin_adjustment' } = request.body;
+
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      return reply.status(400).send({ error: 'Valid integer credit amount is required' });
+    }
+
+    try {
+      const { data: profile, error: pErr } = await supabaseAdmin
+        .from('profiles')
+        .select('credits_balance')
+        .eq('id', id)
+        .single();
+
+      if (pErr || !profile) {
+        return reply.status(404).send({ error: 'User profile not found' });
+      }
+
+      const current = profile.credits_balance ?? 10;
+      const newBalance = Math.max(0, current + amount);
+
+      await supabaseAdmin
+        .from('profiles')
+        .update({ credits_balance: newBalance })
+        .eq('id', id);
+
+      await supabaseAdmin
+        .from('credit_transactions')
+        .insert({
+          user_id: id,
+          amount,
+          balance_after: newBalance,
+          action: reason
+        });
+
+      return { success: true, newBalance, message: `User credits adjusted by ${amount}. New balance: ${newBalance}` };
+    } catch (err: any) {
+      fastify.log.error(err);
+      return reply.status(500).send({ error: err.message || 'Failed to adjust credits' });
     }
   });
 

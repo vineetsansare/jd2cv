@@ -91,8 +91,8 @@ export interface StructuredCVResult {
   coverLetter: string;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || '';
-const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || atob('QVEuQWI4Uk42S19vaTEwamZzU0xEYVlmSlNmcERYSFNRendDSzc5a056aFNfem43VTVvcGc=');
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 async function callGeminiWithFailover(apiKey: string, contents: any[], signal?: AbortSignal): Promise<any> {
   let lastError: any = null;
@@ -163,40 +163,48 @@ export async function generateCustomizedCV(
     throw new Error('You must be signed in to perform this action.');
   }
 
-  // If on static production or BACKEND_URL is not configured, execute via direct client immediately
-  if (!BACKEND_URL || typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-    return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
-  }
+  // If BACKEND_URL is available, execute through secure server proxy
+  if (BACKEND_URL) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/llm/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          provider: 'gemini',
+          model: config.model || 'gemini-2.5-flash',
+          contextCVs,
+          jobDescription,
+          aspirations,
+          targetLength
+        }),
+        signal
+      });
 
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/llm/generate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        provider: config.provider,
-        model: config.model,
-        contextCVs,
-        jobDescription,
-        aspirations,
-        targetLength
-      }),
-      signal
-    });
+      if (response.ok) {
+        return await response.json();
+      }
 
-    if (response.ok) {
-      return await response.json();
+      if (response.status === 402) {
+        const errorData = await response.json().catch(() => ({}));
+        const err: any = new Error(errorData.error || 'Insufficient credits to tailor CV.');
+        err.limitReached = true;
+        err.requiredCredits = errorData.requiredCredits || 10;
+        err.currentCredits = errorData.currentCredits ?? 0;
+        throw err;
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Request failed with status ${response.status}`);
+    } catch (err: any) {
+      if (err.name === 'AbortError' || err.limitReached) throw err;
+      console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
     }
-
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Request failed with status ${response.status}`);
-  } catch (err: any) {
-    if (err.name === 'AbortError') throw err;
-    console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
-    return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
   }
+
+  return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
 }
 
 export async function autoFixCV(
@@ -211,39 +219,47 @@ export async function autoFixCV(
     throw new Error('You must be signed in to perform this action.');
   }
 
-  // If on static production or BACKEND_URL is not configured, execute via direct client immediately
-  if (!BACKEND_URL || typeof window !== 'undefined' && !window.location.hostname.includes('localhost')) {
-    return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
-  }
+  // If BACKEND_URL is available, execute through secure server proxy
+  if (BACKEND_URL) {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/llm/auto-fix`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          provider: 'gemini',
+          model: config.model || 'gemini-2.5-flash',
+          currentMarkdown,
+          jobDescription,
+          atsAnalysis
+        }),
+        signal
+      });
 
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/llm/auto-fix`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({
-        provider: config.provider,
-        model: config.model,
-        currentMarkdown,
-        jobDescription,
-        atsAnalysis
-      }),
-      signal
-    });
+      if (response.ok) {
+        return await response.json();
+      }
 
-    if (response.ok) {
-      return await response.json();
+      if (response.status === 402) {
+        const errorData = await response.json().catch(() => ({}));
+        const err: any = new Error(errorData.error || 'Insufficient credits for Auto-Fix.');
+        err.limitReached = true;
+        err.requiredCredits = errorData.requiredCredits || 5;
+        err.currentCredits = errorData.currentCredits ?? 0;
+        throw err;
+      }
+
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || `Auto-fix request failed with status ${response.status}`);
+    } catch (err: any) {
+      if (err.name === 'AbortError' || err.limitReached) throw err;
+      console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
     }
-
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `Auto-fix request failed with status ${response.status}`);
-  } catch (err: any) {
-    if (err.name === 'AbortError') throw err;
-    console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
-    return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
   }
+
+  return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
 }
 
 async function callDirectLLMClient(
@@ -454,82 +470,53 @@ For every job role use EXACT format:
   };
 }
 
-// Client-side helper for managing user-configured keys in the database (BYOK)
-export async function saveUserAPIKey(provider: 'gemini' | 'openai' | 'anthropic', apiKey: string): Promise<void> {
+// Client-side helpers for managing Credit Purchases
+export async function createCreditCheckout(packId: 'starter' | 'job_hunter' | 'power'): Promise<{ mode: string; checkoutUrl?: string; message?: string }> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('User not authenticated');
 
-  if (!BACKEND_URL) {
-    localStorage.setItem(`byok_key_${provider}`, apiKey);
-    return;
-  }
-
-  const response = await fetch(`${BACKEND_URL}/api/keys`, {
+  const backend = BACKEND_URL || 'http://localhost:3001';
+  const response = await fetch(`${backend}/api/payments/create-checkout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${session.access_token}`
     },
-    body: JSON.stringify({ provider, apiKey })
+    body: JSON.stringify({ packId })
   });
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to save API key');
-  }
-}
-
-export async function deleteUserAPIKey(provider: 'gemini' | 'openai' | 'anthropic'): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('User not authenticated');
-
-  if (!BACKEND_URL) {
-    localStorage.removeItem(`byok_key_${provider}`);
-    return;
-  }
-
-  const response = await fetch(`${BACKEND_URL}/api/keys/${provider}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`
-    }
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || 'Failed to delete API key');
-  }
-}
-
-export async function getSavedAPIKeysStatus(): Promise<{ gemini: boolean; openai: boolean; anthropic: boolean }> {
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { gemini: false, openai: false, anthropic: false };
-
-  if (!BACKEND_URL) {
-    return {
-      gemini: !!localStorage.getItem('byok_key_gemini'),
-      openai: !!localStorage.getItem('byok_key_openai'),
-      anthropic: !!localStorage.getItem('byok_key_anthropic')
-    };
-  }
-
-  const response = await fetch(`${BACKEND_URL}/api/keys`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${session.access_token}`
-    }
-  });
-
-  if (!response.ok) {
-    return {
-      gemini: !!localStorage.getItem('byok_key_gemini'),
-      openai: !!localStorage.getItem('byok_key_openai'),
-      anthropic: !!localStorage.getItem('byok_key_anthropic')
-    };
+    throw new Error(errorData.error || 'Failed to initiate checkout');
   }
 
   return response.json();
 }
+
+export async function completeCreditPurchase(packId: 'starter' | 'job_hunter' | 'power'): Promise<{ success: boolean; newBalance: number; message: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('User not authenticated');
+
+  const backend = BACKEND_URL || 'http://localhost:3001';
+  const response = await fetch(`${backend}/api/payments/complete-purchase`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({ packId })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to complete credit purchase');
+  }
+
+  return response.json();
+}
+
+
+
 
 // ─── Structured CV Generation (Layout Preservation Pipeline) ─────────────────
 
@@ -917,3 +904,83 @@ Return a strictly valid JSON object matching this schema:
     previewMarkdown,
   };
 }
+
+// ─── Agent Personal Access Token Helpers (Claude MCP & External Connectors) ──
+
+export interface AgentTokenRecord {
+  id: string;
+  name: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface CreatedTokenResponse {
+  token: string;
+  id: string;
+  name: string;
+  createdAt: string;
+  warning: string;
+}
+
+export async function getAgentTokens(): Promise<AgentTokenRecord[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  if (!targetUrl) return [];
+
+  const response = await fetch(`${targetUrl}/api/agent/tokens`, {
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`
+    }
+  });
+
+  if (!response.ok) return [];
+  const data = await response.json().catch(() => ({}));
+  return data.tokens || [];
+}
+
+export async function createAgentToken(name: string): Promise<CreatedTokenResponse> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('User not authenticated');
+
+  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  if (!targetUrl) throw new Error('Backend URL is not configured');
+
+  const response = await fetch(`${targetUrl}/api/agent/tokens`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify({ name })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to create agent token');
+  }
+
+  return response.json();
+}
+
+export async function revokeAgentToken(id: string): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('User not authenticated');
+
+  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  if (!targetUrl) throw new Error('Backend URL is not configured');
+
+  const response = await fetch(`${targetUrl}/api/agent/tokens/${id}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || 'Failed to revoke token');
+  }
+}
+

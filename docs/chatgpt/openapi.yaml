@@ -1,0 +1,188 @@
+openapi: 3.1.0
+info:
+  title: JD2CV Resume Builder & ATS Optimization Engine
+  description: OpenAPI 3.1 Action interface for ChatGPT to access stored candidate resumes, extract job postings, audit ATS keyword compatibility, and generate executive tailored CVs via JD2CV.
+  version: 1.0.0
+servers:
+  - url: https://toolsby.vineetsansare.com/api/agent
+    description: JD2CV Production Agent API
+paths:
+  /profile:
+    get:
+      operationId: getUserProfile
+      summary: Get user profile, subscription plan, and generation quota
+      description: Returns the authenticated candidate's subscription tier and remaining generation credits.
+      responses:
+        '200':
+          description: User profile details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+                  plan:
+                    type: string
+                    enum: [free, byok, pro]
+                  generationCount:
+                    type: integer
+                  quotaRemaining:
+                    type: [integer, string]
+        '401':
+          description: Unauthorized token
+
+  /base-cv:
+    get:
+      operationId: getUserBaseCV
+      summary: Retrieve candidate's active master resume
+      description: Fetches the candidate's primary baseline CV stored in JD2CV.
+      responses:
+        '200':
+          description: Master CV details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasBaseCV:
+                    type: boolean
+                  cv:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      filename:
+                        type: string
+                      extractedText:
+                        type: string
+                      uploadedAt:
+                        type: string
+                      wordCount:
+                        type: integer
+        '404':
+          description: No base CV found
+
+  /scrape:
+    post:
+      operationId: extractJobFromUrl
+      summary: Extract clean text from a job posting or company URL
+      description: Sanitizes and extracts clean job description requirements and metadata from a web page.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Public web URL of the job description or company About Us page
+      responses:
+        '200':
+          description: Clean extracted text
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                  title:
+                    type: string
+                  text:
+                    type: string
+        '422':
+          description: URL extraction failed or blocked
+
+  /generate:
+    post:
+      operationId: generateTailoredCV
+      summary: Generate executive tailored CV and ATS audit
+      description: Invokes JD2CV's executive rewriting engine to customize candidate accomplishments for a target Job Description, returning ATS score, audit analysis, cover letter, and a deep link to preview/export the 2-page PDF.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                jobDescription:
+                  type: string
+                  description: The target job description text
+                url:
+                  type: string
+                  format: uri
+                  description: Optional URL of the job description (used if raw text not provided)
+                aspirations:
+                  type: string
+                  description: Specific focus, seniority, or skills to emphasize
+                targetLength:
+                  type: string
+                  enum: [1-page, 2-page, comprehensive]
+                  default: 2-page
+                  description: Strict page ceiling for the printed layout
+                redactPii:
+                  type: boolean
+                  default: false
+                  description: "GDPR Data Minimization: Mask candidate phone, email, and street address before AI processing"
+              anyOf:
+                - required: [jobDescription]
+                - required: [url]
+      responses:
+        '200':
+          description: Generation successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cvMarkdown:
+                    type: string
+                  atsScore:
+                    type: integer
+                  atsAnalysis:
+                    type: object
+                    properties:
+                      matchedKeywords:
+                        type: array
+                        items:
+                          type: string
+                      missingKeywords:
+                        type: array
+                        items:
+                          type: string
+                      strengths:
+                        type: array
+                        items:
+                          type: string
+                      weaknesses:
+                        type: array
+                        items:
+                          type: string
+                      actionItems:
+                        type: array
+                        items:
+                          type: string
+                  humanFriendlyChanges:
+                    type: array
+                    items:
+                      type: string
+                  coverLetter:
+                    type: string
+                  generationId:
+                    type: string
+                  deepLinkUrl:
+                    type: string
+                    format: uri
+                  quotaRemaining:
+                    type: [integer, string]
+        '400':
+          description: Missing baseline CV or invalid job description
+        '402':
+          description: Free trial quota exhausted

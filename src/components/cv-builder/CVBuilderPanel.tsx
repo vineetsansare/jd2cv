@@ -38,6 +38,7 @@ interface CVBuilderPanelProps {
 }
 
 export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
+  userProfile,
   baseCVs,
   onSetAsBaseCV
 }) => {
@@ -69,6 +70,21 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
     }, 600);
     return () => clearTimeout(timer);
   }, [cv]);
+
+  // Sync profile avatar into CV basics if not already customized
+  useEffect(() => {
+    const activeAvatar = userProfile?.avatar_url || (typeof window !== 'undefined' ? localStorage.getItem('user_avatar_url') : '');
+    if (activeAvatar && (!cv.basics.avatarUrl || cv.basics.avatarUrl === DEFAULT_CV_DATA.basics.avatarUrl)) {
+      setCv(prev => ({
+        ...prev,
+        basics: {
+          ...prev.basics,
+          avatarUrl: activeAvatar,
+          showAvatar: true
+        }
+      }));
+    }
+  }, [userProfile?.avatar_url]);
 
   // Section updaters
   const updateBasics = (basics: ResumeBasics) => {

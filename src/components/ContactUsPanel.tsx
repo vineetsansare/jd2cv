@@ -6,7 +6,8 @@ interface ContactUsPanelProps {
   userProfile: {
     email: string;
     full_name?: string;
-    plan: 'free' | 'byok' | 'pro';
+    plan: 'free' | 'pro';
+    credits_balance?: number;
     generation_count: number;
   } | null;
   session?: any;
@@ -155,8 +156,8 @@ export const ContactUsPanel: React.FC<ContactUsPanelProps> = ({ userProfile, ses
     setError(null);
 
     const userPlan = (userProfile?.plan || 'free').toUpperCase();
-    const planBadgeColor = userPlan === 'PRO' ? '#c084fc' : userPlan === 'BYOK' ? '#a78bfa' : '#94a3b8';
-    const planBadgeBg = userPlan === 'PRO' ? 'rgba(192, 132, 252, 0.15)' : userPlan === 'BYOK' ? 'rgba(167, 139, 250, 0.15)' : 'rgba(255, 255, 255, 0.08)';
+    const planBadgeColor = userPlan === 'PRO' ? '#c084fc' : '#94a3b8';
+    const planBadgeBg = userPlan === 'PRO' ? 'rgba(192, 132, 252, 0.15)' : 'rgba(255, 255, 255, 0.08)';
 
     // 4. Build Custom Dark-Mode HTML Email for Resend
     const htmlEmail = `

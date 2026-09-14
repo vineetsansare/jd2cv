@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
+import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
@@ -20,8 +21,9 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 export interface AuthenticatedUser {
   id: string;
   email: string;
-  plan: 'free' | 'byok' | 'pro';
+  plan: 'free' | 'pro';
   generationCount: number;
+  credits: number;
   isAdmin: boolean;
 }
 
@@ -59,11 +61,52 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
       email: 'admin@vineetsansare.com',
       plan: 'pro',
       generationCount: 9999,
+      credits: 99999,
       isAdmin: true
     };
   }
 
-  // 2. Supabase User Token Check
+  // 2. Personal Access Token Check (jd2cv_sk_...) for Claude MCP, ChatGPT, or CLI
+  if (token.startsWith('jd2cv_sk_')) {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    const { data: pat, error: patError } = await supabaseAdmin
+      .from('personal_access_tokens')
+      .select('id, user_id')
+      .eq('token_hash', tokenHash)
+      .single();
+
+    if (!patError && pat) {
+      // Async update of last_used_at
+      supabaseAdmin
+        .from('personal_access_tokens')
+        .update({ last_used_at: new Date().toISOString() })
+        .eq('id', pat.id)
+        .then();
+
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('email, plan, credits_balance, generation_count, is_admin')
+        .eq('id', pat.user_id)
+        .single();
+
+      if (!profileError && profile) {
+        const rawPlan: 'free' | 'pro' = profile.plan === 'pro' ? 'pro' : 'free';
+        return {
+          id: pat.user_id,
+          email: profile.email || '',
+          plan: rawPlan,
+          generationCount: profile.generation_count || 0,
+          credits: typeof profile.credits_balance === 'number' ? profile.credits_balance : 10,
+          isAdmin: isUserAdmin(profile.email || '', profile.is_admin)
+        };
+      }
+    }
+
+    reply.status(401).send({ error: 'Invalid or revoked Personal Access Token' });
+    throw new Error('Unauthorized');
+  }
+
+  // 3. Supabase User Token Check (Session JWT or OAuth 2.0 Token)
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !user) {
@@ -71,10 +114,10 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
     throw new Error('Unauthorized');
   }
 
-  // Fetch the user's profile to get their plan, generation count, and admin status
+  // Fetch the user's profile to get their plan, credits, generation count, and admin status
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('plan, generation_count, is_admin')
+    .select('plan, credits_balance, generation_count, is_admin')
     .eq('id', user.id)
     .single();
 
@@ -85,12 +128,14 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
 
   const email = user.email || '';
   const isAdmin = isUserAdmin(email, profile.is_admin);
+  const rawPlan: 'free' | 'pro' = profile.plan === 'pro' ? 'pro' : 'free';
 
   return {
     id: user.id,
     email,
-    plan: profile.plan as 'free' | 'byok' | 'pro',
+    plan: rawPlan,
     generationCount: profile.generation_count || 0,
+    credits: typeof profile.credits_balance === 'number' ? profile.credits_balance : 10,
     isAdmin
   };
 }

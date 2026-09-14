@@ -1,72 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { Check, Zap, Key, Sparkles, X, ShieldCheck, ArrowRight, Star, Globe } from 'lucide-react';
+import { Check, Zap, Sparkles, X, ShieldCheck, ArrowRight, Star, Globe, Coins, FileText, CheckCircle2 } from 'lucide-react';
 
 export interface PricingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPlan: 'free' | 'byok' | 'pro';
-  onSelectPlan: (plan: 'free' | 'byok' | 'pro') => Promise<void>;
+  currentPlan?: 'free' | 'pro';
+  creditsBalance?: number;
+  onPurchasePack?: (packId: 'starter' | 'job_hunter' | 'power') => Promise<void>;
+  onSelectPlan?: (plan: 'free' | 'pro') => Promise<void>;
   generationCount?: number;
-  triggerReason?: 'limit_reached' | 'model_upgrade' | 'manual' | null;
+  triggerReason?: 'insufficient_credits' | 'limit_reached' | 'model_upgrade' | 'manual' | null;
 }
 
 type CurrencyCode = 'AED' | 'USD' | 'INR' | 'EUR' | 'GBP';
 
-interface CurrencyPricing {
-  symbol: string;
-  monthlyPrice: string;
-  weeklyPrice: string;
-  monthlyDisplay: string;
-  weeklyDisplay: string;
-  label: string;
-  tagline: string;
+interface PackPricing {
+  display: string;
+  priceNum: number;
 }
 
-const CURRENCIES: Record<CurrencyCode, CurrencyPricing> = {
+interface CurrencyPackDetails {
+  symbol: string;
+  starter: PackPricing;
+  job_hunter: PackPricing;
+  power: PackPricing;
+  label: string;
+}
+
+const CURRENCY_PACKS: Record<CurrencyCode, CurrencyPackDetails> = {
   AED: {
     symbol: 'AED',
-    monthlyPrice: '29',
-    weeklyPrice: '15',
-    monthlyDisplay: '29 AED',
-    weeklyDisplay: '15 AED',
     label: '🇦🇪 AED (د.إ)',
-    tagline: 'Less than the price of a single coffee / meal'
+    starter: { display: '18 AED', priceNum: 18 },
+    job_hunter: { display: '36 AED', priceNum: 36 },
+    power: { display: '72 AED', priceNum: 72 }
   },
   USD: {
     symbol: '$',
-    monthlyPrice: '7.99',
-    weeklyPrice: '3.99',
-    monthlyDisplay: '$7.99',
-    weeklyDisplay: '$3.99',
     label: '🇺🇸 USD ($)',
-    tagline: 'Less than the price of a single coffee / meal'
+    starter: { display: '$4.99', priceNum: 4.99 },
+    job_hunter: { display: '$9.99', priceNum: 9.99 },
+    power: { display: '$19.99', priceNum: 19.99 }
   },
   INR: {
     symbol: '₹',
-    monthlyPrice: '599',
-    weeklyPrice: '299',
-    monthlyDisplay: '₹599',
-    weeklyDisplay: '₹299',
     label: '🇮🇳 INR (₹)',
-    tagline: 'High-speed AI tailoring for top career opportunities'
+    starter: { display: '₹399', priceNum: 399 },
+    job_hunter: { display: '₹799', priceNum: 799 },
+    power: { display: '₹1,599', priceNum: 1599 }
   },
   EUR: {
     symbol: '€',
-    monthlyPrice: '7.99',
-    weeklyPrice: '3.99',
-    monthlyDisplay: '€7.99',
-    weeklyDisplay: '€3.99',
     label: '🇪🇺 EUR (€)',
-    tagline: 'Less than the price of a single coffee / meal'
+    starter: { display: '€4.99', priceNum: 4.99 },
+    job_hunter: { display: '€9.99', priceNum: 9.99 },
+    power: { display: '€19.99', priceNum: 19.99 }
   },
   GBP: {
     symbol: '£',
-    monthlyPrice: '6.99',
-    weeklyPrice: '3.49',
-    monthlyDisplay: '£6.99',
-    weeklyDisplay: '£3.49',
     label: '🇬🇧 GBP (£)',
-    tagline: 'Less than the price of a single coffee / meal'
+    starter: { display: '£3.99', priceNum: 3.99 },
+    job_hunter: { display: '£7.99', priceNum: 7.99 },
+    power: { display: '£15.99', priceNum: 15.99 }
   }
 };
 
@@ -88,20 +83,19 @@ const detectDefaultCurrency = (): CurrencyCode => {
   } catch (e) {
     // fallback
   }
-  return 'AED'; // Default to UAE / AED as primary target market!
+  return 'AED'; // Default to UAE / AED
 };
 
 export const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
-  currentPlan,
-  onSelectPlan,
-  generationCount = 0,
+  currentPlan: _currentPlan,
+  creditsBalance = 0,
+  onPurchasePack,
   triggerReason = 'manual'
 }) => {
-  const [billingCycle, setBillingCycle] = useState<'weekly' | 'monthly'>('monthly');
   const [currency, setCurrency] = useState<CurrencyCode>('AED');
-  const [loadingPlan, setLoadingPlan] = useState<'free' | 'byok' | 'pro' | null>(null);
+  const [loadingPack, setLoadingPack] = useState<'starter' | 'job_hunter' | 'power' | null>(null);
 
   useEffect(() => {
     setCurrency(detectDefaultCurrency());
@@ -109,21 +103,19 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentCur = CURRENCIES[currency];
+  const currentPrices = CURRENCY_PACKS[currency];
 
-  const handlePlanClick = async (plan: 'free' | 'byok' | 'pro') => {
-    if (plan === currentPlan) {
-      onClose();
-      return;
-    }
-    setLoadingPlan(plan);
+  const handleBuy = async (packId: 'starter' | 'job_hunter' | 'power') => {
+    setLoadingPack(packId);
     try {
-      await onSelectPlan(plan);
+      if (onPurchasePack) {
+        await onPurchasePack(packId);
+      }
       onClose();
     } catch (err) {
-      console.error('Plan selection failed:', err);
+      console.error('Purchase failed:', err);
     } finally {
-      setLoadingPlan(null);
+      setLoadingPack(null);
     }
   };
 
@@ -135,7 +127,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(5, 8, 15, 0.85)',
+        backgroundColor: 'rgba(5, 8, 15, 0.88)',
         backdropFilter: 'blur(12px)',
         zIndex: 10000,
         display: 'flex',
@@ -150,14 +142,14 @@ export const PricingModal: React.FC<PricingModalProps> = ({
         className="glass-card"
         style={{
           position: 'relative',
-          maxWidth: '1040px',
+          maxWidth: '1060px',
           width: '100%',
-          maxHeight: '92vh',
+          maxHeight: '94vh',
           overflowY: 'auto',
           padding: '2.5rem 2rem',
           borderRadius: '24px',
           border: '1px solid rgba(124, 58, 237, 0.25)',
-          background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(10, 15, 29, 0.98) 100%)',
+          background: 'linear-gradient(180deg, rgba(15, 23, 42, 0.96) 0%, rgba(10, 15, 29, 0.98) 100%)',
           boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 40px rgba(124, 58, 237, 0.15)'
         }}
         onClick={(e) => e.stopPropagation()}
@@ -189,74 +181,92 @@ export const PricingModal: React.FC<PricingModalProps> = ({
 
         {/* Modal Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          {triggerReason === 'limit_reached' && (
+          {triggerReason === 'insufficient_credits' || triggerReason === 'limit_reached' ? (
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                padding: '0.35rem 0.85rem',
+                padding: '0.4rem 1rem',
                 borderRadius: '999px',
-                background: 'rgba(239, 68, 68, 0.12)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.35)',
                 color: '#f87171',
                 fontSize: '0.85rem',
-                fontWeight: 600,
+                fontWeight: 700,
+                marginBottom: '0.75rem'
+              }}
+            >
+              <Coins size={15} />
+              <span>You have {creditsBalance} credits left. Add credits to tailor your next CV!</span>
+            </div>
+          ) : (
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.35rem 0.9rem',
+                borderRadius: '999px',
+                background: 'rgba(124, 58, 237, 0.15)',
+                border: '1px solid rgba(124, 58, 237, 0.3)',
+                color: '#c084fc',
+                fontSize: '0.82rem',
+                fontWeight: 700,
                 marginBottom: '0.75rem'
               }}
             >
               <Sparkles size={14} />
-              <span>You've used all {generationCount} free generations!</span>
+              <span>Pay As You Go • No Subscriptions • Zero API Keys</span>
             </div>
           )}
 
           <h2
             style={{
-              fontSize: '2rem',
+              fontSize: '2.1rem',
               fontWeight: 800,
               color: '#ffffff',
               margin: '0 0 0.5rem 0',
               letterSpacing: '-0.02em'
             }}
           >
-            Upgrade Your Job Search Power
+            Job Hunter Credit Shop
           </h2>
           <p
             style={{
-              fontSize: '1rem',
+              fontSize: '0.95rem',
               color: 'var(--text-secondary)',
               margin: 0,
-              maxWidth: '560px',
+              maxWidth: '600px',
               marginInline: 'auto'
             }}
           >
-            Tailor high-converting, ATS-beating resumes and cover letters in seconds.
+            Credits never expire. 10 credits tailor a bespoke CV, calculate live ATS scores, and generate an executive cover letter.
           </p>
 
-          {/* Controls Bar: Currency Selector + Billing Cycle Toggle */}
+          {/* Controls Bar: Currency Selector */}
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '1rem',
               marginTop: '1.5rem'
             }}
           >
-            {/* Currency Selector */}
             <div
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
                 background: 'rgba(255, 255, 255, 0.05)',
-                padding: '4px 8px',
+                padding: '6px 12px',
                 borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                gap: '6px'
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                gap: '8px'
               }}
             >
-              <Globe size={14} style={{ color: 'var(--text-secondary)' }} />
+              <Globe size={15} style={{ color: 'var(--accent-primary)' }} />
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Currency:</span>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value as CurrencyCode)}
@@ -264,102 +274,40 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                   background: 'transparent',
                   border: 'none',
                   color: '#ffffff',
-                  fontWeight: 600,
+                  fontWeight: 700,
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   padding: '2px 4px',
                   outline: 'none'
                 }}
               >
-                {Object.entries(CURRENCIES).map(([code, details]) => (
+                {Object.entries(CURRENCY_PACKS).map(([code, details]) => (
                   <option key={code} value={code} style={{ background: '#0f172a', color: '#fff' }}>
                     {details.label}
                   </option>
                 ))}
               </select>
             </div>
-
-            {/* Billing Cycle Toggle */}
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                background: 'rgba(255, 255, 255, 0.05)',
-                padding: '4px',
-                borderRadius: '12px',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                gap: '4px'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setBillingCycle('monthly')}
-                style={{
-                  padding: '0.45rem 1.15rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: billingCycle === 'monthly' ? 'var(--accent-primary)' : 'transparent',
-                  color: billingCycle === 'monthly' ? '#ffffff' : 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                Monthly Pro ({currentCur.monthlyDisplay}/mo)
-              </button>
-              <button
-                type="button"
-                onClick={() => setBillingCycle('weekly')}
-                style={{
-                  padding: '0.45rem 1.15rem',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: billingCycle === 'weekly' ? 'var(--accent-primary)' : 'transparent',
-                  color: billingCycle === 'weekly' ? '#ffffff' : 'var(--text-secondary)',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.35rem'
-                }}
-              >
-                <span>Weekly Sprint Pass ({currentCur.weeklyDisplay}/wk)</span>
-                <span
-                  style={{
-                    fontSize: '0.7rem',
-                    background: 'rgba(16, 185, 129, 0.2)',
-                    color: '#34d399',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    fontWeight: 700
-                  }}
-                >
-                  Sprint
-                </span>
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* 3-Tier Grid */}
+        {/* 3-Pack Grid */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '1.5rem',
-            alignItems: 'stretch'
+            alignItems: 'stretch',
+            marginBottom: '2rem'
           }}
         >
-          {/* TIER 1: FREE */}
+          {/* PACK 1: STARTER PACK */}
           <div
             style={{
               borderRadius: '20px',
               padding: '1.75rem',
               background: 'rgba(255, 255, 255, 0.03)',
-              border: currentPlan === 'free' ? '2px solid var(--accent-primary)' : '1px solid rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
@@ -368,156 +316,74 @@ export const PricingModal: React.FC<PricingModalProps> = ({
           >
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Free Trial
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Starter Pack
                 </span>
-                {currentPlan === 'free' && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', padding: '2px 8px', borderRadius: '6px' }}>
-                    CURRENT
-                  </span>
-                )}
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '3px 8px', borderRadius: '6px' }}>
+                  30 CREDITS
+                </span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>0 {currentCur.symbol}</span>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>forever</span>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  {currentPrices.starter.display}
+                </span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>one-time</span>
               </div>
 
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-                Test drive AI CV tailoring and experience live ATS score optimization.
+              <p style={{ fontSize: '0.82rem', color: '#a78bfa', marginBottom: '1.25rem', lineHeight: 1.4, fontWeight: 600 }}>
+                ~3 Bespoke Tailored CVs + Cover Letters
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>5 Free</strong> CV Tailorings</span>
+                  <span><strong>30 Total Generation Credits</strong></span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>1 Saved Baseline CV Profile</span>
+                  <span>Instant Pro Tier status unlock</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Live ATS Score Diagnostic</span>
+                  <span>Live ATS Score Diagnostic & Keyword Gaps</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Google Gemini 2.5 Flash Engine</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Clean ATS-Friendly PDF Export</span>
+                  <span>Clean PDF & Word DOCX exports</span>
                 </div>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => handlePlanClick('free')}
-              disabled={loadingPlan !== null}
+              onClick={() => handleBuy('starter')}
+              disabled={loadingPack !== null}
               className="btn btn-secondary"
               style={{
                 width: '100%',
-                padding: '0.75rem',
+                padding: '0.8rem',
                 justifyContent: 'center',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                opacity: currentPlan === 'free' ? 0.7 : 1
+                fontWeight: 700,
+                fontSize: '0.9rem'
               }}
             >
-              {currentPlan === 'free' ? 'Active Plan' : 'Select Free'}
+              {loadingPack === 'starter' ? 'Processing...' : `Get Starter (${currentPrices.starter.display})`}
             </button>
           </div>
 
-          {/* TIER 2: BYOK (BRING YOUR OWN KEY) */}
+          {/* PACK 2: JOB HUNTER PACK (RECOMMENDED / POPULAR) */}
           <div
             style={{
               borderRadius: '20px',
               padding: '1.75rem',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: currentPlan === 'byok' ? '2px solid var(--accent-primary)' : '1px solid rgba(255, 255, 255, 0.12)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              position: 'relative'
-            }}
-          >
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#a78bfa', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Key size={14} /> BYOK (Developer)
-                </span>
-                {currentPlan === 'byok' && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(167, 139, 250, 0.2)', color: '#c4b5fd', padding: '2px 8px', borderRadius: '6px' }}>
-                    CURRENT
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>0 {currentCur.symbol}</span>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>/ month (Uses your keys)</span>
-              </div>
-
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: 1.5 }}>
-                Bring your own OpenAI, Anthropic, or Gemini API keys for unlimited, cost-free generations.
-              </p>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>Unlimited</strong> Generations (Direct API)</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Up to 5 Saved CV Profiles</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Unlock GPT-4o, Claude 3.5 Sonnet, Gemini Pro</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Encrypted Client-Side Key Vault</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Full Auto-Fix & Cover Letter support</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => handlePlanClick('byok')}
-              disabled={loadingPlan !== null}
-              className="btn btn-secondary"
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                justifyContent: 'center',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                borderColor: 'rgba(167, 139, 250, 0.4)',
-                color: '#c4b5fd'
-              }}
-            >
-              {loadingPlan === 'byok' ? 'Switching...' : currentPlan === 'byok' ? 'Active Plan' : 'Switch to BYOK'}
-            </button>
-          </div>
-
-          {/* TIER 3: PRO (POPULAR / EXECUTIVE) */}
-          <div
-            style={{
-              borderRadius: '20px',
-              padding: '1.75rem',
-              background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)',
+              background: 'linear-gradient(180deg, rgba(124, 58, 237, 0.18) 0%, rgba(99, 102, 241, 0.10) 100%)',
               border: '2px solid var(--accent-primary)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
               position: 'relative',
-              boxShadow: '0 10px 30px -10px rgba(124, 58, 237, 0.4)'
+              boxShadow: '0 10px 35px -10px rgba(124, 58, 237, 0.45)'
             }}
           >
             {/* Top Badge */}
@@ -528,7 +394,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 right: '24px',
                 background: 'linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)',
                 color: '#ffffff',
-                fontSize: '0.75rem',
+                fontSize: '0.72rem',
                 fontWeight: 800,
                 padding: '3px 10px',
                 borderRadius: '999px',
@@ -538,94 +404,193 @@ export const PricingModal: React.FC<PricingModalProps> = ({
                 gap: '0.25rem'
               }}
             >
-              <Star size={12} fill="#fff" />
-              <span>POPULAR</span>
+              <Star size={11} fill="#fff" />
+              <span>MOST POPULAR</span>
             </div>
 
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Zap size={14} fill="#c084fc" /> Pro Executive
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Zap size={14} fill="#c084fc" /> Job Hunter Pack
                 </span>
-                {currentPlan === 'pro' && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: 700, background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '2px 8px', borderRadius: '6px' }}>
-                    CURRENT
-                  </span>
-                )}
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'rgba(124, 58, 237, 0.3)', color: '#e9d5ff', padding: '3px 8px', borderRadius: '6px' }}>
+                  80 CREDITS
+                </span>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.35rem' }}>
                 <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>
-                  {billingCycle === 'weekly' ? currentCur.weeklyDisplay : currentCur.monthlyDisplay}
+                  {currentPrices.job_hunter.display}
                 </span>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  {billingCycle === 'weekly' ? '/ week (Cancel anytime)' : '/ month (Cancel anytime)'}
-                </span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>one-time</span>
               </div>
 
-              <p style={{ fontSize: '0.78rem', color: '#a78bfa', fontWeight: 600, margin: '0 0 1.25rem 0' }}>
-                ✨ {currentCur.tagline}
+              <p style={{ fontSize: '0.82rem', color: '#e9d5ff', marginBottom: '1.25rem', lineHeight: 1.4, fontWeight: 600 }}>
+                ~8 Bespoke Tailored CVs + Auto-Fixes & Covers
               </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>Unlimited</strong> AI CV Generations</span>
+                  <span><strong>80 Total Generation Credits</strong></span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>Unlimited</strong> Saved CV Profiles</span>
+                  <span><strong>1-Click ATS Auto-Fix</strong> (5 credits per fix)</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>Zero API Keys Required</strong> (Hosted Cloud Proxy)</span>
+                  <span>DOCX In-Place Exact Layout Preservation</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Instant 3-Paragraph Cover Letters</span>
+                  <span>Full Executive 3-Paragraph Cover Letters</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
                   <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Priority 1-Click ATS Auto-Fix</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
-                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span>Multi-Page & 1-Page PDF Scaler</span>
+                  <span>Credits never expire</span>
                 </div>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={() => handlePlanClick('pro')}
-              disabled={loadingPlan !== null}
+              onClick={() => handleBuy('job_hunter')}
+              disabled={loadingPack !== null}
               className="btn btn-primary"
               style={{
                 width: '100%',
                 padding: '0.85rem',
                 justifyContent: 'center',
-                fontWeight: 700,
+                fontWeight: 800,
                 fontSize: '0.95rem',
                 background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 100%)',
                 boxShadow: '0 4px 15px rgba(124, 58, 237, 0.4)',
                 gap: '0.5rem'
               }}
             >
-              {loadingPlan === 'pro' ? 'Upgrading...' : currentPlan === 'pro' ? 'Active Plan' : (
+              {loadingPack === 'job_hunter' ? 'Processing...' : (
                 <>
-                  <span>Upgrade to Pro</span>
+                  <span>Get 80 Credits ({currentPrices.job_hunter.display})</span>
                   <ArrowRight size={16} />
                 </>
               )}
             </button>
+          </div>
+
+          {/* PACK 3: POWER APPLICANT PACK */}
+          <div
+            style={{
+              borderRadius: '20px',
+              padding: '1.75rem',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              position: 'relative'
+            }}
+          >
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Power Applicant
+                </span>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '6px' }}>
+                  200 CREDITS
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem', marginBottom: '0.35rem' }}>
+                <span style={{ fontSize: '2.25rem', fontWeight: 800, color: '#ffffff' }}>
+                  {currentPrices.power.display}
+                </span>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>one-time</span>
+              </div>
+
+              <p style={{ fontSize: '0.82rem', color: '#34d399', marginBottom: '1.25rem', lineHeight: 1.4, fontWeight: 600 }}>
+                ~20 Bespoke Tailored CVs • Best Value
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span><strong>200 Total Generation Credits</strong></span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span>Deep Multi-Role Career Campaigns</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span>Priority Processing on dedicated Gemini</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text-primary)' }}>
+                  <Check size={16} style={{ color: '#10b981', flexShrink: 0 }} />
+                  <span>Unlimited DOCX & PDF clean downloads</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleBuy('power')}
+              disabled={loadingPack !== null}
+              className="btn btn-secondary"
+              style={{
+                width: '100%',
+                padding: '0.8rem',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: '0.9rem'
+              }}
+            >
+              {loadingPack === 'power' ? 'Processing...' : `Get Power Pack (${currentPrices.power.display})`}
+            </button>
+          </div>
+        </div>
+
+        {/* Credit Burn Transparency Table */}
+        <div
+          style={{
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '1.25rem 1.5rem',
+            marginBottom: '1.5rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+            <FileText size={16} style={{ color: 'var(--accent-primary)' }} />
+            <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#ffffff' }}>
+              How Credits Work (Clear & Transparent)
+            </h4>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.82rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Tailor CV + Cover Letter + ATS Score:</span>
+              <strong style={{ color: '#c084fc' }}>10 Credits</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>1-Click ATS Auto-Fix:</span>
+              <strong style={{ color: '#c084fc' }}>5 Credits</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>DOCX Layout Optimization:</span>
+              <strong style={{ color: '#c084fc' }}>10 Credits</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255, 255, 255, 0.06)', paddingBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>PDF & DOCX Clean Exports:</span>
+              <strong style={{ color: '#10b981' }}>FREE (0 Credits)</strong>
+            </div>
           </div>
         </div>
 
         {/* Security & Guarantee Footer */}
         <div
           style={{
-            marginTop: '2rem',
-            paddingTop: '1.25rem',
+            paddingTop: '1rem',
             borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             flexWrap: 'wrap',
@@ -641,12 +606,12 @@ export const PricingModal: React.FC<PricingModalProps> = ({
             <span>Encrypted & Privacy-First</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Zap size={14} style={{ color: '#818cf8' }} />
-            <span>Instant Plan Activation</span>
+            <Coins size={14} style={{ color: '#818cf8' }} />
+            <span>Credits Never Expire</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Check size={14} style={{ color: '#34d399' }} />
-            <span>Cancel Anytime in 1 Click</span>
+            <CheckCircle2 size={14} style={{ color: '#34d399' }} />
+            <span>Instant Credit Activation</span>
           </div>
         </div>
       </div>

@@ -32,7 +32,14 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
   onChangeThemeConfig,
   userAvatarUrl
 }) => {
-  const [photoInput, setPhotoInput] = React.useState(themeConfig.photoUrl || userAvatarUrl || '');
+  const localAvatar = typeof window !== 'undefined' ? (localStorage.getItem('user_avatar_url') || '') : '';
+  const activePhoto = themeConfig.photoUrl || userAvatarUrl || localAvatar || '';
+  const [photoInput, setPhotoInput] = React.useState(activePhoto);
+
+  React.useEffect(() => {
+    const current = themeConfig.photoUrl || userAvatarUrl || (typeof window !== 'undefined' ? (localStorage.getItem('user_avatar_url') || '') : '') || '';
+    setPhotoInput(current);
+  }, [themeConfig.photoUrl, userAvatarUrl]);
 
   const handleSelectColor = (color: string, name: string) => {
     onChangeThemeConfig({
@@ -44,10 +51,11 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
 
   const handleTogglePhoto = () => {
     const nextState = !themeConfig.showPhoto;
+    const fallbackPhoto = photoInput || userAvatarUrl || localAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
     onChangeThemeConfig({
       ...themeConfig,
       showPhoto: nextState,
-      photoUrl: photoInput || userAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+      photoUrl: fallbackPhoto
     });
   };
 

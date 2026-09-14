@@ -2,9 +2,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import dotenv from 'dotenv';
 import llmRoutes from './routes/llm.js';
-import keyRoutes from './routes/keys.js';
+import paymentRoutes from './routes/payments.js';
 import emailRoutes from './routes/email.js';
 import adminRoutes from './routes/admin.js';
+import agentRoutes from './routes/agent.js';
 
 // Load environment variables
 dotenv.config();
@@ -30,9 +31,10 @@ await fastify.register(cors, {
 
 // Register routes
 await fastify.register(llmRoutes, { prefix: '/api/llm' });
-await fastify.register(keyRoutes, { prefix: '/api/keys' });
+await fastify.register(paymentRoutes, { prefix: '/api/payments' });
 await fastify.register(emailRoutes, { prefix: '/api/email' });
 await fastify.register(adminRoutes, { prefix: '/api/admin' });
+await fastify.register(agentRoutes, { prefix: '/api/agent' });
 
 // Health check
 fastify.get('/health', async () => {

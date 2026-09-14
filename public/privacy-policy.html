@@ -299,13 +299,13 @@
       <ul>
         <li><strong>Account Data:</strong> Full name, email address, avatar photo (if uploaded or authenticated via Google OAuth), and secure authentication user IDs managed through Supabase Auth.</li>
         <li><strong>Resume & Career Inputs:</strong> Work history, skills, education, target job descriptions, uploaded PDF resume text, and customized output documents.</li>
-        <li><strong>Bring Your Own Key (BYOK) Data:</strong> If you supply your personal LLM API keys (Google Gemini, OpenAI, Anthropic), they are stored strictly locally in your browser's encrypted local storage. We never log, store, or inspect your personal API keys on our servers.</li>
-        <li><strong>Technical & Session Analytics:</strong> Browser type, timestamps, ATS score metrics, and feature usage counters (e.g. tracking your 5 Free tier generations).</li>
+        <li><strong>Billing & Credit Records:</strong> Credit transaction balances, purchase records, and pack selections. Payment card numbers and sensitive billing details are processed directly by authorized payment gateways (such as Stripe) and are never stored or inspected on our servers.</li>
+        <li><strong>Technical & Session Analytics:</strong> Browser type, timestamps, ATS score metrics, and feature usage counters (e.g. tracking credit balances and generation history).</li>
       </ul>
 
       <h2>3. How We Use Artificial Intelligence (AI)</h2>
       <p>
-        To perform contextual tailoring, keyword matching, and executive formatting, your input data is sent to enterprise Large Language Model (LLM) providers (Google Gemini API, OpenAI API, Anthropic Claude API).
+        To perform contextual tailoring, keyword matching, and executive formatting, your input data is sent to enterprise Large Language Model (LLM) providers (Google Gemini API via dedicated, secure server-side infrastructure).
       </p>
       <p>
         <strong>Enterprise Privacy Standards:</strong> We interact with AI providers through commercial API agreements where data transmission is encrypted (TLS 1.3) and your career data is <strong>never retained to train future AI models</strong>.
@@ -340,7 +340,7 @@
 
       <h2>7. Cookies & Local Storage</h2>
       <p>
-        We do not use advertising cookies. We use only strictly necessary first-party cookies and <code>localStorage</code> tokens for authentication sessions, dark/light theme preferences, and locally saved BYOK API key configurations.
+        We do not use advertising cookies. We use only strictly necessary first-party cookies and <code>localStorage</code> tokens for authentication sessions, dark/light theme preferences, and UI state.
       </p>
 
       <h2>8. Contact Us</h2>

@@ -222,10 +222,10 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   <strong>Resume & Career Data:</strong> Uploaded CVs, background text, target job descriptions, career aspirations, skills, work experience, and generated executive CV markdown documents.
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <strong>BYOK (Bring Your Own Key) Credentials:</strong> When you provide your own LLM API keys (Google Gemini, OpenAI, Anthropic), they are stored locally in your browser’s secure storage and transmitted directly/proxied solely for your own requests. We never inspect, share, or log your personal API keys.
+                  <strong>Billing & Credit Records:</strong> Credit transaction balances, purchase records, and pack selections. Payment details are processed directly by authorized payment processors (such as Stripe) and are never stored on our servers.
                 </li>
                 <li style={{ marginBottom: '0.5rem' }}>
-                  <strong>Technical & Usage Metrics:</strong> Device/browser type, generation timestamps, ATS score metrics, and feature interaction counts (e.g. tracking your 5 free trial generations).
+                  <strong>Technical & Usage Metrics:</strong> Device/browser type, generation timestamps, ATS score metrics, and feature interaction counts (e.g. tracking credit balance and generation history).
                 </li>
               </ul>
 
@@ -280,7 +280,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
 
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '1.5rem 0 0.5rem 0', color: 'var(--text-primary)' }}>7. Cookies & Local Storage</h3>
               <p>
-                We use only strictly necessary first-party cookies and <code>localStorage</code> tokens required for user authentication sessions, dark/light theme preferences, and locally saved BYOK API key configurations. We do not use third-party advertising tracking cookies.
+                We use only strictly necessary first-party cookies and <code>localStorage</code> tokens required for user authentication sessions, dark/light theme preferences, and application UI state. We do not use third-party advertising tracking cookies.
               </p>
 
               <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '1.5rem 0 0.5rem 0', color: 'var(--text-primary)' }}>8. Updates to This Policy</h3>
@@ -362,17 +362,14 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                 </p>
               </div>
 
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '1.5rem 0 0.5rem 0', color: 'var(--text-primary)' }}>5. Subscription Tiers & Bring Your Own Key (BYOK)</h3>
-              <p>JD2CV operates under transparent pricing tiers:</p>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, margin: '1.5rem 0 0.5rem 0', color: 'var(--text-primary)' }}>5. Plans, Credits & Billing</h3>
+              <p>JD2CV operates under a flexible, pay-as-you-go credit system across two plans:</p>
               <ul style={{ paddingLeft: '1.5rem', marginBottom: '1rem' }}>
                 <li style={{ marginBottom: '0.4rem' }}>
-                  <strong>Free Tier:</strong> Includes 5 free lifetime AI CV generations powered by system high-speed Gemini models.
+                  <strong>Free Tier:</strong> Includes 10 complimentary welcome credits upon signup to explore the platform and tailor resumes. PDF/DOCX resume extraction and document downloads are completely free.
                 </li>
                 <li style={{ marginBottom: '0.4rem' }}>
-                  <strong>BYOK (Bring Your Own Key) Tier:</strong> Unlocks unlimited generations and multi-model access (OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, Gemini Pro) using your own direct API key.
-                </li>
-                <li style={{ marginBottom: '0.4rem' }}>
-                  <strong>Pro Tier:</strong> Unlimited cloud generations, priority auto-failover, candidate photo avatars, executive formatting presets, and dedicated support.
+                  <strong>Pro Tier & Credit Packs:</strong> Top up credits as needed by purchasing credit packs (Starter, Job Hunter, or Power packs). Full CV generations consume 10 credits; 1-click ATS Auto-Fixes consume 5 credits. Paid credits never expire as long as your account remains active.
                 </li>
               </ul>
 

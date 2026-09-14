@@ -1,0 +1,22 @@
+{
+  "name": "@jd2cv/mcp-server",
+  "version": "1.0.0",
+  "description": "Claude Model Context Protocol (MCP) server for JD2CV Resume Builder and ATS Engine",
+  "main": "dist/index.js",
+  "bin": {
+    "jd2cv-mcp": "./dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "typescript": "^5.7.3"
+  }
+}

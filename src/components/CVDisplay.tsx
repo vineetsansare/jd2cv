@@ -36,7 +36,11 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('preview');
   const [copied, setCopied] = useState<'markdown' | 'text' | 'cover' | null>(null);
-  const candidatePhoto = extractedPhotoUrl || userProfile?.avatar_url || '';
+  
+  // Prioritize user profile avatar from Settings > localStorage > extracted document photo fallback
+  const localAvatar = typeof window !== 'undefined' ? (localStorage.getItem('user_avatar_url') || '') : '';
+  const candidatePhoto = userProfile?.avatar_url || localAvatar || extractedPhotoUrl || '';
+  
   const [themeConfig, setThemeConfig] = useState<CVThemeConfig>({
     accentColor: initialTemplate === 'split-sidebar-right' ? '#1c202d' : initialTemplate === 'modern-timeline' ? '#2563eb' : '#475569',
     themeName: initialTemplate === 'split-sidebar-right' ? 'Slate Charcoal' : initialTemplate === 'modern-timeline' ? 'Sapphire Blue' : 'Slate Charcoal',
@@ -46,6 +50,17 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     template: initialTemplate,
     showLinkIcons: true
   });
+
+  // Dynamically sync candidatePhoto whenever userProfile.avatar_url or Settings photo changes
+  React.useEffect(() => {
+    if (candidatePhoto) {
+      setThemeConfig(prev => ({
+        ...prev,
+        photoUrl: candidatePhoto,
+        showPhoto: prev.showPhoto !== false
+      }));
+    }
+  }, [candidatePhoto]);
 
   const [mobileScale, setMobileScale] = useState<number>(1);
   const [isLiveEditing, setIsLiveEditing] = useState<boolean>(false);

@@ -1,13 +1,15 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { authenticate } from '../utils/auth.js';
-import { decrypt } from '../utils/crypto.js';
 import { generateCustomizedCVServer, autoFixCVServer } from '../services/llm.js';
 import { supabaseAdmin } from '../utils/auth.js';
 import type { TargetLength, ATSAnalysis } from '../types.js';
 
+const CREDITS_COST_GENERATE = 10;
+const CREDITS_COST_AUTOFIX = 5;
+
 interface GenerateBody {
-  provider: 'gemini' | 'openai' | 'anthropic';
-  model: string;
+  provider?: 'gemini' | 'openai' | 'anthropic';
+  model?: string;
   contextCVs: { name: string; text: string }[];
   jobDescription: string;
   aspirations: string;
@@ -15,11 +17,48 @@ interface GenerateBody {
 }
 
 interface AutoFixBody {
-  provider: 'gemini' | 'openai' | 'anthropic';
-  model: string;
+  provider?: 'gemini' | 'openai' | 'anthropic';
+  model?: string;
   currentMarkdown: string;
   jobDescription: string;
   atsAnalysis: ATSAnalysis;
+}
+
+async function deductUserCredits(userId: string, currentCredits: number, amount: number, action: string): Promise<number> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('deduct_credits', {
+      p_user_id: userId,
+      p_amount: amount,
+      p_action: action
+    });
+    if (!error && data && data.success) {
+      return data.new_balance;
+    }
+  } catch (err) {
+    console.warn('[Credits] RPC deduct_credits failed, using direct table update:', err);
+  }
+
+  // Resilient direct fallback
+  const newBalance = Math.max(0, currentCredits - amount);
+  await supabaseAdmin
+    .from('profiles')
+    .update({ credits_balance: newBalance })
+    .eq('id', userId);
+
+  try {
+    await supabaseAdmin
+      .from('credit_transactions')
+      .insert({
+        user_id: userId,
+        amount: -amount,
+        balance_after: newBalance,
+        action
+      });
+  } catch {
+    // Ignore logging transaction error
+  }
+
+  return newBalance;
 }
 
 export default async function llmRoutes(fastify: FastifyInstance) {
@@ -27,45 +66,25 @@ export default async function llmRoutes(fastify: FastifyInstance) {
   // POST /api/llm/generate
   fastify.post('/generate', async (request: FastifyRequest<{ Body: GenerateBody }>, reply: FastifyReply) => {
     const user = await authenticate(request, reply);
-    const { provider, model, contextCVs, jobDescription, aspirations, targetLength } = request.body;
+    const { contextCVs, jobDescription, aspirations, targetLength } = request.body;
 
-    // Determine the API Key based on user plan
-    let apiKey = '';
-
-    if (user.plan === 'byok') {
-      // Fetch user's own key
-      const { data, error } = await supabaseAdmin
-        .from('user_api_keys')
-        .select('encrypted_key')
-        .eq('user_id', user.id)
-        .eq('provider', provider)
-        .single();
-
-      if (error || !data) {
-        return reply.status(400).send({ error: `API key for provider '${provider}' is not configured. Please save it in settings.` });
-      }
-
-      try {
-        apiKey = decrypt(data.encrypted_key);
-      } catch (err) {
-        return reply.status(500).send({ error: 'Failed to decrypt your stored API key.' });
-      }
-    } else if (user.plan === 'pro') {
-      // Use platform key
-      apiKey = getPlatformApiKey(provider);
-    } else {
-      // Free plan: Limit to 3 generations
-      if (user.generationCount >= 3) {
-        return reply.status(402).send({ 
-          error: 'Free trial limit reached (3 generations max). Please upgrade to Pro or enter your own API Key to continue using the app.',
-          limitReached: true
-        });
-      }
-      apiKey = getPlatformApiKey(provider);
+    // Check credit balance (requires 10 credits)
+    if (user.credits < CREDITS_COST_GENERATE) {
+      return reply.status(402).send({ 
+        error: `Insufficient credits (${user.credits} available). You need at least ${CREDITS_COST_GENERATE} credits to tailor a bespoke CV.`,
+        limitReached: true,
+        requiredCredits: CREDITS_COST_GENERATE,
+        currentCredits: user.credits
+      });
     }
 
+    // Always use dedicated server Gemini API Key
+    const provider = 'gemini';
+    const model = request.body.model || 'gemini-2.5-flash';
+    const apiKey = getPlatformApiKey('gemini');
+
     if (!apiKey) {
-      return reply.status(500).send({ error: `Platform API key for '${provider}' is not configured on the server.` });
+      return reply.status(500).send({ error: 'Dedicated Gemini API key is not configured on the server.' });
     }
 
     try {
@@ -77,13 +96,14 @@ export default async function llmRoutes(fastify: FastifyInstance) {
         targetLength
       );
 
-      // Increment generation count for free users and log all generations
-      if (user.plan === 'free') {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ generation_count: user.generationCount + 1 })
-          .eq('id', user.id);
-      }
+      // Atomically deduct 10 credits
+      const remainingCredits = await deductUserCredits(user.id, user.credits, CREDITS_COST_GENERATE, 'cv_generation');
+
+      // Update generation count
+      await supabaseAdmin
+        .from('profiles')
+        .update({ generation_count: user.generationCount + 1 })
+        .eq('id', user.id);
 
       // Log generation history
       await supabaseAdmin.from('generations').insert({
@@ -100,7 +120,10 @@ export default async function llmRoutes(fastify: FastifyInstance) {
         model_used: model
       });
 
-      return result;
+      return {
+        ...result,
+        remainingCredits
+      };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ error: error.message || 'Generation failed' });
@@ -110,33 +133,24 @@ export default async function llmRoutes(fastify: FastifyInstance) {
   // POST /api/llm/auto-fix
   fastify.post('/auto-fix', async (request: FastifyRequest<{ Body: AutoFixBody }>, reply: FastifyReply) => {
     const user = await authenticate(request, reply);
-    const { provider, model, currentMarkdown, jobDescription, atsAnalysis } = request.body;
+    const { currentMarkdown, jobDescription, atsAnalysis } = request.body;
 
-    let apiKey = '';
-
-    if (user.plan === 'byok') {
-      const { data, error } = await supabaseAdmin
-        .from('user_api_keys')
-        .select('encrypted_key')
-        .eq('user_id', user.id)
-        .eq('provider', provider)
-        .single();
-
-      if (error || !data) {
-        return reply.status(400).send({ error: `API key for provider '${provider}' not found.` });
-      }
-
-      apiKey = decrypt(data.encrypted_key);
-    } else {
-      // Pro & Free (Auto-fix is enabled for Free trial as well, counting as part of usage)
-      if (user.plan === 'free' && user.generationCount >= 3) {
-        return reply.status(402).send({ error: 'Free trial limit reached. Please upgrade to use Auto-Fix.' });
-      }
-      apiKey = getPlatformApiKey(provider);
+    // Check credit balance (requires 5 credits)
+    if (user.credits < CREDITS_COST_AUTOFIX) {
+      return reply.status(402).send({ 
+        error: `Insufficient credits (${user.credits} available). You need at least ${CREDITS_COST_AUTOFIX} credits to run ATS Auto-Fix.`,
+        limitReached: true,
+        requiredCredits: CREDITS_COST_AUTOFIX,
+        currentCredits: user.credits
+      });
     }
 
+    const provider = 'gemini';
+    const model = request.body.model || 'gemini-2.5-flash';
+    const apiKey = getPlatformApiKey('gemini');
+
     if (!apiKey) {
-      return reply.status(500).send({ error: `API key for '${provider}' is not available.` });
+      return reply.status(500).send({ error: 'Dedicated Gemini API key is not configured on the server.' });
     }
 
     try {
@@ -147,15 +161,13 @@ export default async function llmRoutes(fastify: FastifyInstance) {
         atsAnalysis
       );
 
-      // Increment count for free users if this triggers a rewrite log
-      if (user.plan === 'free') {
-        await supabaseAdmin
-          .from('profiles')
-          .update({ generation_count: user.generationCount + 1 })
-          .eq('id', user.id);
-      }
+      // Atomically deduct 5 credits
+      const remainingCredits = await deductUserCredits(user.id, user.credits, CREDITS_COST_AUTOFIX, 'auto_fix');
 
-      return result;
+      return {
+        ...result,
+        remainingCredits
+      };
     } catch (error: any) {
       fastify.log.error(error);
       return reply.status(500).send({ error: error.message || 'Auto-fix failed' });
@@ -163,7 +175,7 @@ export default async function llmRoutes(fastify: FastifyInstance) {
   });
 }
 
-function getPlatformApiKey(provider: string): string {
+export function getPlatformApiKey(provider: string): string {
   if (provider === 'gemini') return process.env.GEMINI_API_KEY || '';
   if (provider === 'openai') return process.env.OPENAI_API_KEY || '';
   if (provider === 'anthropic') return process.env.ANTHROPIC_API_KEY || '';
