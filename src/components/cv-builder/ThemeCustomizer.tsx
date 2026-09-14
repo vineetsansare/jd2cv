@@ -18,12 +18,12 @@ const COLOR_PALETTE = [
 ];
 
 const TEMPLATES: { id: TemplateId; name: string; desc: string; ats: string }[] = [
-  { id: 'modern-timeline', name: 'Modern Timeline', desc: 'Timeline style with left date rail & photo header', ats: '98%' },
-  { id: 'classic-ats', name: 'Classic ATS Clean', desc: 'Single column centered standard with 100% ATS score', ats: '100%' },
-  { id: 'tech-linear', name: 'Tech Linear', desc: 'Monospace headers & tabular engineering alignment', ats: '99%' },
-  { id: 'classic-serif', name: 'Classic Serif', desc: 'Executive Merriweather typography for leadership', ats: '100%' },
-  { id: 'split-sidebar', name: 'Split Sidebar', desc: 'Two-column layout with colored sidebar details', ats: '95%' },
-  { id: 'compact-grid', name: 'Compact 1-Pager', desc: 'High-density format designed to fit into 1 page', ats: '99%' }
+  { id: 'modern', name: 'Modern Timeline', desc: 'Timeline style with left date rail & photo header', ats: '98%' },
+  { id: 'classic', name: 'Classic ATS Clean', desc: 'Single column centered standard with 100% ATS score', ats: '100%' },
+  { id: 'tech', name: 'Tech Linear', desc: 'Monospace headers & tabular engineering alignment', ats: '99%' },
+  { id: 'executive', name: 'Classic Serif', desc: 'Executive Merriweather typography for leadership', ats: '100%' },
+  { id: 'two-column', name: 'Split Sidebar', desc: 'Two-column layout with colored sidebar details', ats: '95%' },
+  { id: 'minimal', name: 'Compact 1-Pager', desc: 'High-density format designed to fit into 1 page', ats: '99%' }
 ];
 
 const FONTS: ('Plus Jakarta Sans' | 'Inter' | 'Merriweather' | 'Roboto' | 'JetBrains Mono')[] = [

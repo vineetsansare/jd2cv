@@ -231,6 +231,48 @@ export async function parsePdf(fileBuffer: ArrayBuffer): Promise<PdfParseResult>
       detectedTemplate = 'classic-ats';
     }
 
+    // Helper to group items sharing roughly the same Y coordinate into separate lines
+    const itemsToMultiLineText = (items: PageItem[]): string => {
+      if (items.length === 0) return '';
+      // Sort items: primarily Y descending (top to bottom).
+      // If Y difference is within 3.5 points, they are on the same line -> sort by X ascending.
+      const sorted = [...items].sort((a, b) => {
+        const dy = b.y - a.y;
+        if (Math.abs(dy) > 3.5) {
+          return dy;
+        }
+        return a.x - b.x;
+      });
+
+      const lineList: string[] = [];
+      let currentLineItems: PageItem[] = [];
+      let currentLineY: number | null = null;
+
+      for (const it of sorted) {
+        if (currentLineY === null) {
+          currentLineItems.push(it);
+          currentLineY = it.y;
+        } else if (Math.abs(it.y - currentLineY) <= 3.5) {
+          currentLineItems.push(it);
+        } else {
+          currentLineItems.sort((a, b) => a.x - b.x);
+          const lineStr = currentLineItems.map(i => collapseSpacedLetters(i.str)).join(' ').trim();
+          if (lineStr) lineList.push(lineStr);
+
+          currentLineItems = [it];
+          currentLineY = it.y;
+        }
+      }
+
+      if (currentLineItems.length > 0) {
+        currentLineItems.sort((a, b) => a.x - b.x);
+        const lineStr = currentLineItems.map(i => collapseSpacedLetters(i.str)).join(' ').trim();
+        if (lineStr) lineList.push(lineStr);
+      }
+
+      return lineList.join('\n');
+    };
+
     // ── Column-Aware Text Extraction ─────────────────────────────────────
     if (detectedTemplate === 'split-sidebar-right') {
       let mainText = '';
@@ -240,12 +282,8 @@ export async function parsePdf(fileBuffer: ArrayBuffer): Promise<PdfParseResult>
         const leftItems = p.items.filter(it => it.x < 370);
         const rightItems = p.items.filter(it => it.x >= 370);
 
-        // Sort top to bottom (y descending)
-        leftItems.sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
-        rightItems.sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
-
-        const pageMain = leftItems.map(it => collapseSpacedLetters(it.str)).join(' ');
-        const pageSidebar = rightItems.map(it => collapseSpacedLetters(it.str)).join(' ');
+        const pageMain = itemsToMultiLineText(leftItems);
+        const pageSidebar = itemsToMultiLineText(rightItems);
 
         if (pageMain) mainText += pageMain + '\n\n';
         if (pageSidebar) sidebarText += pageSidebar + '\n\n';
@@ -254,9 +292,8 @@ export async function parsePdf(fileBuffer: ArrayBuffer): Promise<PdfParseResult>
       fullText = mainText.trim() + '\n\n' + sidebarText.trim();
     } else {
       for (const p of pageItemsList) {
-        // Standard sort by y descending, then x ascending
-        const items = [...p.items].sort((a, b) => Math.abs(b.y - a.y) > 3 ? b.y - a.y : a.x - b.x);
-        fullText += items.map(it => it.str).join(' ') + '\n\n';
+        const pageText = itemsToMultiLineText(p.items);
+        if (pageText) fullText += pageText + '\n\n';
       }
     }
 

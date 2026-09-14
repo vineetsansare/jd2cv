@@ -111,14 +111,99 @@ export const DEFAULT_CV_DATA: StructuredCV = {
       visible: true
     }
   ],
+
+  // ── New sections (initialized empty for default) ────────────────────
+  languages: [
+    { id: 'lang-1', language: 'English', fluency: 'Fluent', visible: true },
+    { id: 'lang-2', language: 'Hindi', fluency: 'Native', visible: true },
+    { id: 'lang-3', language: 'Marathi', fluency: 'Native', visible: true },
+  ],
+  awards: [],
+  volunteer: [],
+  publications: [],
+  interests: [],
+  references: [],
   customSections: [],
+
+  // ── Section ordering ────────────────────────────────────────────────
+  sectionOrder: [
+    'summary',
+    'experience',
+    'education',
+    'skills',
+    'projects',
+    'certifications',
+    'languages',
+  ],
+
+  // ── Theme / Presentation ────────────────────────────────────────────
   theme: {
-    templateId: 'modern-timeline',
+    templateId: 'modern',
     accentColor: '#1e3a8a',
     fontFamily: 'Plus Jakarta Sans',
     fontSize: 'standard',
     lineHeight: 'normal',
     pageMargin: 'standard',
-    showIcons: true
+    sectionSpacing: 'standard',
+    showIcons: true,
+    headingStyle: 'uppercase',
   }
 };
+
+/**
+ * Returns a blank resume for creating a new CV from scratch.
+ * All sections exist but are empty — user adds content via the editor.
+ */
+export function createBlankResume(): StructuredCV {
+  return {
+    id: `resume-${Date.now()}`,
+    title: 'Untitled Resume',
+    updatedAt: new Date().toISOString(),
+    basics: {
+      fullName: '',
+      headline: '',
+      email: '',
+      phone: '',
+      location: '',
+      website: '',
+      avatarUrl: '',
+      showAvatar: false,
+      avatarShape: 'circle',
+      links: [],
+    },
+    summary: {
+      title: 'Summary',
+      content: '',
+      visible: true,
+    },
+    experience: [],
+    education: [],
+    skills: [],
+    projects: [],
+    certifications: [],
+    languages: [],
+    awards: [],
+    volunteer: [],
+    publications: [],
+    interests: [],
+    references: [],
+    customSections: [],
+    sectionOrder: [
+      'summary',
+      'experience',
+      'education',
+      'skills',
+    ],
+    theme: {
+      templateId: 'modern',
+      accentColor: '#2563eb',
+      fontFamily: 'Inter',
+      fontSize: 'standard',
+      lineHeight: 'normal',
+      pageMargin: 'standard',
+      sectionSpacing: 'standard',
+      showIcons: true,
+      headingStyle: 'uppercase',
+    },
+  };
+}

@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 import { CANDIDATE_GEMINI_MODELS, type LLMProvider } from './models';
+import type { StructuredCV } from '../types/cvBuilder';
+import { ensureResumeDefaults } from '../types/cvBuilder';
+import { DEFAULT_CV_DATA } from './defaultCvData';
+import { parseResumeTextToStructuredCV } from './cvBuilderConverter';
 
 export interface LLMConfig {
   provider: LLMProvider;
@@ -916,4 +920,350 @@ Return a strictly valid JSON object matching this schema:
     coverLetter: rawJson?.coverLetter || '',
     previewMarkdown,
   };
+}
+
+/**
+ * Uses AI (Gemini / OpenAI) to digitize raw resume text directly into the canonical StructuredCV data model.
+ * Exactly like FlowCV's AI resume import.
+ * Falls back to client-side heuristic parser if offline or AI call fails.
+ */
+export async function digitizeResumeWithAI(
+  rawText: string,
+  config?: LLMConfig,
+  signal?: AbortSignal
+): Promise<StructuredCV> {
+  if (!rawText || !rawText.trim()) {
+    return DEFAULT_CV_DATA;
+  }
+
+  const apiKey = config?.apiKey || SYSTEM_GEMINI_KEY;
+
+  if (!apiKey) {
+    console.warn('No LLM API key available, using client-side parser fallback.');
+    return parseResumeTextToStructuredCV(rawText);
+  }
+
+  const aiPrompt = `You are a World-Class AI Resume Parser.
+Analyze the following raw text from an uploaded resume document (which may have complex multi-column or unstructured formatting).
+Extract all details accurately and map them into the exact JSON schema below.
+
+RESUME CONTENT:
+"""
+${rawText.slice(0, 15000)}
+"""
+
+OUTPUT SCHEMA (Return ONLY valid JSON matching this schema):
+{
+  "basics": {
+    "fullName": "Candidate Full Name",
+    "headline": "Current or Target Job Title / Headline",
+    "email": "candidate@email.com",
+    "phone": "+1 555-0123",
+    "location": "City, State or City, Country",
+    "website": "https://personal-site.com",
+    "links": [
+      { "network": "LinkedIn", "username": "...", "url": "https://linkedin.com/in/..." },
+      { "network": "GitHub", "username": "...", "url": "https://github.com/..." }
+    ]
+  },
+  "summary": "Full professional executive summary or profile text...",
+  "experience": [
+    {
+      "role": "Exact Job Title",
+      "company": "Company / Employer Name",
+      "location": "City, Country or Remote",
+      "startDate": "MM/YYYY or YYYY",
+      "endDate": "Present or MM/YYYY",
+      "isCurrent": true,
+      "bullets": [
+        "Quantifiable achievement or responsibility...",
+        "Second bullet point..."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "degree": "Degree / Major (e.g. Bachelor of Science in Computer Science)",
+      "institution": "University / College Name",
+      "location": "City, Country",
+      "startDate": "YYYY",
+      "endDate": "YYYY",
+      "score": "GPA or honors if mentioned"
+    }
+  ],
+  "skills": [
+    {
+      "categoryName": "Domain / Category Name (e.g. Mobile & Web, Cloud & DevOps, Languages)",
+      "skills": ["Skill 1", "Skill 2", "Skill 3"]
+    }
+  ],
+  "projects": [
+    {
+      "title": "Project Name",
+      "subtitle": "Role or Subtitle",
+      "technologies": ["Tech 1", "Tech 2"],
+      "url": "https://...",
+      "bullets": ["Project highlight..."]
+    }
+  ],
+  "certifications": [
+    {
+      "name": "Certification Name",
+      "issuer": "Issuing Authority",
+      "date": "YYYY or MM/YYYY",
+      "url": ""
+    }
+  ],
+  "languages": [
+    {
+      "language": "Language",
+      "fluency": "Native | Fluent | Advanced | Intermediate | Basic"
+    }
+  ],
+  "awards": [
+    {
+      "title": "Award Title",
+      "awarder": "Organization",
+      "date": "YYYY"
+    }
+  ],
+  "volunteer": [
+    {
+      "role": "Role",
+      "organization": "Organization",
+      "bullets": ["..."]
+    }
+  ],
+  "publications": [
+    {
+      "title": "Title",
+      "publisher": "Publisher",
+      "date": "YYYY"
+    }
+  ],
+  "interests": [
+    {
+      "name": "Interest Name",
+      "keywords": ["tag1", "tag2"]
+    }
+  ],
+  "customSections": [
+    {
+      "sectionTitle": "Title of any unmatched section (e.g. Key Clients, Speaking, Patents)",
+      "items": [
+        {
+          "title": "Item heading or title",
+          "bullets": ["Details..."]
+        }
+      ]
+    }
+  ]
+}
+
+RULES:
+1. Preserve 100% factual accuracy from the resume. Never fabricate details.
+2. Ensure fullName is extracted as Title Case (e.g. 'Vineet Makarand Sansare').
+3. For experience bullets, keep each bullet point distinct, concise, and impactful.
+4. Categorize skills intelligently into domains.
+5. If links/socials like LinkedIn or GitHub exist, extract their full URLs.
+6. Return ONLY valid JSON, with NO surrounding markdown or explanations.`;
+
+  try {
+    let parsedJson: any;
+
+    if (config?.provider === 'openai' && config.apiKey) {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${config.apiKey}`
+        },
+        body: JSON.stringify({
+          model: config.model || 'gpt-4o-mini',
+          response_format: { type: 'json_object' },
+          messages: [{ role: 'user', content: aiPrompt }]
+        }),
+        signal
+      });
+      if (!resp.ok) {
+        throw new Error(`OpenAI error: ${resp.status}`);
+      }
+      const data = await resp.json();
+      parsedJson = JSON.parse(data.choices[0].message.content);
+    } else {
+      const contents = [
+        { role: 'user', parts: [{ text: aiPrompt }] }
+      ];
+      parsedJson = await callGeminiWithFailover(apiKey, contents, signal);
+    }
+
+    if (!parsedJson || typeof parsedJson !== 'object') {
+      throw new Error('AI returned non-object response');
+    }
+
+    // Map AI output directly into our canonical StructuredCV model
+    const baseCv: StructuredCV = JSON.parse(JSON.stringify(DEFAULT_CV_DATA));
+    const now = new Date().toISOString();
+
+    const result: StructuredCV = {
+      ...baseCv,
+      updatedAt: now,
+      basics: {
+        ...baseCv.basics,
+        fullName: parsedJson.basics?.fullName || baseCv.basics.fullName,
+        headline: parsedJson.basics?.headline || baseCv.basics.headline,
+        email: parsedJson.basics?.email || '',
+        phone: parsedJson.basics?.phone || '',
+        location: parsedJson.basics?.location || '',
+        website: parsedJson.basics?.website || '',
+        links: (parsedJson.basics?.links || []).map((l: any, idx: number) => ({
+          id: `link-${Date.now()}-${idx}`,
+          network: l.network || 'Link',
+          username: l.username || '',
+          url: l.url || ''
+        }))
+      },
+      summary: {
+        title: 'Executive Profile',
+        content: parsedJson.summary || '',
+        visible: Boolean(parsedJson.summary?.trim())
+      },
+      experience: (parsedJson.experience || []).map((e: any, idx: number) => ({
+        id: `exp-${Date.now()}-${idx}`,
+        role: e.role || 'Professional Role',
+        company: e.company || '',
+        location: e.location || '',
+        startDate: e.startDate || '',
+        endDate: e.endDate || 'Present',
+        isCurrent: Boolean(e.isCurrent ?? /present|current/i.test(e.endDate || '')),
+        bullets: Array.isArray(e.bullets) ? e.bullets.filter(Boolean) : [],
+        visible: true,
+        alignment: 'justify'
+      })),
+      education: (parsedJson.education || []).map((ed: any, idx: number) => ({
+        id: `edu-${Date.now()}-${idx}`,
+        degree: ed.degree || 'Degree',
+        institution: ed.institution || '',
+        location: ed.location || '',
+        startDate: ed.startDate || '',
+        endDate: ed.endDate || '',
+        score: ed.score || '',
+        visible: true,
+        alignment: 'justify'
+      })),
+      skills: (parsedJson.skills || []).map((sk: any, idx: number) => ({
+        id: `sk-${Date.now()}-${idx}`,
+        categoryName: sk.categoryName || 'Skills',
+        skills: Array.isArray(sk.skills) ? sk.skills.filter(Boolean) : [],
+        visible: true
+      })),
+      projects: (parsedJson.projects || []).map((pr: any, idx: number) => ({
+        id: `proj-${Date.now()}-${idx}`,
+        title: pr.title || 'Project',
+        subtitle: pr.subtitle || '',
+        technologies: Array.isArray(pr.technologies) ? pr.technologies.filter(Boolean) : [],
+        url: pr.url || '',
+        bullets: Array.isArray(pr.bullets) ? pr.bullets.filter(Boolean) : [],
+        visible: true,
+        alignment: 'justify'
+      })),
+      certifications: (parsedJson.certifications || []).map((c: any, idx: number) => ({
+        id: `cert-${Date.now()}-${idx}`,
+        name: c.name || '',
+        issuer: c.issuer || '',
+        date: c.date || '',
+        url: c.url || '',
+        visible: true
+      })),
+      languages: (parsedJson.languages || []).map((l: any, idx: number) => ({
+        id: `lang-${Date.now()}-${idx}`,
+        language: l.language || '',
+        fluency: l.fluency || 'Fluent',
+        visible: true
+      })),
+      awards: (parsedJson.awards || []).map((a: any, idx: number) => ({
+        id: `award-${Date.now()}-${idx}`,
+        title: a.title || '',
+        awarder: a.awarder || '',
+        date: a.date || '',
+        summary: a.summary || '',
+        visible: true
+      })),
+      volunteer: (parsedJson.volunteer || []).map((v: any, idx: number) => ({
+        id: `vol-${Date.now()}-${idx}`,
+        role: v.role || '',
+        organization: v.organization || '',
+        startDate: v.startDate || '',
+        endDate: v.endDate || '',
+        isCurrent: false,
+        bullets: Array.isArray(v.bullets) ? v.bullets.filter(Boolean) : [],
+        visible: true,
+        alignment: 'justify'
+      })),
+      publications: (parsedJson.publications || []).map((p: any, idx: number) => ({
+        id: `pub-${Date.now()}-${idx}`,
+        title: p.title || '',
+        publisher: p.publisher || '',
+        date: p.date || '',
+        visible: true
+      })),
+      interests: (parsedJson.interests || []).map((i: any, idx: number) => ({
+        id: `int-${Date.now()}-${idx}`,
+        name: i.name || '',
+        keywords: Array.isArray(i.keywords) ? i.keywords.filter(Boolean) : [],
+        visible: true
+      })),
+      references: (parsedJson.references || []).map((r: any, idx: number) => ({
+        id: `ref-${Date.now()}-${idx}`,
+        name: r.name || '',
+        title: r.title || '',
+        company: r.company || '',
+        visible: true
+      })),
+      customSections: (parsedJson.customSections || []).map((cs: any, cIdx: number) => {
+        const cId = `custom-${Date.now()}-${cIdx}`;
+        return {
+          id: cId,
+          sectionTitle: cs.sectionTitle || 'Custom Section',
+          icon: 'sparkles',
+          showIcon: true,
+          items: (cs.items || []).map((it: any, itIdx: number) => ({
+            id: `c-item-${Date.now()}-${itIdx}`,
+            title: it.title || '',
+            bullets: Array.isArray(it.bullets) ? it.bullets.filter(Boolean) : [],
+            visible: true,
+            alignment: 'justify'
+          })),
+          visible: true
+        };
+      })
+    };
+
+    // Calculate section order based on populated sections
+    const order: string[] = [];
+    if (result.summary.content) order.push('summary');
+    if (result.experience.length > 0) order.push('experience');
+    if (result.education.length > 0) order.push('education');
+    if (result.skills.length > 0) order.push('skills');
+    if (result.projects.length > 0) order.push('projects');
+    if (result.certifications.length > 0) order.push('certifications');
+    if (result.languages.length > 0) order.push('languages');
+    if (result.awards.length > 0) order.push('awards');
+    if (result.volunteer.length > 0) order.push('volunteer');
+    if (result.publications.length > 0) order.push('publications');
+    if (result.interests.length > 0) order.push('interests');
+    if (result.references.length > 0) order.push('references');
+    result.customSections.forEach(cs => order.push(cs.id));
+
+    // Append standard sections if not present
+    ['summary', 'experience', 'education', 'skills', 'projects', 'certifications'].forEach(s => {
+      if (!order.includes(s)) order.push(s);
+    });
+    result.sectionOrder = order;
+
+    return ensureResumeDefaults(result);
+  } catch (aiErr: any) {
+    console.warn('AI Resume digitization failed, falling back to client-side heuristics:', aiErr);
+    return parseResumeTextToStructuredCV(rawText);
+  }
 }

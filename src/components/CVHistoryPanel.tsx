@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { History, Download, Eye, Sparkles, Calendar, ShieldCheck } from 'lucide-react';
+import { History, Download, Eye, Sparkles, Calendar, ShieldCheck, LayoutGrid, List } from 'lucide-react';
 import { LiquidCard } from './ui/LiquidCard';
 import { printCvDocument } from '../utils/printHelper';
 
@@ -28,6 +28,24 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
   onSelectGeneration
 }) => {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    try {
+      const saved = localStorage.getItem('jd2cv_history_view_mode');
+      if (saved === 'grid' || saved === 'list') return saved;
+    } catch {
+      // localStorage may not be accessible
+    }
+    return 'grid';
+  });
+
+  const handleViewModeChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('jd2cv_history_view_mode', mode);
+    } catch {
+      // ignore
+    }
+  };
 
   const handleDownloadPDF = (gen: GenerationRecord) => {
     setDownloadingId(gen.id);
@@ -64,11 +82,11 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
   };
 
   return (
-    <div style={{ padding: '2rem 1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
+    <div className="history-panel-container">
       
       {/* Header Banner */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+      <div className="history-header-banner">
+        <div className="history-header-left">
           <div style={{
             width: '38px',
             height: '38px',
@@ -78,12 +96,13 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
             alignItems: 'center',
             justifyContent: 'center',
             color: '#ffffff',
-            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+            boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)',
+            flexShrink: 0
           }}>
             <History size={20} />
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            <h2 className="history-header-title" style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               Recent Generation History
             </h2>
             <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
@@ -91,6 +110,46 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
             </p>
           </div>
         </div>
+
+        {/* View Mode Selection (Grid / List) */}
+        {!loading && generations.length > 0 && (
+          <div className="history-view-toggle">
+            <button
+              type="button"
+              className="history-view-toggle-btn"
+              onClick={() => handleViewModeChange('grid')}
+              style={{
+                fontWeight: viewMode === 'grid' ? 600 : 500,
+                border: viewMode === 'grid' ? '1px solid var(--card-border)' : '1px solid transparent',
+                backgroundColor: viewMode === 'grid' ? 'var(--card-bg)' : 'transparent',
+                color: viewMode === 'grid' ? 'var(--text-primary)' : 'var(--text-muted)',
+                boxShadow: viewMode === 'grid' ? '0 2px 6px rgba(0, 0, 0, 0.1)' : 'none',
+              }}
+              title="Grid View"
+              aria-label="Grid View"
+            >
+              <LayoutGrid size={15} />
+              <span>Grid</span>
+            </button>
+            <button
+              type="button"
+              className="history-view-toggle-btn"
+              onClick={() => handleViewModeChange('list')}
+              style={{
+                fontWeight: viewMode === 'list' ? 600 : 500,
+                border: viewMode === 'list' ? '1px solid var(--card-border)' : '1px solid transparent',
+                backgroundColor: viewMode === 'list' ? 'var(--card-bg)' : 'transparent',
+                color: viewMode === 'list' ? 'var(--text-primary)' : 'var(--text-muted)',
+                boxShadow: viewMode === 'list' ? '0 2px 6px rgba(0, 0, 0, 0.1)' : 'none',
+              }}
+              title="List View"
+              aria-label="List View"
+            >
+              <List size={15} />
+              <span>List</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -120,8 +179,8 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
             When you optimize a CV using target job descriptions, your top 5 customized versions will automatically appear here for instant preview and PDF export.
           </p>
         </LiquidCard>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+      ) : viewMode === 'grid' ? (
+        <div className="history-grid-container">
           {generations.map((gen, idx) => {
             const ats = gen.ats_score || 88;
             const scoreColor = ats >= 85 ? '#10b981' : ats >= 70 ? '#f59e0b' : '#ef4444';
@@ -247,6 +306,122 @@ export const CVHistoryPanel: React.FC<CVHistoryPanelProps> = ({
                     <Download size={15} />
                     <span>{downloadingId === gen.id ? 'Exporting...' : 'PDF'}</span>
                   </button>
+                </div>
+              </LiquidCard>
+            );
+          })}
+        </div>
+      ) : (
+        /* List View */
+        <div className="history-list-container">
+          {generations.map((gen, idx) => {
+            const ats = gen.ats_score || 88;
+            const scoreColor = ats >= 85 ? '#10b981' : ats >= 70 ? '#f59e0b' : '#ef4444';
+
+            return (
+              <LiquidCard
+                key={gen.id || idx}
+                variant="glass"
+                padding="sm"
+                className="entrance-fade history-list-row"
+                style={{
+                  borderRadius: '16px',
+                  border: '1px solid var(--card-border)',
+                  background: 'var(--card-bg)'
+                }}
+              >
+                <div className="history-list-row-inner">
+                  {/* Left: Metadata & Job Profile */}
+                  <div className="history-list-main-info">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>
+                        Generation #{generations.length - idx}
+                      </span>
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: '20px',
+                        background: `${scoreColor}15`,
+                        border: `1px solid ${scoreColor}40`,
+                        color: scoreColor,
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}>
+                        <ShieldCheck size={13} />
+                        <span>{ats}% ATS Match</span>
+                      </div>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                        <Calendar size={13} style={{ color: 'var(--text-muted)' }} />
+                        <span>{formatDate(gen.created_at)}</span>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.45rem', minWidth: 0, width: '100%' }}>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        flexShrink: 0
+                      }}>
+                        Target:
+                      </span>
+                      <p className="history-list-target-text">
+                        "{getJDSnippet(gen.job_description)}"
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="history-list-actions">
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => onSelectGeneration(gen)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--card-border)',
+                        color: 'var(--text-primary)',
+                        padding: '0.55rem 0.95rem',
+                        borderRadius: '10px'
+                      }}
+                    >
+                      <Eye size={15} />
+                      <span>Edit / Preview</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn btn-glowing"
+                      disabled={downloadingId === gen.id}
+                      onClick={() => handleDownloadPDF(gen)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+                        color: '#ffffff',
+                        padding: '0.55rem 0.95rem',
+                        borderRadius: '10px',
+                        border: 'none'
+                      }}
+                    >
+                      <Download size={15} />
+                      <span>{downloadingId === gen.id ? 'Exporting...' : 'PDF'}</span>
+                    </button>
+                  </div>
                 </div>
               </LiquidCard>
             );

@@ -1,6 +1,123 @@
 import { parseMarkdownToHtml } from './mdParser';
 import type { CVThemeConfig } from '../components/CVThemeSelector';
 
+/**
+ * High-fidelity print export for the FlowCV-style resume templates.
+ * Renders the exact DOM tree from the A4 preview into an isolated print iframe,
+ * preserving all custom colors, typography, column layouts, spacing, and page break rules.
+ */
+export function printResumeElement(
+  element: HTMLElement,
+  filenameTitle: string = 'Resume'
+) {
+  if (!element) return;
+
+  const originalTitle = document.title;
+  document.title = filenameTitle;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  iframe.style.zIndex = '-9999';
+  iframe.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document || iframe.contentDocument;
+  if (!doc) {
+    window.print();
+    return;
+  }
+
+  const contentHtml = element.innerHTML;
+
+  const iframeContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=794, initial-scale=1.0" />
+  <title>${filenameTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    *, *:before, *:after {
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #ffffff !important;
+      color: #111827 !important;
+      width: 100% !important;
+    }
+    .print-a4-wrapper {
+      width: 794px !important;
+      min-height: 1123px !important;
+      margin: 0 auto !important;
+      background: #ffffff !important;
+      position: relative !important;
+    }
+    /* Page break optimization rules */
+    h1, h2, h3, h4 {
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+    }
+    p, li, [data-entry], tr {
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    img {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="print-a4-wrapper">
+    ${contentHtml}
+  </div>
+</body>
+</html>`;
+
+  doc.open();
+  doc.write(iframeContent);
+  doc.close();
+
+  const triggerPrint = () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.warn('Iframe print error, falling back to window.print():', e);
+        window.print();
+      } finally {
+        document.title = originalTitle;
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1200);
+      }
+    }, 300);
+  };
+
+  if ((iframe.contentWindow as any)?.document?.fonts?.ready) {
+    (iframe.contentWindow as any).document.fonts.ready.then(triggerPrint).catch(triggerPrint);
+  } else {
+    triggerPrint();
+  }
+}
+
 export function printCvDocument(
   markdown: string, 
   themeConfig: CVThemeConfig = { accentColor: '#475569', themeName: 'Slate Charcoal', showPhoto: false },
