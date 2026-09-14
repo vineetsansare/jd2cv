@@ -85,7 +85,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
 
       const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
-        .select('email, plan, credits_balance, generation_count, is_admin')
+        .select('*')
         .eq('id', pat.user_id)
         .single();
 
@@ -117,12 +117,13 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
   // Fetch the user's profile to get their plan, credits, generation count, and admin status
   const { data: profile, error: profileError } = await supabaseAdmin
     .from('profiles')
-    .select('plan, credits_balance, generation_count, is_admin')
+    .select('*')
     .eq('id', user.id)
     .single();
 
   if (profileError || !profile) {
-    reply.status(500).send({ error: 'Failed to retrieve user profile' });
+    console.error('Failed to retrieve profile for user:', user.id, profileError);
+    reply.status(500).send({ error: profileError?.message || 'Failed to retrieve user profile' });
     throw new Error('Database Error');
   }
 

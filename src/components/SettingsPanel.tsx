@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Settings, ShieldCheck, Zap, LogOut, Camera, Sparkles, Coins, HelpCircle } from 'lucide-react';
-import type { LLMConfig } from '../utils/llm';
+import React, { useState, useEffect, useRef } from 'react';
+import { Settings, ShieldCheck, Zap, LogOut, Camera, Sparkles, Coins, HelpCircle, Key, Copy, Trash2, Plus, Bot, Check, RefreshCw } from 'lucide-react';
+import type { LLMConfig, AgentTokenRecord } from '../utils/llm';
+import { getAgentTokens, createAgentToken, revokeAgentToken } from '../utils/llm';
 import { AvatarCropperModal } from './AvatarCropperModal';
 
 interface SettingsPanelProps {
@@ -29,6 +30,63 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
 }) => {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Agent Personal Access Tokens State (Claude MCP & ChatGPT)
+  const [tokens, setTokens] = useState<AgentTokenRecord[]>([]);
+  const [loadingTokens, setLoadingTokens] = useState(false);
+  const [newTokenName, setNewTokenName] = useState('');
+  const [creatingToken, setCreatingToken] = useState(false);
+  const [newlyCreatedToken, setNewlyCreatedToken] = useState<string | null>(null);
+  const [copiedToken, setCopiedToken] = useState(false);
+  const [copiedConfig, setCopiedConfig] = useState(false);
+  const [tokenError, setTokenError] = useState('');
+
+  useEffect(() => {
+    fetchTokens();
+  }, []);
+
+  const fetchTokens = async () => {
+    setLoadingTokens(true);
+    try {
+      const list = await getAgentTokens();
+      setTokens(list);
+    } catch (e: any) {
+      console.error('Failed to load agent tokens:', e);
+    } finally {
+      setLoadingTokens(false);
+    }
+  };
+
+  const handleCreateToken = async () => {
+    if (!newTokenName.trim()) {
+      setTokenError('Please enter a name for the key (e.g., Claude Desktop)');
+      return;
+    }
+    setCreatingToken(true);
+    setTokenError('');
+    try {
+      const result = await createAgentToken(newTokenName.trim());
+      setNewlyCreatedToken(result.token);
+      setNewTokenName('');
+      await fetchTokens();
+    } catch (e: any) {
+      setTokenError(e.message || 'Failed to create token');
+    } finally {
+      setCreatingToken(false);
+    }
+  };
+
+  const handleRevokeToken = async (id: string) => {
+    if (!confirm('Are you sure you want to revoke this agent key? Any connected AI agent (Claude Desktop, ChatGPT) will immediately lose access.')) {
+      return;
+    }
+    try {
+      await revokeAgentToken(id);
+      await fetchTokens();
+    } catch (e: any) {
+      alert(e.message || 'Failed to revoke token');
+    }
+  };
 
   // Avatar Upload States
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
@@ -359,6 +417,257 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Column 3: AI Connectors & Agent Keys (Full Width Card) */}
+      <div className="glass-card" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="flex-row-gap">
+            <Bot size={20} className="text-accent-primary" />
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>AI Connectors & Agent Keys (Claude & ChatGPT)</h3>
+          </div>
+          <button 
+            type="button" 
+            onClick={fetchTokens} 
+            disabled={loadingTokens}
+            title="Refresh keys"
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.8rem' }}
+          >
+            <RefreshCw size={14} className={loadingTokens ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+          Personal Access Tokens allow external AI assistants like <strong>Claude Desktop (MCP)</strong> and <strong>ChatGPT Custom GPTs</strong> to securely inspect your base resume and generate ATS-tailored CVs directly on your behalf.
+        </p>
+
+        {/* Generate Token Section */}
+        <div style={{ background: 'var(--bg-secondary)', padding: '1.25rem', borderRadius: 'var(--border-radius-md)', border: '1px solid var(--card-border)' }}>
+          <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <Key size={15} className="text-accent-primary" />
+            <span>Create New Personal Access Token</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <input
+              type="text"
+              placeholder="e.g. Claude Desktop, Work Laptop"
+              value={newTokenName}
+              onChange={(e) => setNewTokenName(e.target.value)}
+              style={{
+                flex: '1 1 240px',
+                padding: '0.65rem 0.9rem',
+                borderRadius: '6px',
+                border: '1px solid var(--card-border)',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: 'var(--text-primary)',
+                fontSize: '0.85rem'
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateToken()}
+            />
+            <button
+              type="button"
+              onClick={handleCreateToken}
+              disabled={creatingToken}
+              className="btn btn-primary"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.65rem 1.25rem',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: creatingToken ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <Plus size={16} />
+              <span>{creatingToken ? 'Generating...' : 'Generate Key'}</span>
+            </button>
+          </div>
+
+          {tokenError && (
+            <div style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+              {tokenError}
+            </div>
+          )}
+        </div>
+
+        {/* Newly Created Token Banner (One-Time Reveal) */}
+        {newlyCreatedToken && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%)',
+            border: '1px solid #10b981',
+            borderRadius: 'var(--border-radius-md)',
+            padding: '1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700, color: '#10b981', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Check size={16} /> Key Generated Successfully!
+              </span>
+              <button
+                type="button"
+                onClick={() => setNewlyCreatedToken(null)}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem' }}
+              >
+                Dismiss
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Make sure to copy this key now. For your security (GDPR Article 32), we only store a cryptographic SHA-256 hash at rest, so you will never be able to view this plaintext token again.
+            </p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0a0a0f', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+              <code style={{ flex: 1, fontFamily: 'monospace', fontSize: '0.85rem', color: '#38bdf8', overflowX: 'auto' }}>
+                {newlyCreatedToken}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(newlyCreatedToken);
+                  setCopiedToken(true);
+                  setTimeout(() => setCopiedToken(false), 2000);
+                }}
+                className="btn btn-secondary"
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                {copiedToken ? <Check size={14} className="text-success" /> : <Copy size={14} />}
+                <span>{copiedToken ? 'Copied!' : 'Copy Key'}</span>
+              </button>
+            </div>
+
+            {/* Quick Claude Desktop JSON helper */}
+            <div style={{ marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  Claude Desktop Config (~/Library/Application Support/Claude/claude_desktop_config.json):
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const snippet = JSON.stringify({
+                      mcpServers: {
+                        jd2cv: {
+                          command: "node",
+                          args: [
+                            "/Volumes/Mac HD2/Personal/Projects/Antigravity-Projects/CV-builder/mcp-server/dist/index.js"
+                          ],
+                          env: {
+                            JD2CV_API_KEY: newlyCreatedToken,
+                            JD2CV_API_URL: "http://localhost:3001"
+                          }
+                        }
+                      }
+                    }, null, 2);
+                    navigator.clipboard.writeText(snippet);
+                    setCopiedConfig(true);
+                    setTimeout(() => setCopiedConfig(false), 2000);
+                  }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                >
+                  {copiedConfig ? <Check size={12} /> : <Copy size={12} />}
+                  <span>{copiedConfig ? 'Snippet Copied!' : 'Copy Claude Config JSON'}</span>
+                </button>
+              </div>
+              <pre style={{
+                background: 'rgba(0, 0, 0, 0.4)',
+                padding: '0.75rem',
+                borderRadius: '6px',
+                fontSize: '0.75rem',
+                margin: 0,
+                color: '#e2e8f0',
+                overflowX: 'auto'
+              }}>
+                {`{
+  "mcpServers": {
+    "jd2cv": {
+      "command": "node",
+      "args": [
+        "/Volumes/Mac HD2/Personal/Projects/Antigravity-Projects/CV-builder/mcp-server/dist/index.js"
+      ],
+      "env": {
+        "JD2CV_API_KEY": "${newlyCreatedToken}",
+        "JD2CV_API_URL": "http://localhost:3001"
+      }
+    }
+  }
+}`}
+              </pre>
+            </div>
+          </div>
+        )}
+
+        {/* Existing Active Keys List */}
+        <div>
+          <h4 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 0.75rem 0' }}>
+            Active Agent Keys ({tokens.length})
+          </h4>
+
+          {loadingTokens && tokens.length === 0 ? (
+            <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loading active keys...</div>
+          ) : tokens.length === 0 ? (
+            <div style={{
+              padding: '1.5rem',
+              textAlign: 'center',
+              background: 'rgba(255, 255, 255, 0.02)',
+              borderRadius: '8px',
+              border: '1px dashed var(--card-border)',
+              color: 'var(--text-muted)',
+              fontSize: '0.85rem'
+            }}>
+              No active agent keys found. Generate a key above to connect Claude Desktop or ChatGPT!
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {tokens.map((token) => (
+                <div
+                  key={token.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--bg-secondary)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--card-border)'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                      {token.name}
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Created: {new Date(token.created_at).toLocaleDateString()} •{' '}
+                      {token.last_used_at ? `Last used: ${new Date(token.last_used_at).toLocaleDateString()}` : 'Never used'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRevokeToken(token.id)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#f87171',
+                      padding: '0.4rem 0.75rem',
+                      borderRadius: '6px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem'
+                    }}
+                  >
+                    <Trash2 size={13} />
+                    <span>Revoke</span>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
