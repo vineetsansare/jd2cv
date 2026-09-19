@@ -63,23 +63,22 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
   if (layout === 'left-rail') {
     return (
       <div 
-        className="entry-avoid-break experience-entry"
+        className="experience-entry"
         style={{
           display: 'grid',
           gridTemplateColumns: '115px 1fr',
-          gap: '1rem',
-          marginBottom: '1.25rem',
-          pageBreakInside: 'avoid'
+          gap: '0.85rem',
+          marginBottom: '0.85rem'
         }}
       >
         {/* Left Rail (Dates & Location) */}
-        <div style={{ textAlign: 'right', color: '#64748b', fontSize: '0.86em', fontWeight: 600, paddingTop: '0.15rem' }}>
+        <div style={{ textAlign: 'right', color: '#64748b', fontSize: '0.86em', fontWeight: 600, paddingTop: '0.12rem' }}>
           <div style={{ color: '#1e293b', fontWeight: 700 }}>{dateStr}</div>
-          {locationStr && <div style={{ fontSize: '0.88em', color: '#64748b', marginTop: '0.15rem' }}>{locationStr}</div>}
+          {locationStr && <div style={{ fontSize: '0.88em', color: '#64748b', marginTop: '0.12rem' }}>{locationStr}</div>}
         </div>
 
         {/* Right Rail (Role, Company, Bullets) with Sleek Timeline Connector */}
-        <div style={{ borderLeft: `2px solid ${accent}33`, paddingLeft: '1.15rem', position: 'relative' }}>
+        <div style={{ borderLeft: `2px solid ${accent}33`, paddingLeft: '1rem', position: 'relative' }}>
           {/* Timeline Dot */}
           <div 
             style={{
@@ -94,7 +93,18 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
             }} 
           />
 
-          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.35rem' }}>
+          <div 
+            className="role-header-avoid-break"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'baseline', 
+              flexWrap: 'wrap', 
+              gap: '0.45rem', 
+              marginBottom: '0.25rem',
+              breakAfter: 'avoid',
+              pageBreakAfter: 'avoid'
+            }}
+          >
             <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>
               {roleStr}
             </span>
@@ -107,7 +117,7 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
           {item.bullets && item.bullets.length > 0 && (
             <ul style={{ margin: 0, paddingLeft: '1.15rem', color: '#334155', textAlign: align }}>
               {item.bullets.map((bullet, idx) => (
-                <li key={idx} style={{ marginBottom: '0.3rem', lineHeight: 'inherit' }}>
+                <li key={idx} style={{ marginBottom: '0.22rem', lineHeight: 'inherit', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                   {renderFormattedText(bullet)}
                 </li>
               ))}
@@ -120,8 +130,19 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
 
   // Standard Header Layout (Role & Company left, Date & Location right)
   return (
-    <div className="entry-avoid-break experience-entry" style={{ marginBottom: '1.05rem', pageBreakInside: 'avoid', textAlign: align }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
+    <div className="experience-entry" style={{ marginBottom: '0.85rem', textAlign: align }}>
+      <div 
+        className="role-header-avoid-break"
+        style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'baseline', 
+          flexWrap: 'wrap', 
+          marginBottom: '0.2rem',
+          breakAfter: 'avoid',
+          pageBreakAfter: 'avoid'
+        }}
+      >
         <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.4rem' }}>
           <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>
             {roleStr}
@@ -139,9 +160,9 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
       </div>
 
       {item.bullets && item.bullets.length > 0 && (
-        <ul style={{ margin: '0.35rem 0 0 0', paddingLeft: '1.2rem', color: '#334155' }}>
+        <ul style={{ margin: '0.25rem 0 0 0', paddingLeft: '1.2rem', color: '#334155' }}>
           {item.bullets.map((bullet, idx) => (
-            <li key={idx} style={{ marginBottom: '0.25rem', lineHeight: 'inherit' }}>
+            <li key={idx} style={{ marginBottom: '0.2rem', lineHeight: 'inherit', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
               {renderFormattedText(bullet)}
             </li>
           ))}

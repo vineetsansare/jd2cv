@@ -64,9 +64,9 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
         flexDirection: align === 'center' ? 'column' : 'row',
         alignItems: align === 'center' ? 'center' : 'center',
         justifyContent: 'space-between',
-        gap: '1.25rem',
-        marginBottom: '1.25rem',
-        paddingBottom: showBorders ? '1rem' : '0.5rem',
+        gap: '1rem',
+        marginBottom: '0.85rem',
+        paddingBottom: showBorders ? '0.65rem' : '0.35rem',
         borderBottom: showBorders ? `1.5px solid ${accent}22` : 'none',
         textAlign: align
       }}

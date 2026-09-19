@@ -59,6 +59,8 @@ function buildModularPrintHtml(
       margin: 0 auto !important;
       box-shadow: none !important;
       border: none !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -77,13 +79,25 @@ function buildModularPrintHtml(
         break-after: avoid !important;
         page-break-after: avoid !important;
       }
+      /* Role header row stays with its first bullet point */
+      .role-header-avoid-break {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
       /* Ensure bullet points do not get horizontally cut in half */
       li {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }
-      /* Leaf item break avoidance */
-      .entry-avoid-break {
+      /* Experience entries allow natural flow between bullet points to prevent large empty voids */
+      .experience-entry {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+      /* Compact leaf entries like education and certifications stay cohesive */
+      .entry-avoid-break, .compact-leaf-avoid-break {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }

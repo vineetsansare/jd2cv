@@ -18,7 +18,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'summary':
         if (!summary || summary.visible === false || !summary.content) return null;
         return (
-          <section key="summary" style={{ marginBottom: '1.25rem' }}>
+          <section key="summary" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title={summary.title || 'Profile Summary'} 
               theme={theme} 
@@ -33,7 +33,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'skills':
         if (!skills || skills.filter(s => s.visible !== false).length === 0) return null;
         return (
-          <section key="skills" style={{ marginBottom: '1.25rem' }}>
+          <section key="skills" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title={cv.skillsMeta?.title || 'Technical Expertise & Skills'} 
               theme={theme} 
@@ -52,7 +52,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'experience':
         if (!experience || experience.filter(e => e.visible !== false).length === 0) return null;
         return (
-          <section key="experience" style={{ marginBottom: '1.25rem' }}>
+          <section key="experience" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title={cv.experienceMeta?.title || 'Professional Experience'} 
               theme={theme} 
@@ -69,7 +69,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'projects':
         if (!projects || projects.filter(p => p.visible !== false).length === 0) return null;
         return (
-          <section key="projects" style={{ marginBottom: '1.25rem' }}>
+          <section key="projects" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title={cv.projectsMeta?.title || 'Key Projects & Architecture'} 
               theme={theme} 
@@ -84,7 +84,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'education':
         if (!education || education.filter(e => e.visible !== false).length === 0) return null;
         return (
-          <section key="education" style={{ marginBottom: '1.25rem' }}>
+          <section key="education" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title={cv.educationMeta?.title || 'Education & Credentials'} 
               theme={theme} 
@@ -101,7 +101,7 @@ export const ModernTimelineRenderer: React.FC<TemplateProps> = ({ cv }) => {
       case 'certifications':
         if (!certifications || certifications.filter(c => c.visible !== false).length === 0) return null;
         return (
-          <section key="certifications" style={{ marginBottom: '1.25rem' }}>
+          <section key="certifications" style={{ marginBottom: '0.85rem' }}>
             <TemplateSectionHeading 
               title="Certifications & Badges" 
               theme={theme} 
