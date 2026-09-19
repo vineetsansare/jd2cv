@@ -38,7 +38,8 @@ import {
   Check, 
   Sparkles, 
   Upload, 
-  ArrowLeft
+  ArrowLeft,
+  Info
 } from 'lucide-react';
 
 const LOCAL_STORAGE_KEY_BUILDER = 'jd2cv_builder_draft_v1';
@@ -379,6 +380,29 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           ) : (
             /* Content Sections Accordion */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              {/* Sidebar Pro Fixed Layout Disclaimer */}
+              {cv.theme.templateId === 'split-sidebar' && (
+                <div 
+                  style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '10px',
+                    background: 'rgba(37, 99, 235, 0.08)',
+                    border: '1px solid rgba(37, 99, 235, 0.22)',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.8rem',
+                    lineHeight: 1.45,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.65rem'
+                  }}
+                >
+                  <Info size={16} style={{ color: 'var(--accent-primary)', flexShrink: 0 }} />
+                  <span>
+                    <strong>Fixed Multi-Column Layout:</strong> Section movement is locked for the <em>Two-Column Sidebar Pro</em> template to preserve its dedicated sidebar (Skills, Education, Certifications) and main column structure.
+                  </span>
+                </div>
+              )}
+
               {/* 1. Header & Personal Info (Pinned Top) */}
               <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '12px' }}>
                 <div 
@@ -419,8 +443,9 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
 
               {/* Dynamic Reorderable Sections */}
               {sectionOrder.map((sectionKey, index) => {
-                const canMoveUp = index > 0;
-                const canMoveDown = index < sectionOrder.length - 1;
+                const isSidebar = cv.theme.templateId === 'split-sidebar';
+                const canMoveUp = !isSidebar && index > 0;
+                const canMoveDown = !isSidebar && index < sectionOrder.length - 1;
 
                 if (sectionKey === 'summary') {
                   return (
@@ -433,11 +458,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       isExpanded={expandedSection === 'summary'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
                       onToggleVisibility={(v) => updateSummary({ ...cv.summary, visible: v })}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
@@ -457,11 +482,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       visible={true}
                       isExpanded={expandedSection === 'experience'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
@@ -481,11 +506,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       visible={true}
                       isExpanded={expandedSection === 'education'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
@@ -505,11 +530,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       visible={true}
                       isExpanded={expandedSection === 'skills'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
@@ -529,11 +554,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       visible={true}
                       isExpanded={expandedSection === 'projects'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
@@ -553,11 +578,11 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
                       visible={true}
                       isExpanded={expandedSection === 'certifications'}
                       onToggleExpand={() => setExpandedSection(expandedSection === 'certifications' ? null : 'certifications')}
-                      onMoveUp={() => moveSection(index, index - 1)}
-                      onMoveDown={() => moveSection(index, index + 1)}
+                      onMoveUp={!isSidebar ? () => moveSection(index, index - 1) : undefined}
+                      onMoveDown={!isSidebar ? () => moveSection(index, index + 1) : undefined}
                       canMoveUp={canMoveUp}
                       canMoveDown={canMoveDown}
-                      draggable={true}
+                      draggable={!isSidebar}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}

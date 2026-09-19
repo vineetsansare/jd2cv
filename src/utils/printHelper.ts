@@ -46,7 +46,7 @@ export function printCvDocument(
   <style>
     @page {
       size: A4 portrait;
-      margin: ${customHtml ? '0' : (themeConfig?.template === 'split-sidebar-right' ? '0' : '10mm 10mm 10mm 10mm')};
+      margin: 8mm 0mm;
     }
     *, *:before, *:after {
       box-sizing: border-box !important;
@@ -81,6 +81,17 @@ export function printCvDocument(
       box-shadow: none !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+    }
+
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      section, li, div[style*="pageBreakInside"], div[style*="page-break-inside"] {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
     }
 
     .resume-preview-sheet {

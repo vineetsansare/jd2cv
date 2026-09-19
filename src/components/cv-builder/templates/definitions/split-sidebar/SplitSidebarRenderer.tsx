@@ -22,19 +22,27 @@ export const SplitSidebarRenderer: React.FC<TemplateProps> = ({ cv }) => {
   };
 
   return (
-    <PrintContainer theme={theme} className="split-sidebar-template" style={{ padding: 0 }}>
+    <PrintContainer 
+      theme={theme} 
+      className="split-sidebar-template" 
+      style={{ 
+        padding: 0,
+        background: 'linear-gradient(to right, #f8fafc 0px, #f8fafc 240px, #e2e8f0 240px, #e2e8f0 241px, #ffffff 241px, #ffffff 100%)'
+      }}
+    >
       <div 
         style={{
           display: 'grid',
           gridTemplateColumns: '240px 1fr',
-          minHeight: '1123px'
+          minHeight: '1123px',
+          width: '100%',
+          background: 'linear-gradient(to right, #f8fafc 0px, #f8fafc 240px, #e2e8f0 240px, #e2e8f0 241px, #ffffff 241px, #ffffff 100%)'
         }}
       >
         {/* Left Sidebar */}
         <aside 
           style={{
-            backgroundColor: '#f8fafc',
-            borderRight: '1px solid #e2e8f0',
+            backgroundColor: 'transparent',
             padding: '30px 22px',
             display: 'flex',
             flexDirection: 'column',
