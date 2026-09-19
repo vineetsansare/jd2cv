@@ -3,7 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
-const rawUrl = (process.env.JD2CV_API_URL || "https://toolsby.vineetsansare.com").replace(/\/+$/, "");
+const rawUrl = (process.env.JD2CV_API_URL || "https://jd2cv.onrender.com").replace(/\/+$/, "");
 const API_BASE_URL = rawUrl.endsWith("/api/agent") ? rawUrl : `${rawUrl}/api/agent`;
 const API_KEY = process.env.JD2CV_API_KEY || "";
 
