@@ -156,6 +156,8 @@ export const LivePreviewA4: React.FC<LivePreviewA4Props> = ({ cv, onDownloadPdf 
         >
           {/* Inner 794px A4 Sheet transformed from top-left */}
           <div 
+            id="cv-live-a4-sheet"
+            className="cv-a4-sheet-container"
             style={{
               width: `${A4_WIDTH}px`,
               minHeight: `${A4_HEIGHT}px`,

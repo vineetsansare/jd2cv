@@ -111,6 +111,7 @@ export const DEFAULT_CV_DATA: StructuredCV = {
       visible: true
     }
   ],
+  sectionOrder: ['summary', 'experience', 'education', 'skills', 'projects', 'certifications'],
   customSections: [],
   theme: {
     templateId: 'modern-timeline',

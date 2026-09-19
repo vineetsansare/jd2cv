@@ -1,6 +1,7 @@
 import React from 'react';
 import type { ResumeBasics, CVThemeSettings } from '../../../../types/cvBuilder';
 import { Mail, Phone, MapPin, Globe, Linkedin, Github, ExternalLink } from 'lucide-react';
+import { cleanText } from './ExperienceEntry';
 
 interface TemplateHeaderProps {
   basics: ResumeBasics;
@@ -24,7 +25,7 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
   const avatarRadius = avatarShape === 'circle' ? '50%' : avatarShape === 'rounded' ? '12px' : '4px';
 
   // Helper for icon based on network
-  const getNetworkIcon = (network: string) => {
+  const getNetworkIcon = (network: string = '') => {
     const net = network.toLowerCase();
     if (net.includes('linkedin')) return <Linkedin size={13} />;
     if (net.includes('github')) return <Github size={13} />;
@@ -32,11 +33,18 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
     return <ExternalLink size={13} />;
   };
 
+  const cleanName = cleanText(basics.fullName) || 'Your Full Name';
+  const cleanHeadline = cleanText(basics.headline);
+  const cleanLocation = cleanText(basics.location);
+  const cleanEmail = cleanText(basics.email);
+  const cleanPhone = cleanText(basics.phone);
+  const cleanWebsite = cleanText(basics.website);
+
   const photoElement = showPhoto && (
     <div style={{ flexShrink: 0 }}>
       <img
         src={basics.avatarUrl}
-        alt={basics.fullName}
+        alt={cleanName}
         style={{
           width: '78px',
           height: '78px',
@@ -76,10 +84,10 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
             lineHeight: 1.15
           }}
         >
-          {basics.fullName || 'Your Full Name'}
+          {cleanName}
         </h1>
 
-        {basics.headline && (
+        {cleanHeadline && (
           <div 
             style={{
               fontSize: 'var(--cv-font-size-h3, 10.5pt)',
@@ -89,7 +97,7 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
               marginBottom: '0.45rem'
             }}
           >
-            {basics.headline}
+            {cleanHeadline}
           </div>
         )}
 
@@ -106,57 +114,64 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
             marginTop: '0.2rem'
           }}
         >
-          {basics.email && (
+          {cleanEmail && (
             <a 
-              href={`mailto:${basics.email}`} 
+              href={`mailto:${cleanEmail}`} 
               style={{ color: '#334155', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <Mail size={12} style={{ color: accent }} />
-              <span>{basics.email}</span>
+              <span>{cleanEmail}</span>
             </a>
           )}
 
-          {basics.phone && (
+          {cleanPhone && (
             <a 
-              href={`tel:${basics.phone}`} 
+              href={`tel:${cleanPhone}`} 
               style={{ color: '#334155', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <Phone size={12} style={{ color: accent }} />
-              <span>{basics.phone}</span>
+              <span>{cleanPhone}</span>
             </a>
           )}
 
-          {basics.location && (
+          {cleanLocation && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
               <MapPin size={12} style={{ color: accent }} />
-              <span>{basics.location}</span>
+              <span>{cleanLocation}</span>
             </span>
           )}
 
-          {basics.website && (
+          {cleanWebsite && (
             <a 
-              href={basics.website.startsWith('http') ? basics.website : `https://${basics.website}`} 
+              href={cleanWebsite.startsWith('http') ? cleanWebsite : `https://${cleanWebsite}`} 
               target="_blank" 
               rel="noreferrer"
               style={{ color: '#334155', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <Globe size={12} style={{ color: accent }} />
-              <span>{basics.website.replace(/^https?:\/\//, '')}</span>
+              <span>{cleanWebsite.replace(/^https?:\/\//, '')}</span>
             </a>
           )}
 
-          {basics.links && basics.links.map(link => (
-            <a 
-              key={link.id}
-              href={link.url.startsWith('http') ? link.url : `https://${link.url}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{ color: '#334155', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-            >
-              {getNetworkIcon(link.network)}
-              <span>{link.username || link.network}</span>
-            </a>
-          ))}
+          {basics.links && basics.links.map(link => {
+            const rawUrl = link.url || '';
+            const cleanUrl = rawUrl.replace(/^\[(.*?)\]\((.*?)\)$/, '$2').trim();
+            const cleanUsername = cleanText(link.username) || cleanText(link.network);
+            const href = cleanUrl.startsWith('http') ? cleanUrl : `https://${cleanUrl}`;
+
+            return (
+              <a 
+                key={link.id}
+                href={href}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: '#334155', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                {getNetworkIcon(link.network)}
+                <span>{cleanUsername}</span>
+              </a>
+            );
+          })}
         </div>
       </div>
 
@@ -164,3 +179,4 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
     </div>
   );
 };
+

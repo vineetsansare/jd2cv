@@ -5,9 +5,12 @@ import { Camera, Eye, EyeOff, Plus, Trash2, Mail, Phone, MapPin, Globe } from 'l
 interface HeaderSectionProps {
   basics: ResumeBasics;
   onChange: (updated: ResumeBasics) => void;
+  onUpdateAvatar?: (url: string) => Promise<void> | void;
 }
 
-export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }) => {
+export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange, onUpdateAvatar }) => {
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const updateField = (field: keyof ResumeBasics, value: any) => {
     onChange({ ...basics, [field]: value });
   };
@@ -18,11 +21,22 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        updateField('avatarUrl', reader.result);
-        updateField('showAvatar', true);
+        const photoUrl = reader.result;
+        onChange({ ...basics, avatarUrl: photoUrl, showAvatar: true });
+        if (onUpdateAvatar) {
+          onUpdateAvatar(photoUrl);
+        }
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    updateField('avatarUrl', '');
+    updateField('showAvatar', false);
+    if (onUpdateAvatar) {
+      onUpdateAvatar('');
+    }
   };
 
   const addLink = () => {
@@ -46,7 +60,19 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Avatar Headshot & Basic Details */}
       <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-        <div style={{ position: 'relative' }}>
+        <input 
+          ref={fileInputRef}
+          type="file" 
+          accept="image/*" 
+          onChange={handleAvatarUpload} 
+          style={{ display: 'none' }} 
+        />
+
+        <div 
+          style={{ position: 'relative', cursor: 'pointer' }}
+          onClick={() => fileInputRef.current?.click()}
+          title="Click to upload profile photo"
+        >
           {basics.avatarUrl ? (
             <img 
               src={basics.avatarUrl} 
@@ -56,7 +82,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
                 height: '76px',
                 borderRadius: basics.avatarShape === 'circle' ? '50%' : basics.avatarShape === 'rounded' ? '14px' : '4px',
                 objectFit: 'cover',
-                border: '2px solid var(--card-border)'
+                border: '2px solid var(--accent-primary)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
               }}
             />
           ) : (
@@ -65,17 +92,20 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
               height: '76px',
               borderRadius: '50%',
               background: 'var(--bg-secondary)',
-              border: '2px dashed var(--card-border)',
+              border: '2px dashed var(--accent-primary)',
               display: 'flex',
+              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-muted)'
+              color: 'var(--accent-primary)',
+              gap: '2px'
             }}>
-              <Camera size={26} />
+              <Camera size={24} />
+              <span style={{ fontSize: '9px', fontWeight: 600 }}>Upload</span>
             </div>
           )}
 
-          <label 
+          <div 
             style={{
               position: 'absolute',
               bottom: '-4px',
@@ -88,19 +118,49 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              cursor: 'pointer',
               boxShadow: '0 2px 6px rgba(0,0,0,0.3)'
             }}
             title="Upload photo"
           >
             <Camera size={13} />
-            <input type="file" accept="image/*" onChange={handleAvatarUpload} style={{ display: 'none' }} />
-          </label>
+          </div>
         </div>
 
         <div style={{ flexGrow: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.45rem', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Profile Photo</span>
+            
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="btn btn-secondary"
+              style={{ padding: '0.2rem 0.55rem', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+            >
+              <Camera size={12} />
+              <span>{basics.avatarUrl ? 'Change' : 'Upload'}</span>
+            </button>
+
+            {basics.avatarUrl && (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--danger, #ef4444)',
+                  cursor: 'pointer',
+                  fontSize: '0.72rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.2rem',
+                  padding: 0
+                }}
+              >
+                <Trash2 size={12} />
+                <span>Remove</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => updateField('showAvatar', !basics.showAvatar)}
@@ -113,7 +173,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
                 alignItems: 'center',
                 gap: '0.25rem',
                 fontSize: '0.75rem',
-                padding: 0
+                padding: 0,
+                marginLeft: 'auto'
               }}
             >
               {basics.showAvatar ? <Eye size={14} /> : <EyeOff size={14} />}
@@ -121,7 +182,8 @@ export const HeaderSection: React.FC<HeaderSectionProps> = ({ basics, onChange }
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Shape:</span>
             {(['circle', 'rounded', 'square'] as const).map(shape => (
               <button
                 key={shape}

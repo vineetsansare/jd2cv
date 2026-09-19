@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import type { StructuredCV, ResumeBasics, WorkExperienceItem, EducationItem, SkillCategoryItem, CVThemeSettings } from '../../types/cvBuilder';
+import type { 
+  StructuredCV, 
+  ResumeBasics, 
+  WorkExperienceItem, 
+  EducationItem, 
+  SkillCategoryItem, 
+  ProjectItem, 
+  CertificationItem, 
+  CVThemeSettings 
+} from '../../types/cvBuilder';
 import { DEFAULT_CV_DATA } from '../../utils/defaultCvData';
 import { structuredCVToMarkdown, markdownToStructuredCV } from '../../utils/cvBuilderConverter';
 import { printCvDocument } from '../../utils/printHelper';
@@ -8,6 +17,9 @@ import { SummarySection } from './sections/SummarySection';
 import { ExperienceSection } from './sections/ExperienceSection';
 import { EducationSection } from './sections/EducationSection';
 import { SkillsSection } from './sections/SkillsSection';
+import { ProjectsSection } from './sections/ProjectsSection';
+import { CertificationsSection } from './sections/CertificationsSection';
+import { SectionCard } from './sections/SectionCard';
 import { ThemeCustomizer } from './ThemeCustomizer';
 import { LivePreviewA4 } from './LivePreviewA4';
 import { 
@@ -17,10 +29,11 @@ import {
   GraduationCap, 
   Cpu, 
   Palette, 
+  Code,
+  Award,
   ChevronDown, 
   ChevronUp, 
   Eye, 
-  EyeOff, 
   Download, 
   Check, 
   Sparkles, 
@@ -34,20 +47,26 @@ interface CVBuilderPanelProps {
   userProfile?: any;
   baseCVs: Array<{ id?: string; name: string; text: string }>;
   onSetAsBaseCV: (markdown: string, filename: string) => Promise<void>;
+  onUpdateAvatar?: (url: string) => Promise<void> | void;
   theme?: 'light' | 'dark';
 }
 
 export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
   userProfile,
   baseCVs,
-  onSetAsBaseCV
+  onSetAsBaseCV,
+  onUpdateAvatar
 }) => {
   // Load initial draft from localStorage or default
   const [cv, setCv] = useState<StructuredCV>(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY_BUILDER);
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        if (!parsed.sectionOrder || parsed.sectionOrder.length === 0) {
+          parsed.sectionOrder = ['summary', 'experience', 'education', 'skills', 'projects', 'certifications'];
+        }
+        return parsed;
       } catch (e) {
         console.error('Failed to parse builder draft from storage', e);
       }
@@ -60,6 +79,9 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
   const [saveStatus, setSaveStatus] = useState<string>('Saved');
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState<boolean>(false);
   const [isSyncingBaseCV, setIsSyncingBaseCV] = useState<boolean>(false);
+  const [draggedSectionIndex, setDraggedSectionIndex] = useState<number | null>(null);
+
+  const sectionOrder = cv.sectionOrder || ['summary', 'experience', 'education', 'skills', 'projects', 'certifications'];
 
   // Autosave on change
   useEffect(() => {
@@ -129,8 +151,57 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
     }));
   };
 
+  const updateProjects = (projects: ProjectItem[], meta?: any) => {
+    setCv(prev => ({
+      ...prev,
+      projects,
+      projectsMeta: meta || prev.projectsMeta,
+      updatedAt: new Date().toISOString()
+    }));
+  };
+
+  const updateCertifications = (certifications: CertificationItem[]) => {
+    setCv(prev => ({
+      ...prev,
+      certifications,
+      updatedAt: new Date().toISOString()
+    }));
+  };
+
   const updateTheme = (theme: CVThemeSettings) => {
     setCv(prev => ({ ...prev, theme, updatedAt: new Date().toISOString() }));
+  };
+
+  // Move section in order
+  const moveSection = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= sectionOrder.length) return;
+    const newOrder = [...sectionOrder];
+    const [moved] = newOrder.splice(fromIndex, 1);
+    newOrder.splice(toIndex, 0, moved);
+    setCv(prev => ({
+      ...prev,
+      sectionOrder: newOrder,
+      updatedAt: new Date().toISOString()
+    }));
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedSectionIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedSectionIndex !== null && draggedSectionIndex !== targetIndex) {
+      moveSection(draggedSectionIndex, targetIndex);
+    }
+    setDraggedSectionIndex(null);
   };
 
   // 1-Click "Set as Base CV" (Syncs with AI Optimizer)
@@ -162,18 +233,21 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
     }
   };
 
-  // Print / Export PDF
+  // Print / Export PDF with 100% template fidelity
   const handleExportPdf = () => {
-    const markdown = structuredCVToMarkdown(cv);
+    const liveSheet = document.getElementById('cv-live-a4-sheet') || document.querySelector('.cv-a4-document');
+    const customHtml = liveSheet ? liveSheet.innerHTML : undefined;
     const filenameTitle = `${cv.basics.fullName || 'Candidate'}-${cv.basics.headline || 'Resume'}`;
-    printCvDocument(markdown, {
+    
+    printCvDocument('', {
       accentColor: cv.theme.accentColor || '#1e3a8a',
       themeName: cv.theme.templateId || 'modern-timeline',
       showPhoto: cv.basics.showAvatar && !!cv.basics.avatarUrl,
       photoUrl: cv.basics.avatarUrl,
       layoutDensity: cv.theme.fontSize === 'compact' ? 'compact' : 'standard'
-    }, filenameTitle);
+    }, filenameTitle, customHtml);
   };
+
 
   return (
     <div className="entrance-fade" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -305,183 +379,196 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
           ) : (
             /* Content Sections Accordion */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              {/* 1. Header & Personal Info */}
-              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
+              {/* 1. Header & Personal Info (Pinned Top) */}
+              <div className="glass-card" style={{ padding: 0, overflow: 'hidden', borderRadius: '12px' }}>
                 <div 
                   onClick={() => setExpandedSection(expandedSection === 'header' ? null : 'header')}
                   style={{
-                    padding: '1rem 1.25rem',
+                    padding: '0.85rem 1.15rem',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     cursor: 'pointer',
                     userSelect: 'none',
-                    background: expandedSection === 'header' ? 'rgba(124, 58, 237, 0.04)' : 'transparent'
+                    background: expandedSection === 'header' ? 'rgba(124, 58, 237, 0.04)' : 'transparent',
+                    borderBottom: expandedSection === 'header' ? '1px solid var(--card-border)' : 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(37,99,235,0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <User size={16} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'rgba(37,99,235,0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <User size={15} />
                     </div>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Personal Info & Links</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.basics.fullName || 'Name'}, {cv.basics.email || 'Email'}</div>
                     </div>
                   </div>
-                  {expandedSection === 'header' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                  {expandedSection === 'header' ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
 
                 {expandedSection === 'header' && (
                   <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <HeaderSection basics={cv.basics} onChange={updateBasics} />
+                    <HeaderSection 
+                      basics={cv.basics} 
+                      onChange={updateBasics} 
+                      onUpdateAvatar={onUpdateAvatar}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* 2. Executive Profile / Summary */}
-              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div 
-                  onClick={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    background: expandedSection === 'summary' ? 'rgba(124, 58, 237, 0.04)' : 'transparent'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <FileText size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>Executive Profile</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.summary.visible ? 'Visible' : 'Hidden'}</div>
-                    </div>
-                  </div>
+              {/* Dynamic Reorderable Sections */}
+              {sectionOrder.map((sectionKey, index) => {
+                const canMoveUp = index > 0;
+                const canMoveDown = index < sectionOrder.length - 1;
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        updateSummary({ ...cv.summary, visible: !cv.summary.visible });
-                      }}
-                      style={{ background: 'none', border: 'none', color: cv.summary.visible ? '#10b981' : 'var(--text-muted)', cursor: 'pointer', padding: '0.2rem' }}
+                if (sectionKey === 'summary') {
+                  return (
+                    <SectionCard
+                      key="summary"
+                      title={cv.summary.title || 'Executive Profile'}
+                      subtitle={cv.summary.visible ? 'Visible on CV' : 'Hidden'}
+                      icon={<FileText size={16} />}
+                      visible={cv.summary.visible}
+                      isExpanded={expandedSection === 'summary'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'summary' ? null : 'summary')}
+                      onToggleVisibility={(v) => updateSummary({ ...cv.summary, visible: v })}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
                     >
-                      {cv.summary.visible ? <Eye size={15} /> : <EyeOff size={15} />}
-                    </button>
-                    {expandedSection === 'summary' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                  </div>
-                </div>
+                      <SummarySection summary={cv.summary} onChange={updateSummary} />
+                    </SectionCard>
+                  );
+                }
 
-                {expandedSection === 'summary' && (
-                  <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <SummarySection summary={cv.summary} onChange={updateSummary} />
-                  </div>
-                )}
-              </div>
+                if (sectionKey === 'experience') {
+                  return (
+                    <SectionCard
+                      key="experience"
+                      title={cv.experienceMeta?.title || 'Professional Experience'}
+                      entriesCount={cv.experience.length}
+                      icon={<Briefcase size={16} />}
+                      visible={true}
+                      isExpanded={expandedSection === 'experience'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <ExperienceSection meta={cv.experienceMeta} experience={cv.experience} onChange={updateExperience} />
+                    </SectionCard>
+                  );
+                }
 
-              {/* 3. Professional Experience */}
-              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div 
-                  onClick={() => setExpandedSection(expandedSection === 'experience' ? null : 'experience')}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    background: expandedSection === 'experience' ? 'rgba(124, 58, 237, 0.04)' : 'transparent'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(234,88,12,0.1)', color: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Briefcase size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.experienceMeta?.title || 'Professional Experience'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.experience.length} career positions</div>
-                    </div>
-                  </div>
-                  {expandedSection === 'experience' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </div>
+                if (sectionKey === 'education') {
+                  return (
+                    <SectionCard
+                      key="education"
+                      title={cv.educationMeta?.title || 'Education'}
+                      entriesCount={cv.education.length}
+                      icon={<GraduationCap size={16} />}
+                      visible={true}
+                      isExpanded={expandedSection === 'education'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <EducationSection meta={cv.educationMeta} education={cv.education} onChange={updateEducation} />
+                    </SectionCard>
+                  );
+                }
 
-                {expandedSection === 'experience' && (
-                  <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <ExperienceSection meta={cv.experienceMeta} experience={cv.experience} onChange={updateExperience} />
-                  </div>
-                )}
-              </div>
+                if (sectionKey === 'skills') {
+                  return (
+                    <SectionCard
+                      key="skills"
+                      title={cv.skillsMeta?.title || 'Skills & Competencies'}
+                      entriesCount={cv.skills.length}
+                      icon={<Cpu size={16} />}
+                      visible={true}
+                      isExpanded={expandedSection === 'skills'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <SkillsSection meta={cv.skillsMeta} skills={cv.skills} onChange={updateSkills} />
+                    </SectionCard>
+                  );
+                }
 
-              {/* 4. Education */}
-              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div 
-                  onClick={() => setExpandedSection(expandedSection === 'education' ? null : 'education')}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    background: expandedSection === 'education' ? 'rgba(124, 58, 237, 0.04)' : 'transparent'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(139,92,246,0.1)', color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <GraduationCap size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.educationMeta?.title || 'Education'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.education.length} degrees / qualifications</div>
-                    </div>
-                  </div>
-                  {expandedSection === 'education' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </div>
+                if (sectionKey === 'projects') {
+                  return (
+                    <SectionCard
+                      key="projects"
+                      title={cv.projectsMeta?.title || 'Projects & Highlights'}
+                      entriesCount={(cv.projects || []).length}
+                      icon={<Code size={16} />}
+                      visible={true}
+                      isExpanded={expandedSection === 'projects'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'projects' ? null : 'projects')}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <ProjectsSection meta={cv.projectsMeta} projects={cv.projects || []} onChange={updateProjects} />
+                    </SectionCard>
+                  );
+                }
 
-                {expandedSection === 'education' && (
-                  <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <EducationSection meta={cv.educationMeta} education={cv.education} onChange={updateEducation} />
-                  </div>
-                )}
-              </div>
+                if (sectionKey === 'certifications') {
+                  return (
+                    <SectionCard
+                      key="certifications"
+                      title="Certifications & Awards"
+                      entriesCount={(cv.certifications || []).length}
+                      icon={<Award size={16} />}
+                      visible={true}
+                      isExpanded={expandedSection === 'certifications'}
+                      onToggleExpand={() => setExpandedSection(expandedSection === 'certifications' ? null : 'certifications')}
+                      onMoveUp={() => moveSection(index, index - 1)}
+                      onMoveDown={() => moveSection(index, index + 1)}
+                      canMoveUp={canMoveUp}
+                      canMoveDown={canMoveDown}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <CertificationsSection certifications={cv.certifications || []} onChange={updateCertifications} />
+                    </SectionCard>
+                  );
+                }
 
-              {/* 5. Skills & Competencies */}
-              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div 
-                  onClick={() => setExpandedSection(expandedSection === 'skills' ? null : 'skills')}
-                  style={{
-                    padding: '1rem 1.25rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    cursor: 'pointer',
-                    userSelect: 'none',
-                    background: expandedSection === 'skills' ? 'rgba(124, 58, 237, 0.04)' : 'transparent'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: 'rgba(6,182,212,0.1)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Cpu size={16} />
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-primary)' }}>{cv.skillsMeta?.title || 'Skills & Competencies'}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cv.skills.length} categories</div>
-                    </div>
-                  </div>
-                  {expandedSection === 'skills' ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </div>
-
-                {expandedSection === 'skills' && (
-                  <div style={{ padding: '1.25rem', borderTop: '1px solid var(--card-border)' }}>
-                    <SkillsSection meta={cv.skillsMeta} skills={cv.skills} onChange={updateSkills} />
-                  </div>
-                )}
-              </div>
+                return null;
+              })}
             </div>
           )}
         </div>

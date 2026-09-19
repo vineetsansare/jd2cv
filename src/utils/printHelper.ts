@@ -40,10 +40,13 @@ export function printCvDocument(
   <meta charset="utf-8" />
   <meta name="viewport" content="width=794, initial-scale=1.0" />
   <title>${filenameTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
     @page {
       size: A4 portrait;
-      margin: ${themeConfig?.template === 'split-sidebar-right' ? '0' : '10mm 10mm 10mm 10mm'};
+      margin: ${customHtml ? '0' : (themeConfig?.template === 'split-sidebar-right' ? '0' : '10mm 10mm 10mm 10mm')};
     }
     *, *:before, *:after {
       box-sizing: border-box !important;
@@ -56,7 +59,7 @@ export function printCvDocument(
       background: #ffffff !important;
       background-color: #ffffff !important;
       color: #111827 !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       width: 100% !important;
       min-width: 794px !important;
       height: auto !important;
@@ -69,6 +72,15 @@ export function printCvDocument(
       color: #111827 !important;
       padding: 0;
       margin: 0 auto;
+    }
+
+    .cv-a4-document {
+      width: 100% !important;
+      min-width: 794px !important;
+      background-color: #ffffff !important;
+      box-shadow: none !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
     .resume-preview-sheet {

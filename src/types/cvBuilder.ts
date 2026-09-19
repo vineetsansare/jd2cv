@@ -150,6 +150,7 @@ export interface StructuredCV {
   projectsMeta?: SectionMeta;
   projects: ProjectItem[];
   certifications: CertificationItem[];
+  sectionOrder?: string[];
   customSections: any[];
   theme: CVThemeSettings;
 }

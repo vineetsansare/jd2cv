@@ -7,11 +7,27 @@ interface ExperienceEntryProps {
   layout?: 'standard' | 'left-rail' | 'compact';
 }
 
-// Simple helper to parse bold/italic/links in bullet points
-export const renderFormattedText = (text: string) => {
+/**
+ * Strips markdown wrappers like **bold**, *italic*, [link](url)
+ */
+export const cleanText = (text: string = ''): string => {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1')
+    .trim();
+};
+
+/**
+ * Helper to parse bold/italic/links in bullet points and summaries
+ */
+export const renderFormattedText = (text: string = '') => {
   if (!text) return null;
 
-  // Replace Markdown bold **text** or __text__
+  // Replace Markdown bold **text**, italic *text*, and links [text](url)
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|\[.*?\]\(.*?\))/g);
   return parts.map((part, index) => {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -38,27 +54,31 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
   layout = 'standard'
 }) => {
   const accent = theme.accentColor || '#2563eb';
+  const roleStr = cleanText(item.role);
+  const companyStr = cleanText(item.company);
+  const locationStr = cleanText(item.location);
   const dateStr = `${item.startDate} – ${item.isCurrent ? 'Present' : item.endDate || ''}`;
+  const align = item.alignment || 'left';
 
   if (layout === 'left-rail') {
     return (
       <div 
         style={{
           display: 'grid',
-          gridTemplateColumns: '145px 1fr',
+          gridTemplateColumns: '140px 1fr',
           gap: '1.25rem',
-          marginBottom: '1.15rem',
+          marginBottom: '1.25rem',
           pageBreakInside: 'avoid'
         }}
       >
         {/* Left Rail (Dates & Location) */}
-        <div style={{ textAlign: 'right', color: '#64748b', fontSize: '0.85em', fontWeight: 600, paddingTop: '0.1rem' }}>
-          <div style={{ color: '#334155' }}>{dateStr}</div>
-          {item.location && <div style={{ fontSize: '0.9em', color: '#94a3b8' }}>{item.location}</div>}
+        <div style={{ textAlign: 'right', color: '#64748b', fontSize: '0.86em', fontWeight: 600, paddingTop: '0.15rem' }}>
+          <div style={{ color: '#1e293b', fontWeight: 700 }}>{dateStr}</div>
+          {locationStr && <div style={{ fontSize: '0.9em', color: '#64748b', marginTop: '0.15rem' }}>{locationStr}</div>}
         </div>
 
-        {/* Right Rail (Role, Company, Bullets) */}
-        <div style={{ borderLeft: `2px solid ${accent}33`, paddingLeft: '1.1rem', position: 'relative' }}>
+        {/* Right Rail (Role, Company, Bullets) with Sleek Timeline Connector */}
+        <div style={{ borderLeft: `2px solid ${accent}40`, paddingLeft: '1.25rem', position: 'relative' }}>
           {/* Timeline Dot */}
           <div 
             style={{
@@ -68,24 +88,25 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: accent
+              backgroundColor: accent,
+              boxShadow: `0 0 0 3px #ffffff, 0 0 0 4px ${accent}40`
             }} 
           />
 
-          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.4rem' }}>
             <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>
-              {item.role}
+              {roleStr}
             </span>
-            <span style={{ color: '#64748b', fontSize: '0.9em' }}>•</span>
+            <span style={{ color: '#94a3b8', fontSize: '0.85em' }}>•</span>
             <span style={{ fontWeight: 600, color: accent }}>
-              {item.company}
+              {companyStr}
             </span>
           </div>
 
           {item.bullets && item.bullets.length > 0 && (
-            <ul style={{ margin: 0, paddingLeft: '1.1rem', color: '#334155' }}>
+            <ul style={{ margin: 0, paddingLeft: '1.15rem', color: '#334155', textAlign: align }}>
               {item.bullets.map((bullet, idx) => (
-                <li key={idx} style={{ marginBottom: '0.25rem', lineHeight: 'inherit' }}>
+                <li key={idx} style={{ marginBottom: '0.3rem', lineHeight: 'inherit' }}>
                   {renderFormattedText(bullet)}
                 </li>
               ))}
@@ -98,21 +119,21 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
 
   // Standard Header Layout (Role & Company left, Date & Location right)
   return (
-    <div style={{ marginBottom: '1rem', pageBreakInside: 'avoid' }}>
+    <div style={{ marginBottom: '1.05rem', pageBreakInside: 'avoid', textAlign: align }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.4rem' }}>
           <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>
-            {item.role}
+            {roleStr}
           </span>
           <span style={{ color: '#94a3b8' }}>|</span>
           <span style={{ fontWeight: 600, color: '#334155', fontStyle: 'italic' }}>
-            {item.company}
+            {companyStr}
           </span>
         </div>
 
         <div style={{ fontSize: '0.85em', color: '#64748b', fontWeight: 500, textAlign: 'right' }}>
           <span>{dateStr}</span>
-          {item.location && <span> • {item.location}</span>}
+          {locationStr && <span> • {locationStr}</span>}
         </div>
       </div>
 
@@ -128,3 +149,4 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
     </div>
   );
 };
+

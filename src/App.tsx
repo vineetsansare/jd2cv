@@ -2656,6 +2656,7 @@ function App() {
                     onSetAsBaseCV={async (markdown: string, filename: string) => {
                       await handleAddCV(filename, markdown);
                     }}
+                    onUpdateAvatar={handleUpdateAvatar}
                     theme={theme}
                   />
                 )}
