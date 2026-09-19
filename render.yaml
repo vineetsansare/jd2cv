@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: jd2cv-api
+    runtime: node
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    plan: free
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ENCRYPTION_SECRET
+        sync: false
