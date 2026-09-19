@@ -63,10 +63,11 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
   if (layout === 'left-rail') {
     return (
       <div 
+        className="entry-avoid-break experience-entry"
         style={{
           display: 'grid',
-          gridTemplateColumns: '140px 1fr',
-          gap: '1.25rem',
+          gridTemplateColumns: '115px 1fr',
+          gap: '1rem',
           marginBottom: '1.25rem',
           pageBreakInside: 'avoid'
         }}
@@ -74,11 +75,11 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
         {/* Left Rail (Dates & Location) */}
         <div style={{ textAlign: 'right', color: '#64748b', fontSize: '0.86em', fontWeight: 600, paddingTop: '0.15rem' }}>
           <div style={{ color: '#1e293b', fontWeight: 700 }}>{dateStr}</div>
-          {locationStr && <div style={{ fontSize: '0.9em', color: '#64748b', marginTop: '0.15rem' }}>{locationStr}</div>}
+          {locationStr && <div style={{ fontSize: '0.88em', color: '#64748b', marginTop: '0.15rem' }}>{locationStr}</div>}
         </div>
 
         {/* Right Rail (Role, Company, Bullets) with Sleek Timeline Connector */}
-        <div style={{ borderLeft: `2px solid ${accent}40`, paddingLeft: '1.25rem', position: 'relative' }}>
+        <div style={{ borderLeft: `2px solid ${accent}33`, paddingLeft: '1.15rem', position: 'relative' }}>
           {/* Timeline Dot */}
           <div 
             style={{
@@ -89,11 +90,11 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
               height: '8px',
               borderRadius: '50%',
               backgroundColor: accent,
-              boxShadow: `0 0 0 3px #ffffff, 0 0 0 4px ${accent}40`
+              boxShadow: `0 0 0 2.5px #ffffff, 0 0 0 3.5px ${accent}40`
             }} 
           />
 
-          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.4rem' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.45rem', marginBottom: '0.35rem' }}>
             <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>
               {roleStr}
             </span>
@@ -119,7 +120,7 @@ export const ExperienceEntry: React.FC<ExperienceEntryProps> = ({
 
   // Standard Header Layout (Role & Company left, Date & Location right)
   return (
-    <div style={{ marginBottom: '1.05rem', pageBreakInside: 'avoid', textAlign: align }}>
+    <div className="entry-avoid-break experience-entry" style={{ marginBottom: '1.05rem', pageBreakInside: 'avoid', textAlign: align }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '0.4rem' }}>
           <span style={{ fontSize: 'var(--cv-font-size-h3, 10.5pt)', fontWeight: 700, color: '#0f172a' }}>

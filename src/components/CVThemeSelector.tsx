@@ -1,7 +1,7 @@
 import React from 'react';
 import { Palette, User, Check, Layers, Sparkles, ExternalLink } from 'lucide-react';
 
-export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sidebar-right';
+export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist';
 
 export interface CVThemeConfig {
   accentColor: string;

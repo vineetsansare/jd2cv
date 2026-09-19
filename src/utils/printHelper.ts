@@ -1,6 +1,107 @@
 import { parseMarkdownToHtml } from './mdParser';
 import type { CVThemeConfig } from '../components/CVThemeSelector';
 
+function buildModularPrintHtml(
+  customHtml: string, 
+  filenameTitle: string, 
+  themeConfig: CVThemeConfig
+): string {
+  const isSidebar = themeConfig?.themeName === 'split-sidebar' || 
+                    themeConfig?.template === 'split-sidebar' ||
+                    customHtml.includes('split-sidebar-template');
+
+  const sidebarBg = 'linear-gradient(to right, #f8fafc 0px, #f8fafc 240px, #e2e8f0 240px, #e2e8f0 241px, #ffffff 241px, #ffffff 100%)';
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=794, initial-scale=1.0" />
+  <title>${filenameTitle}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 0mm;
+    }
+    *, *:before, *:after {
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: ${isSidebar ? sidebarBg : '#ffffff'} !important;
+      background-color: ${isSidebar ? '#f8fafc' : '#ffffff'} !important;
+      color: #1e293b !important;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      width: 100% !important;
+      min-width: 794px !important;
+      height: auto !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .cv-print-root {
+      width: 100%;
+      max-width: 794px;
+      min-width: 794px;
+      margin: 0 auto;
+      padding: 0;
+      background: transparent !important;
+    }
+    .cv-a4-document {
+      width: 100% !important;
+      max-width: 794px !important;
+      min-width: 794px !important;
+      margin: 0 auto !important;
+      box-shadow: none !important;
+      border: none !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    @media print {
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      /* Natural flow: resume sections MUST flow across pages without forced page skips */
+      section {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+      /* Prevent headings from being orphaned alone at the bottom of a page */
+      h1, h2, h3, .template-section-heading, [data-heading="true"] {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+      /* Ensure bullet points do not get horizontally cut in half */
+      li {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      /* Leaf item break avoidance */
+      .entry-avoid-break {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+      /* Hide any interactive preview guides or tooltips */
+      .page-break-guide, .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="cv-print-root">
+    ${customHtml}
+  </div>
+</body>
+</html>`;
+}
+
 export function printCvDocument(
   markdown: string, 
   themeConfig: CVThemeConfig = { accentColor: '#475569', themeName: 'Slate Charcoal', showPhoto: false },
@@ -12,9 +113,17 @@ export function printCvDocument(
   const originalTitle = document.title;
   document.title = filenameTitle;
 
-  const parsedHtml = customHtml || parseMarkdownToHtml(markdown, themeConfig);
-  const accentColor = themeConfig?.accentColor || (themeConfig?.template === 'classic-ats' ? '#475569' : '#2563eb');
-  const isCompact = themeConfig?.layoutDensity === 'compact';
+  const isModularTemplate = Boolean(
+    customHtml && (
+      customHtml.includes('cv-a4-document') || 
+      customHtml.includes('classic-ats-template') ||
+      customHtml.includes('modern-timeline-template') ||
+      customHtml.includes('split-sidebar-template') ||
+      customHtml.includes('compact-executive-template') ||
+      customHtml.includes('swiss-minimalist-template') ||
+      !customHtml.includes('resume-preview-sheet')
+    )
+  );
 
   // Create isolated hidden iframe
   const iframe = document.createElement('iframe');
@@ -34,6 +143,36 @@ export function printCvDocument(
     return;
   }
 
+  if (isModularTemplate && customHtml) {
+    const modularContent = buildModularPrintHtml(customHtml, filenameTitle, themeConfig);
+    doc.open();
+    doc.write(modularContent);
+    doc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.warn('Iframe print error, falling back to window.print():', e);
+        window.print();
+      } finally {
+        document.title = originalTitle;
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 1000);
+      }
+    }, 250);
+    return;
+  }
+
+  // Legacy Markdown path below
+  const parsedHtml = customHtml || parseMarkdownToHtml(markdown, themeConfig);
+  const accentColor = themeConfig?.accentColor || (themeConfig?.template === 'classic-ats' ? '#475569' : '#2563eb');
+  const isCompact = themeConfig?.layoutDensity === 'compact';
+
   const iframeContent = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,7 +185,7 @@ export function printCvDocument(
   <style>
     @page {
       size: A4 portrait;
-      margin: 8mm 0mm;
+      margin: 10mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box !important;
@@ -88,7 +227,15 @@ export function printCvDocument(
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      section, li, div[style*="pageBreakInside"], div[style*="page-break-inside"] {
+      section {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+      h2, h3 {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+      li, .role-row, .company-row {
         break-inside: avoid !important;
         page-break-inside: avoid !important;
       }

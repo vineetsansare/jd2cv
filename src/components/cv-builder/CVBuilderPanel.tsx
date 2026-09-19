@@ -236,13 +236,15 @@ export const CVBuilderPanel: React.FC<CVBuilderPanelProps> = ({
 
   // Print / Export PDF with 100% template fidelity
   const handleExportPdf = () => {
-    const liveSheet = document.getElementById('cv-live-a4-sheet') || document.querySelector('.cv-a4-document');
-    const customHtml = liveSheet ? liveSheet.innerHTML : undefined;
+    const docEl = document.querySelector('.cv-a4-document');
+    const liveSheet = document.getElementById('cv-live-a4-sheet');
+    const customHtml = docEl ? docEl.outerHTML : (liveSheet ? liveSheet.innerHTML : undefined);
     const filenameTitle = `${cv.basics.fullName || 'Candidate'}-${cv.basics.headline || 'Resume'}`;
     
     printCvDocument('', {
       accentColor: cv.theme.accentColor || '#1e3a8a',
-      themeName: cv.theme.templateId || 'modern-timeline',
+      themeName: cv.theme.templateId || 'classic-ats',
+      template: cv.theme.templateId as any,
       showPhoto: cv.basics.showAvatar && !!cv.basics.avatarUrl,
       photoUrl: cv.basics.avatarUrl,
       layoutDensity: cv.theme.fontSize === 'compact' ? 'compact' : 'standard'

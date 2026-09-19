@@ -7,7 +7,7 @@ export interface CVParseOptions {
   showPhoto?: boolean;
   photoUrl?: string;
   layoutDensity?: 'compact' | 'standard';
-  template?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right';
+  template?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist' | string;
   showLinkIcons?: boolean;
 }
 

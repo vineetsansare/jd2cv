@@ -25,6 +25,8 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
     case 'border-left':
       return (
         <div 
+          className="template-section-heading"
+          data-heading="true"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -35,7 +37,9 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
             fontSize: 'var(--cv-font-size-h2, 12pt)',
             fontWeight: 700,
             color: '#0f172a',
-            letterSpacing: '0.04em'
+            letterSpacing: '0.04em',
+            breakAfter: 'avoid',
+            pageBreakAfter: 'avoid'
           }}
         >
           {icon && <span style={{ color: accent, display: 'inline-flex' }}>{icon}</span>}
@@ -46,6 +50,8 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
     case 'banner':
       return (
         <div 
+          className="template-section-heading"
+          data-heading="true"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -58,7 +64,9 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
             fontSize: 'var(--cv-font-size-h2, 12pt)',
             fontWeight: 700,
             color: accent,
-            letterSpacing: '0.04em'
+            letterSpacing: '0.04em',
+            breakAfter: 'avoid',
+            pageBreakAfter: 'avoid'
           }}
         >
           {icon && <span style={{ display: 'inline-flex' }}>{icon}</span>}
@@ -69,10 +77,14 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
     case 'centered':
       return (
         <div 
+          className="template-section-heading"
+          data-heading="true"
           style={{
             textAlign: 'center',
             margin: '1.25rem 0 0.75rem 0',
-            position: 'relative'
+            position: 'relative',
+            breakAfter: 'avoid',
+            pageBreakAfter: 'avoid'
           }}
         >
           <div 
@@ -110,6 +122,8 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
     case 'minimal':
       return (
         <div 
+          className="template-section-heading"
+          data-heading="true"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -118,7 +132,9 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
             fontSize: 'var(--cv-font-size-h2, 12pt)',
             fontWeight: 800,
             color: '#0f172a',
-            letterSpacing: '0.05em'
+            letterSpacing: '0.05em',
+            breakAfter: 'avoid',
+            pageBreakAfter: 'avoid'
           }}
         >
           {icon && <span style={{ color: accent, display: 'inline-flex' }}>{icon}</span>}
@@ -130,6 +146,8 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
     default:
       return (
         <div 
+          className="template-section-heading"
+          data-heading="true"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -140,7 +158,9 @@ export const TemplateSectionHeading: React.FC<TemplateSectionHeadingProps> = ({
             fontSize: 'var(--cv-font-size-h2, 12pt)',
             fontWeight: 700,
             color: '#0f172a',
-            letterSpacing: '0.03em'
+            letterSpacing: '0.03em',
+            breakAfter: 'avoid',
+            pageBreakAfter: 'avoid'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
