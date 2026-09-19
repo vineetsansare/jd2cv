@@ -33,7 +33,7 @@ export function isUserAdmin(email: string, profileAdmin?: boolean): boolean {
   if (profileAdmin === true) return true;
   const envAdminEmails = (process.env.ADMIN_EMAILS || '')
     .split(',')
-    .map(e => e.trim().toLowerCase())
+    .map((e: string) => e.trim().toLowerCase())
     .filter(Boolean);
   
   const allAdmins = [...DEFAULT_ADMIN_EMAILS, ...envAdminEmails];
