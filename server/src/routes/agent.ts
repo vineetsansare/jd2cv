@@ -261,7 +261,7 @@ export default async function agentRoutes(fastify: FastifyInstance) {
       }
 
       const generationId = genRecord?.id || null;
-      const appBaseUrl = process.env.APP_URL || 'https://toolsby.vineetsansare.com/jd2cv';
+      const appBaseUrl = (process.env.APP_URL || 'https://toolsby.vineetsansare.com/jd2cv').replace(/\/+$/, '') + '/';
       const deepLinkUrl = generationId ? `${appBaseUrl}?genId=${generationId}` : appBaseUrl;
 
       return {

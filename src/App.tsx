@@ -185,6 +185,17 @@ function App() {
     window.location.hash = window.location.hash.replace(/^##/, '#');
   }
 
+  // Capture deep link genId (?genId=...) immediately into sessionStorage so it survives auth hydration & redirects
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const initialGenId = params.get('genId');
+    if (initialGenId) {
+      try {
+        sessionStorage.setItem('jd2cv_pending_gen_id', initialGenId);
+      } catch (e) {}
+    }
+  }
+
   const isOAuthCallback = window.location.hash.includes('access_token=') || 
                           window.location.search.includes('code=') ||
                           window.location.hash.includes('type=recovery');
@@ -367,37 +378,6 @@ function App() {
 
       // Fetch user's recent CV generation history
       fetchRecentGenerations();
-
-      // Check for deep-linked generation ID (?genId=...) from ChatGPT / Claude MCP
-      const urlParams = new URLSearchParams(window.location.search);
-      const genId = urlParams.get('genId');
-      if (genId) {
-        try {
-          const { data: genData } = await supabase
-            .from('generations')
-            .select('*')
-            .eq('id', genId)
-            .eq('user_id', currentSession.user.id)
-            .maybeSingle();
-
-          if (genData) {
-            setResult({
-              cvMarkdown: genData.cv_markdown,
-              atsScore: genData.ats_score || 85,
-              atsAnalysis: genData.ats_analysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
-              humanFriendlyChanges: genData.human_changes || [],
-              coverLetter: genData.cover_letter || ''
-            });
-            if (genData.job_description) {
-              setJobDescription(genData.job_description);
-            }
-            setActiveTab('quick-optimize');
-            window.history.replaceState(null, '', window.location.pathname);
-          }
-        } catch (deepLinkErr) {
-          console.error('Failed to load generation from deep link:', deepLinkErr);
-        }
-      }
     } catch (err) {
       console.error('Error loading session data:', err);
     } finally {
@@ -515,6 +495,60 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [parsingFile, setParsingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Dedicated deep-link handler for ChatGPT and Claude MCP (?genId=...)
+  useEffect(() => {
+    if (!session?.user) return;
+
+    let targetGenId = '';
+    try {
+      targetGenId = sessionStorage.getItem('jd2cv_pending_gen_id') || '';
+    } catch {}
+
+    if (!targetGenId && typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      targetGenId = urlParams.get('genId') || '';
+    }
+
+    if (!targetGenId) return;
+
+    const loadDeepLink = async () => {
+      try {
+        const { data: genData, error: genError } = await supabase
+          .from('generations')
+          .select('*')
+          .eq('id', targetGenId)
+          .maybeSingle();
+
+        if (genData) {
+          setResult({
+            cvMarkdown: genData.cv_markdown,
+            atsScore: genData.ats_score || 85,
+            atsAnalysis: genData.ats_analysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
+            humanFriendlyChanges: genData.human_changes || [],
+            coverLetter: genData.cover_letter || ''
+          });
+          if (genData.job_description) {
+            setJobDescription(genData.job_description);
+          }
+          setActiveTab('quick-optimize');
+          setIsCustomizing(false);
+          try {
+            sessionStorage.removeItem('jd2cv_pending_gen_id');
+          } catch {}
+          if (typeof window !== 'undefined' && window.location.search.includes('genId=')) {
+            window.history.replaceState(null, '', window.location.pathname);
+          }
+        } else if (genError) {
+          console.error('Error fetching deep-linked generation:', genError);
+        }
+      } catch (err) {
+        console.error('Failed to load deep-linked CV generation:', err);
+      }
+    };
+
+    loadDeepLink();
+  }, [session]);
 
 
 
