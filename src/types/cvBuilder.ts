@@ -2,12 +2,19 @@ export type LayoutDensity = 'compact' | 'standard' | 'spacious';
 export type PageFormat = 'a4' | 'letter';
 export type AvatarShape = 'circle' | 'rounded' | 'square';
 export type TextAlignment = 'left' | 'center' | 'right' | 'justify';
+export type SectionHeadingStyle = 'underline' | 'border-left' | 'banner' | 'centered' | 'minimal';
+export type HeaderAlignment = 'left' | 'center';
+export type DatePlacement = 'right' | 'left-rail' | 'split';
+export type SkillStyle = 'pills' | 'boxed' | 'comma' | 'list';
+
 export type TemplateId = 
+  | 'classic-ats'
   | 'modern-timeline' 
-  | 'classic-ats' 
+  | 'split-sidebar' 
+  | 'swiss-minimalist'
+  // Backward-compatibility aliases
   | 'tech-linear' 
   | 'classic-serif' 
-  | 'split-sidebar' 
   | 'compact-grid';
 
 export interface ResumeProfileLink {
@@ -92,14 +99,33 @@ export interface SectionMeta {
   alignment?: TextAlignment;
 }
 
+export interface AccentTargets {
+  name?: boolean;
+  jobTitle?: boolean;
+  headings?: boolean;
+  lines?: boolean;
+  icons?: boolean;
+  badges?: boolean;
+}
+
 export interface CVThemeSettings {
   templateId: TemplateId;
   accentColor: string;
-  fontFamily: 'Plus Jakarta Sans' | 'Inter' | 'Merriweather' | 'Roboto' | 'JetBrains Mono';
+  fontFamily: 'Plus Jakarta Sans' | 'Inter' | 'Merriweather' | 'Roboto' | 'JetBrains Mono' | string;
   fontSize: LayoutDensity;
+  baseFontSizePt?: number;
+  nameSizeOffset?: number;
+  headingSizeOffset?: number;
   lineHeight: 'tight' | 'normal' | 'relaxed';
   pageMargin: 'compact' | 'standard' | 'spacious';
+  elementSpacing?: 'compact' | 'standard' | 'spacious';
+  sectionHeadingStyle?: SectionHeadingStyle;
+  headerAlignment?: HeaderAlignment;
+  skillStyle?: SkillStyle;
   showIcons: boolean;
+  showPhoto?: boolean;
+  photoShape?: AvatarShape;
+  applyAccentTo?: AccentTargets;
 }
 
 export interface StructuredCV {

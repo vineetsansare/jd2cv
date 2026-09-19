@@ -1,98 +1,407 @@
 import React from 'react';
-import type { CVThemeSettings, TemplateId } from '../../types/cvBuilder';
-import { Palette, Type, Layout, Check } from 'lucide-react';
+import type { CVThemeSettings, SectionHeadingStyle } from '../../types/cvBuilder';
+import { TemplateRegistry } from './templates/registry/TemplateRegistry';
+import './templates/registry/initTemplates';
+import { Palette, Type, Layout, Check, AlignLeft, AlignCenter, User, Sparkles, Layers } from 'lucide-react';
 
 interface ThemeCustomizerProps {
   theme: CVThemeSettings;
   onChange: (updated: CVThemeSettings) => void;
 }
 
-const COLOR_PALETTE = [
-  { name: 'Royal Navy', hex: '#1e3a8a' },
+const COLOR_PALETTES = [
+  { name: 'Sapphire Blue', hex: '#2563eb' },
   { name: 'Executive Slate', hex: '#334155' },
-  { name: 'Forest Emerald', hex: '#065f46' },
-  { name: 'Burgundy Wine', hex: '#881337' },
-  { name: 'Tech Violet', hex: '#7c3aed' },
-  { name: 'Amber Bronze', hex: '#d97706' },
-  { name: 'Minimal Charcoal', hex: '#111827' }
+  { name: 'Minimal Charcoal', hex: '#0f172a' },
+  { name: 'Emerald Teal', hex: '#059669' },
+  { name: 'Executive Violet', hex: '#7c3aed' },
+  { name: 'Burgundy Wine', hex: '#991b1b' },
+  { name: 'Warm Amber', hex: '#d97706' }
 ];
 
-const TEMPLATES: { id: TemplateId; name: string; desc: string; ats: string }[] = [
-  { id: 'modern-timeline', name: 'Modern Timeline', desc: 'Timeline style with left date rail & photo header', ats: '98%' },
-  { id: 'classic-ats', name: 'Classic ATS Clean', desc: 'Single column centered standard with 100% ATS score', ats: '100%' },
-  { id: 'tech-linear', name: 'Tech Linear', desc: 'Monospace headers & tabular engineering alignment', ats: '99%' },
-  { id: 'classic-serif', name: 'Classic Serif', desc: 'Executive Merriweather typography for leadership', ats: '100%' },
-  { id: 'split-sidebar', name: 'Split Sidebar', desc: 'Two-column layout with colored sidebar details', ats: '95%' },
-  { id: 'compact-grid', name: 'Compact 1-Pager', desc: 'High-density format designed to fit into 1 page', ats: '99%' }
+const FONTS: { id: string; name: string; type: string }[] = [
+  { id: 'Plus Jakarta Sans', name: 'Plus Jakarta Sans', type: 'Modern Sans' },
+  { id: 'Inter', name: 'Inter', type: 'Clean Geometric' },
+  { id: 'Merriweather', name: 'Merriweather', type: 'Executive Serif' },
+  { id: 'Roboto', name: 'Roboto', type: 'Neutral Corporate' },
+  { id: 'JetBrains Mono', name: 'JetBrains Mono', type: 'Technical Monospace' }
 ];
 
-const FONTS: ('Plus Jakarta Sans' | 'Inter' | 'Merriweather' | 'Roboto' | 'JetBrains Mono')[] = [
-  'Plus Jakarta Sans',
-  'Inter',
-  'Merriweather',
-  'Roboto',
-  'JetBrains Mono'
+const HEADING_STYLES: { id: SectionHeadingStyle; label: string; desc: string }[] = [
+  { id: 'underline', label: 'Underline', desc: 'Bottom accent divider' },
+  { id: 'border-left', label: 'Left Bar', desc: 'Left vertical stripe' },
+  { id: 'banner', label: 'Banner', desc: 'Tinted background block' },
+  { id: 'centered', label: 'Centered', desc: 'Centered with side lines' },
+  { id: 'minimal', label: 'Minimal', desc: 'Pure typography weight' }
 ];
 
 export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ theme, onChange }) => {
+  const templates = TemplateRegistry.getAllTemplates();
+
   const update = (field: keyof CVThemeSettings, value: any) => {
     onChange({ ...theme, [field]: value });
   };
 
+  const currentTemplateId = theme.templateId || 'classic-ats';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* 1. Template Picker */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-          <Layout size={16} style={{ color: 'var(--accent-primary)' }} />
-          <span>Resume Template</span>
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            <Layout size={17} style={{ color: 'var(--accent-primary)' }} />
+            <span>Select Resume Layout</span>
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>4 Optimized Archetypes</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-          {TEMPLATES.map((tmpl) => {
-            const isSelected = (theme.templateId || 'modern-timeline') === tmpl.id;
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.85rem' }}>
+          {templates.map((tmpl) => {
+            const isSelected = currentTemplateId === tmpl.id;
 
             return (
               <div
                 key={tmpl.id}
                 onClick={() => update('templateId', tmpl.id)}
                 style={{
-                  padding: '0.85rem',
+                  padding: '0.95rem',
                   borderRadius: '12px',
                   border: isSelected ? '2px solid var(--accent-primary)' : '1px solid var(--card-border)',
-                  background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'var(--bg-secondary)',
+                  background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  transition: 'all 0.15s ease',
                   position: 'relative'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '0.85rem', color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                  <span style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)' }}>
                     {tmpl.name}
                   </span>
-                  {isSelected && <Check size={14} style={{ color: 'var(--accent-primary)' }} />}
+                  {isSelected && <Check size={16} style={{ color: 'var(--accent-primary)' }} />}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.3, marginBottom: '0.35rem' }}>
-                  {tmpl.desc}
+
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: 1.35, marginBottom: '0.65rem' }}>
+                  {tmpl.description}
                 </div>
-                <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                  ATS: {tmpl.ats}
-                </span>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', flexWrap: 'wrap' }}>
+                  <span 
+                    style={{
+                      fontSize: '0.72rem',
+                      background: tmpl.atsScoreRating === 100 ? 'rgba(16,185,129,0.15)' : 'rgba(37,99,235,0.12)',
+                      color: tmpl.atsScoreRating === 100 ? '#10b981' : 'var(--accent-primary)',
+                      padding: '2px 7px',
+                      borderRadius: '4px',
+                      fontWeight: 700
+                    }}
+                  >
+                    ATS {tmpl.atsScoreRating}%
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    {tmpl.category}
+                  </span>
+                </div>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* 2. Accent Color Palette */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-          <Palette size={16} style={{ color: 'var(--accent-primary)' }} />
-          <span>Accent Color</span>
+      {/* 2. Typography & Fonts */}
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+          <Type size={17} style={{ color: 'var(--accent-primary)' }} />
+          <span>Typography & Font Family</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
+          {FONTS.map((f) => {
+            const isSelected = (theme.fontFamily || 'Plus Jakarta Sans') === f.id;
+            return (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => update('fontFamily', f.id)}
+                style={{
+                  padding: '0.6rem 0.75rem',
+                  borderRadius: '8px',
+                  border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
+                  background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+                  color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: '0.82rem', fontFamily: `'${f.id}', sans-serif` }}>{f.name}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{f.type}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Font Scale Stepper (Compact vs Standard vs Spacious) */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-secondary)', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Content Density (Base Font):</span>
+          <div style={{ display: 'flex', gap: '0.35rem' }}>
+            {(['compact', 'standard', 'spacious'] as const).map((density) => {
+              const isSelected = (theme.fontSize || 'standard') === density;
+              return (
+                <button
+                  key={density}
+                  type="button"
+                  onClick={() => update('fontSize', density)}
+                  style={{
+                    padding: '0.35rem 0.65rem',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    textTransform: 'capitalize',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: isSelected ? 'var(--accent-primary)' : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {density}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Section Heading Styles */}
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+          <Sparkles size={17} style={{ color: 'var(--accent-primary)' }} />
+          <span>Section Heading Style</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem' }}>
+          {HEADING_STYLES.map((st) => {
+            const isSelected = (theme.sectionHeadingStyle || 'underline') === st.id;
+            return (
+              <button
+                key={st.id}
+                type="button"
+                onClick={() => update('sectionHeadingStyle', st.id)}
+                style={{
+                  padding: '0.55rem 0.65rem',
+                  borderRadius: '8px',
+                  border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
+                  background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+                  color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  cursor: 'pointer',
+                  textAlign: 'center'
+                }}
+              >
+                <div style={{ fontWeight: 600, fontSize: '0.82rem' }}>{st.label}</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{st.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 4. Spacing, Line Height & Margins */}
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+          <Layers size={17} style={{ color: 'var(--accent-primary)' }} />
+          <span>Spacing & Page Layout</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+          {/* Line Height */}
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+              Line Spacing:
+            </div>
+            <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+              {(['tight', 'normal', 'relaxed'] as const).map((lh) => {
+                const isSelected = (theme.lineHeight || 'normal') === lh;
+                return (
+                  <button
+                    key={lh}
+                    type="button"
+                    onClick={() => update('lineHeight', lh)}
+                    style={{
+                      flex: 1,
+                      padding: '0.35rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: isSelected ? 'var(--accent-primary)' : 'transparent',
+                      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {lh}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Page Margins */}
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+              Page Margins:
+            </div>
+            <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+              {(['compact', 'standard', 'spacious'] as const).map((pm) => {
+                const isSelected = (theme.pageMargin || 'standard') === pm;
+                return (
+                  <button
+                    key={pm}
+                    type="button"
+                    onClick={() => update('pageMargin', pm)}
+                    style={{
+                      flex: 1,
+                      padding: '0.35rem',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: isSelected ? 'var(--accent-primary)' : 'transparent',
+                      color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {pm}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Header & Photo Alignment */}
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+          <User size={17} style={{ color: 'var(--accent-primary)' }} />
+          <span>Header & Photo Arrangement</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+          {/* Header Text Alignment */}
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+              Header Alignment:
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
+                type="button"
+                onClick={() => update('headerAlignment', 'left')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  border: (theme.headerAlignment || 'left') === 'left' ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
+                  background: (theme.headerAlignment || 'left') === 'left' ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+                  color: (theme.headerAlignment || 'left') === 'left' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <AlignLeft size={14} /> Left
+              </button>
+              <button
+                type="button"
+                onClick={() => update('headerAlignment', 'center')}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  padding: '0.5rem',
+                  borderRadius: '8px',
+                  border: theme.headerAlignment === 'center' ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
+                  background: theme.headerAlignment === 'center' ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+                  color: theme.headerAlignment === 'center' ? 'var(--accent-primary)' : 'var(--text-primary)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                <AlignCenter size={14} /> Center
+              </button>
+            </div>
+          </div>
+
+          {/* Photo Shape */}
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem', fontWeight: 600 }}>
+              Candidate Photo Shape:
+            </div>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
+              {(['circle', 'rounded', 'square'] as const).map((shape) => {
+                const isSelected = (theme.photoShape || 'circle') === shape;
+                return (
+                  <button
+                    key={shape}
+                    type="button"
+                    onClick={() => update('photoShape', shape)}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0.2rem',
+                      borderRadius: '8px',
+                      border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
+                      background: isSelected ? 'rgba(37, 99, 235, 0.08)' : 'var(--bg-secondary)',
+                      color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      textTransform: 'capitalize',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {shape}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 6. Accent Color Engine */}
+      <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+            <Palette size={17} style={{ color: 'var(--accent-primary)' }} />
+            <span>Accent Theme Color</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Custom:</span>
+            <input
+              type="color"
+              value={theme.accentColor || '#2563eb'}
+              onChange={(e) => update('accentColor', e.target.value)}
+              style={{
+                width: '28px',
+                height: '28px',
+                padding: 0,
+                border: 'none',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                background: 'transparent'
+              }}
+            />
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {COLOR_PALETTE.map((c) => {
+          {COLOR_PALETTES.map((c) => {
             const isSelected = theme.accentColor === c.hex;
 
             return (
@@ -101,17 +410,18 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ theme, onChang
                 type="button"
                 onClick={() => update('accentColor', c.hex)}
                 style={{
-                  width: '34px',
-                  height: '34px',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   background: c.hex,
                   border: isSelected ? '3px solid #ffffff' : '2px solid transparent',
-                  boxShadow: isSelected ? '0 0 0 2px var(--accent-primary)' : '0 2px 4px rgba(0,0,0,0.15)',
+                  boxShadow: isSelected ? `0 0 0 2px ${c.hex}` : 'none',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#ffffff'
+                  color: '#ffffff',
+                  transition: 'transform 0.15s'
                 }}
                 title={c.name}
               >
@@ -119,84 +429,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ theme, onChang
               </button>
             );
           })}
-
-          {/* Custom Hex */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginLeft: '0.5rem' }}>
-            <input 
-              type="color" 
-              value={theme.accentColor || '#1e3a8a'} 
-              onChange={(e) => update('accentColor', e.target.value)}
-              style={{ width: '32px', height: '32px', padding: 0, border: 'none', borderRadius: '6px', cursor: 'pointer', background: 'none' }}
-              title="Custom Hex Picker"
-            />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-              {theme.accentColor}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Typography & Font Family */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
-          <Type size={16} style={{ color: 'var(--accent-primary)' }} />
-          <span>Typography</span>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.5rem' }}>
-          {FONTS.map((font) => {
-            const isSelected = (theme.fontFamily || 'Plus Jakarta Sans') === font;
-
-            return (
-              <button
-                key={font}
-                type="button"
-                onClick={() => update('fontFamily', font)}
-                style={{
-                  padding: '0.5rem',
-                  borderRadius: '8px',
-                  border: isSelected ? '1.5px solid var(--accent-primary)' : '1px solid var(--card-border)',
-                  background: isSelected ? 'rgba(124, 58, 237, 0.08)' : 'var(--bg-secondary)',
-                  color: isSelected ? 'var(--accent-primary)' : 'var(--text-primary)',
-                  fontSize: '0.8rem',
-                  fontWeight: isSelected ? 700 : 500,
-                  cursor: 'pointer',
-                  fontFamily: `'${font}', sans-serif`
-                }}
-              >
-                {font}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. Layout Density & Margins */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }} className="responsive-fields">
-        <div className="form-group" style={{ margin: 0 }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Font Size Scaling</label>
-          <select 
-            value={theme.fontSize || 'standard'} 
-            onChange={(e) => update('fontSize', e.target.value)}
-            style={{ fontSize: '0.82rem' }}
-          >
-            <option value="compact">Compact (9pt - 1 Page fit)</option>
-            <option value="standard">Standard (10.5pt - Balanced)</option>
-            <option value="spacious">Spacious (12pt - Executive)</option>
-          </select>
-        </div>
-
-        <div className="form-group" style={{ margin: 0 }}>
-          <label style={{ fontSize: '0.8rem', fontWeight: 600 }}>Page Margins</label>
-          <select 
-            value={theme.pageMargin || 'standard'} 
-            onChange={(e) => update('pageMargin', e.target.value)}
-            style={{ fontSize: '0.82rem' }}
-          >
-            <option value="compact">Compact Margins (12mm)</option>
-            <option value="standard">Standard Margins (18mm)</option>
-            <option value="spacious">Spacious Margins (24mm)</option>
-          </select>
         </div>
       </div>
     </div>
