@@ -279,11 +279,15 @@ function App() {
       let retryCount = 0;
 
       while (retryCount < 2) {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('profiles')
-          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url, is_admin')
+          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url')
           .eq('id', currentSession.user.id)
           .maybeSingle();
+
+        if (error) {
+          console.warn('Error loading user profile:', error);
+        }
 
         if (data) {
           profile = data;
@@ -299,21 +303,20 @@ function App() {
         const defaultName = meta.full_name || meta.name || currentSession.user.email?.split('@')[0] || 'User';
         const defaultAvatar = meta.avatar_url || meta.picture || '';
 
-        const newProfile = {
+        const newProfile: any = {
           id: currentSession.user.id,
           email: currentSession.user.email,
           full_name: defaultName,
           plan: 'free' as const,
           credits_balance: 10,
           generation_count: 0,
-          avatar_url: defaultAvatar,
-          is_admin: false
+          avatar_url: defaultAvatar
         };
 
         const { data: upserted } = await supabase
           .from('profiles')
           .upsert(newProfile, { onConflict: 'id' })
-          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url, is_admin')
+          .select('id, email, full_name, plan, credits_balance, generation_count, avatar_url')
           .single();
 
         profile = upserted || newProfile;
@@ -321,7 +324,7 @@ function App() {
 
       const plan: 'free' | 'pro' = profile.plan === 'pro' ? 'pro' : 'free';
       const userEmail = profile.email || currentSession.user.email || '';
-      const isAdmin = checkIsAdmin(userEmail, profile.is_admin);
+      const isAdmin = checkIsAdmin(userEmail, (profile as any)?.is_admin);
 
       const storedAvatar = localStorage.getItem('user_avatar_url') || '';
       const resolvedAvatar = profile.avatar_url || currentSession.user.user_metadata?.avatar_url || storedAvatar || '';
@@ -340,8 +343,8 @@ function App() {
         is_admin: isAdmin
       });
 
-      // If user is designated admin but not yet marked in DB, update DB profile
-      if (isAdmin && !profile.is_admin && currentSession.user?.id) {
+      // If user is designated admin, try updating DB profile non-blockingly
+      if (isAdmin && !(profile as any)?.is_admin && currentSession.user?.id) {
         supabase
           .from('profiles')
           .update({ is_admin: true })
@@ -915,6 +918,9 @@ function App() {
             coverLetter: docxOptResult.coverLetter,
           };
           setResult(cvResult);
+          if (docxOptResult.remainingCredits !== undefined) {
+            setUserProfile(prev => prev ? { ...prev, credits_balance: docxOptResult.remainingCredits } : null);
+          }
           saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
         } else {
           // Fallback if no DOCX buffer available
@@ -933,6 +939,9 @@ function App() {
             coverLetter: structuredResult.coverLetter,
           };
           setResult(cvResult);
+          if (structuredResult.remainingCredits !== undefined) {
+            setUserProfile(prev => prev ? { ...prev, credits_balance: structuredResult.remainingCredits } : null);
+          }
           saveGenerationToHistory(cvResult, jobDescription, activeConfig.provider, activeConfig.model);
         }
       } else {

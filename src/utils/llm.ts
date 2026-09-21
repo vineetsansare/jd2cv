@@ -21,6 +21,7 @@ export interface CVGenerationResult {
   atsAnalysis: ATSAnalysis;
   humanFriendlyChanges: string[];
   coverLetter: string;
+  remainingCredits?: number;
 }
 
 export type TargetLength = '1-page' | '2-page' | 'comprehensive';
@@ -89,6 +90,7 @@ export interface StructuredCVResult {
   atsAnalysis: ATSAnalysis;
   humanFriendlyChanges: string[];
   coverLetter: string;
+  remainingCredits?: number;
 }
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
@@ -150,6 +152,89 @@ async function callGeminiWithFailover(apiKey: string, contents: any[], signal?: 
   throw lastError || new Error('All AI models are temporarily busy. Please retry in a few moments.');
 }
 
+/**
+ * Robust credit deduction helper for client-side execution.
+ * First tries the Postgres RPC `deduct_credits`.
+ * Falls back to atomic Supabase profiles update with balance validation and transaction ledger.
+ */
+export async function deductUserCredits(amount: number, action: string): Promise<number> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) {
+    throw new Error('You must be signed in to perform this action.');
+  }
+
+  // 1. Try atomic database RPC function first
+  try {
+    const { data: rpcData, error: rpcError } = await supabase.rpc('deduct_credits', {
+      p_user_id: session.user.id,
+      p_amount: amount,
+      p_action: action
+    });
+
+    if (!rpcError && rpcData) {
+      if (rpcData.success === false) {
+        const err: any = new Error(rpcData.error || 'Insufficient credits.');
+        err.limitReached = true;
+        err.requiredCredits = rpcData.required || amount;
+        err.currentCredits = rpcData.current_balance ?? 0;
+        throw err;
+      }
+      return rpcData.new_balance;
+    }
+  } catch (rpcErr: any) {
+    if (rpcErr.limitReached) throw rpcErr;
+    // Fall back to direct profile update if RPC does not exist or fails
+  }
+
+  // 2. Direct resilient fallback via Supabase
+  const { data: profile, error: fetchErr } = await supabase
+    .from('profiles')
+    .select('credits_balance')
+    .eq('id', session.user.id)
+    .single();
+
+  if (fetchErr || !profile) {
+    throw new Error('Failed to retrieve user credit balance.');
+  }
+
+  const currentBalance = typeof profile.credits_balance === 'number' ? profile.credits_balance : 10;
+  if (currentBalance < amount) {
+    const err: any = new Error(`Insufficient credits. You have ${currentBalance} credits, but this action requires ${amount} credits.`);
+    err.limitReached = true;
+    err.requiredCredits = amount;
+    err.currentCredits = currentBalance;
+    throw err;
+  }
+
+  const newBalance = currentBalance - amount;
+  const { error: updateErr } = await supabase
+    .from('profiles')
+    .update({ 
+      credits_balance: newBalance,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', session.user.id);
+
+  if (updateErr) {
+    console.error('Failed to deduct credits:', updateErr);
+    throw new Error('Failed to update credit balance.');
+  }
+
+  // Non-blocking transaction logging to audit ledger
+  try {
+    await supabase.from('credit_transactions').insert({
+      user_id: session.user.id,
+      amount: -amount,
+      balance_after: newBalance,
+      action
+    });
+  } catch {
+    // Non-blocking
+  }
+
+  return newBalance;
+}
+
 export async function generateCustomizedCV(
   config: LLMConfig,
   contextCVs: { name: string; text: string }[],
@@ -204,7 +289,15 @@ export async function generateCustomizedCV(
     }
   }
 
-  return callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
+  // Direct client execution (e.g. GitHub Pages static deployment)
+  const result = await callDirectLLMClient(config, contextCVs, jobDescription, aspirations, targetLength);
+  
+  // Deduct 10 credits upon successful generation
+  const remainingCredits = await deductUserCredits(10, 'cv_generation');
+  return {
+    ...result,
+    remainingCredits
+  };
 }
 
 export async function autoFixCV(
@@ -259,7 +352,15 @@ export async function autoFixCV(
     }
   }
 
-  return callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
+  // Direct client execution
+  const result = await callDirectAutoFixClient(config, currentMarkdown, jobDescription, atsAnalysis);
+  
+  // Deduct 5 credits upon successful auto-fix
+  const remainingCredits = await deductUserCredits(5, 'auto_fix');
+  return {
+    ...result,
+    remainingCredits
+  };
 }
 
 async function callDirectLLMClient(
@@ -655,6 +756,8 @@ Every bullet point must have rich, prominent bolding just like a top-tier execut
     additionalSections: optimizedResult.additionalSections,
   };
 
+  const remainingCredits = await deductUserCredits(10, 'cv_generation');
+
   return {
     cvState: resultCvState,
     atsScore: typeof optimizedResult.atsScore === 'number' ? optimizedResult.atsScore : 75,
@@ -667,6 +770,7 @@ Every bullet point must have rich, prominent bolding just like a top-tier execut
     },
     humanFriendlyChanges: optimizedResult.humanFriendlyChanges || [],
     coverLetter: optimizedResult.coverLetter || '',
+    remainingCredits,
   };
 }
 
@@ -764,6 +868,7 @@ export interface DocxOptimizationResult {
   humanFriendlyChanges: string[];
   coverLetter: string;
   previewMarkdown: string;
+  remainingCredits?: number;
 }
 
 /**
@@ -889,6 +994,8 @@ Return a strictly valid JSON object matching this schema:
   });
   const previewMarkdown = previewLines.join('\n\n');
 
+  const remainingCredits = await deductUserCredits(10, 'docx_optimize');
+
   return {
     replacements: numReplacements,
     atsScore: typeof rawJson?.atsScore === 'number' ? rawJson.atsScore : 85,
@@ -902,6 +1009,7 @@ Return a strictly valid JSON object matching this schema:
     humanFriendlyChanges: rawJson?.humanFriendlyChanges || [],
     coverLetter: rawJson?.coverLetter || '',
     previewMarkdown,
+    remainingCredits,
   };
 }
 
