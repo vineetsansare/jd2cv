@@ -134,8 +134,7 @@ export function printCvDocument(
       customHtml.includes('modern-timeline-template') ||
       customHtml.includes('split-sidebar-template') ||
       customHtml.includes('compact-executive-template') ||
-      customHtml.includes('swiss-minimalist-template') ||
-      !customHtml.includes('resume-preview-sheet')
+      customHtml.includes('swiss-minimalist-template')
     )
   );
 
@@ -452,6 +451,17 @@ export function printCvDocument(
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       flex-shrink: 0;
     }
+    /* Candidate Photo Shape Variants */
+    .cv-avatar-headshot[data-shape="circle"], .modern-avatar-headshot[data-shape="circle"], .sidebar-avatar-img[data-shape="circle"] { border-radius: 50% !important; }
+    .cv-avatar-headshot[data-shape="rounded"], .modern-avatar-headshot[data-shape="rounded"], .sidebar-avatar-img[data-shape="rounded"] { border-radius: 12px !important; }
+    .cv-avatar-headshot[data-shape="square"], .modern-avatar-headshot[data-shape="square"], .sidebar-avatar-img[data-shape="square"] { border-radius: 4px !important; }
+    .cv-avatar-headshot[data-shape="squircle"], .modern-avatar-headshot[data-shape="squircle"], .sidebar-avatar-img[data-shape="squircle"] { border-radius: 22% !important; }
+
+    /* Candidate Photo Border Variants */
+    .cv-avatar-headshot[data-border="accent"], .modern-avatar-headshot[data-border="accent"], .sidebar-avatar-img[data-border="accent"] { border: 3px solid ${accentColor} !important; }
+    .cv-avatar-headshot[data-border="subtle"], .modern-avatar-headshot[data-border="subtle"], .sidebar-avatar-img[data-border="subtle"] { border: 2px solid #cbd5e1 !important; }
+    .cv-avatar-headshot[data-border="none"], .modern-avatar-headshot[data-border="none"], .sidebar-avatar-img[data-border="none"] { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important; }
+
     .cv-header-photo-info {
       flex-grow: 1;
     }
@@ -992,9 +1002,9 @@ export function printCvDocument(
 </head>
 <body>
   <div class="cv-print-root">
-    <div class="resume-preview-sheet ${isCompact ? 'compact-1page' : ''}">
-      ${parsedHtml}
-    </div>
+    ${parsedHtml.includes('resume-preview-sheet') 
+      ? parsedHtml 
+      : `<div class="resume-preview-sheet ${isCompact ? 'compact-1page' : ''}">${parsedHtml}</div>`}
   </div>
 </body>
 </html>`;

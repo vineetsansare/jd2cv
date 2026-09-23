@@ -790,6 +790,51 @@ textarea {
   flex-shrink: 0;
 }
 
+/* Candidate Photo Shapes */
+.cv-avatar-headshot[data-shape="circle"],
+.modern-avatar-headshot[data-shape="circle"],
+.sidebar-avatar-img[data-shape="circle"] {
+  border-radius: 50% !important;
+}
+
+.cv-avatar-headshot[data-shape="rounded"],
+.modern-avatar-headshot[data-shape="rounded"],
+.sidebar-avatar-img[data-shape="rounded"] {
+  border-radius: 12px !important;
+}
+
+.cv-avatar-headshot[data-shape="square"],
+.modern-avatar-headshot[data-shape="square"],
+.sidebar-avatar-img[data-shape="square"] {
+  border-radius: 4px !important;
+}
+
+.cv-avatar-headshot[data-shape="squircle"],
+.modern-avatar-headshot[data-shape="squircle"],
+.sidebar-avatar-img[data-shape="squircle"] {
+  border-radius: 24% !important;
+}
+
+/* Candidate Photo Borders */
+.cv-avatar-headshot[data-border="accent"],
+.modern-avatar-headshot[data-border="accent"],
+.sidebar-avatar-img[data-border="accent"] {
+  border: 3px solid var(--cv-accent-color, #111827) !important;
+}
+
+.cv-avatar-headshot[data-border="subtle"],
+.modern-avatar-headshot[data-border="subtle"],
+.sidebar-avatar-img[data-border="subtle"] {
+  border: 2px solid #cbd5e1 !important;
+}
+
+.cv-avatar-headshot[data-border="none"],
+.modern-avatar-headshot[data-border="none"],
+.sidebar-avatar-img[data-border="none"] {
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+}
+
 .cv-header-photo-info {
   flex-grow: 1;
   display: flex;

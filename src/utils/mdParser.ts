@@ -6,9 +6,30 @@ export interface CVParseOptions {
   accentColor?: string;
   showPhoto?: boolean;
   photoUrl?: string;
+  photoShape?: 'circle' | 'rounded' | 'square' | 'squircle';
+  photoBorder?: 'accent' | 'subtle' | 'none';
   layoutDensity?: 'compact' | 'standard';
   template?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist' | string;
   showLinkIcons?: boolean;
+}
+
+export function getPhotoRadius(shape?: string): string {
+  switch (shape) {
+    case 'square': return '4px';
+    case 'rounded': return '12px';
+    case 'squircle': return '24%';
+    case 'circle':
+    default: return '50%';
+  }
+}
+
+export function getPhotoBorder(border?: string, accent?: string): string {
+  switch (border) {
+    case 'subtle': return '2px solid #cbd5e1';
+    case 'none': return 'none';
+    case 'accent':
+    default: return `3px solid ${accent || '#111827'}`;
+  }
 }
 
 const KNOWN_SECTIONS = [
@@ -276,8 +297,13 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
 
   // ── Build Sidebar Column HTML ───────────────────────────────────────
   let sidebarHtml = '';
+  const photoShape = options.photoShape || 'circle';
+  const photoBorder = options.photoBorder || 'accent';
+  const photoRadius = getPhotoRadius(photoShape);
+  const photoBorderStyle = getPhotoBorder(photoBorder, options.accentColor || '#1c202d');
+
   if (showPhoto) {
-    sidebarHtml += `<div class="sidebar-avatar-wrapper"><img src="${options.photoUrl}" alt="${name}" class="sidebar-avatar-img" /></div>`;
+    sidebarHtml += `<div class="sidebar-avatar-wrapper"><img src="${options.photoUrl}" alt="${name}" class="sidebar-avatar-img" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>`;
   }
 
   if (linkedin) {
@@ -367,6 +393,10 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   const showLinkIcons = options.showLinkIcons !== false;
   const accentColor = options.accentColor || (isModern ? '#2563eb' : '#475569');
   const showPhoto = options.showPhoto && options.photoUrl;
+  const photoShape = options.photoShape || 'circle';
+  const photoBorder = options.photoBorder || 'accent';
+  const photoRadius = getPhotoRadius(photoShape);
+  const photoBorderStyle = getPhotoBorder(photoBorder, accentColor);
 
   const textColorMap: Record<string, string> = {
     '#475569': '#1e293b',
@@ -476,7 +506,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       if (isModern) {
         processedLines.push(
           `<div class="modern-header">` +
-            (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" /></div>` : '') +
+            (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>` : '') +
             `<div class="modern-header-col">` +
               `<h1 class="modern-name">${pendingHeaderName}</h1>` +
               (pendingSubtitle ? `<div class="modern-subtitle">${pendingSubtitle}</div>` : '') +
@@ -488,7 +518,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         if (showPhoto) {
           processedLines.push(
             `<div class="cv-header-photo-wrapper">` +
-              `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" />` +
+              `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" />` +
               `<div class="cv-header-photo-info">` +
                 `<h1>${pendingHeaderName}</h1>` +
                 (pendingSubtitle ? `<div class="subtitle">${pendingSubtitle}</div>` : '') +

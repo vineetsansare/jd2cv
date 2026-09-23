@@ -21,10 +21,10 @@ import {
 } from 'lucide-react';
 import { supabase } from './utils/supabase';
 import { AuroraBackground } from './components/ui/AuroraBackground';
-import { LiquidCard } from './components/ui/LiquidCard';
 import { UploadIllustration, AICoachIllustration } from './components/ui/Illustrations';
 import { CVHistoryPanel } from './components/CVHistoryPanel';
 import { CVBuilderPanel } from './components/cv-builder/CVBuilderPanel';
+import { GenerationProgressModal } from './components/GenerationProgressModal';
 import type { GenerationRecord } from './components/CVHistoryPanel';
 import { DEFAULT_PROVIDER, DEFAULT_MODEL } from './utils/models';
 
@@ -1061,26 +1061,6 @@ function App() {
     }
   };
 
-  const getLoaderText = () => {
-    if (isAutoFixing) {
-      switch (genStep) {
-        case 0: return { title: 'Analyzing Gaps', desc: 'Identifying the missing keywords and weaknesses from the ATS scan...' };
-        case 1: return { title: 'Weaving Keywords', desc: 'Organically injecting keywords into your bullet points without sounding robotic...' };
-        case 2: return { title: 'Refining Tone', desc: 'Applying a human-friendly polish to the newly generated achievements...' };
-        case 3: return { title: 'Updating Cover Letter', desc: 'Aligning the cover letter with the newly strengthened CV...' };
-        default: return { title: 'Processing Auto-Fix', desc: 'Optimizing your resume...' };
-      }
-    }
-    
-    switch (genStep) {
-      case 0: return { title: 'Scanning Job Description', desc: 'Analyzing the JD to extract core technical stack, keywords, and soft skills requirements...' };
-      case 1: return { title: 'Mapping Career Experience', desc: 'Searching your uploaded profiles to find matching achievements, roles, and project evidence...' };
-      case 2: return { title: 'Optimizing ATS Compatibility', desc: 'Crafting the CV outline, embedding keywords naturally, and structuring bullet points for scanner scoring...' };
-      case 3: return { title: 'Applying Human-Friendly Polish', desc: 'Refining grammar, using strong action verbs, and formatting the markdown layout for the preview...' };
-      default: return { title: 'Processing API Request', desc: 'Generating your customized resume...' };
-    }
-  };
-
   const isKeyConfigured = true;
 
   // Standalone Admin Route (e.g. /admin, /jd2cv/admin, or #/admin)
@@ -1201,8 +1181,6 @@ function App() {
       </div>
     );
   }
-
-  const loaderText = getLoaderText();
 
   // Render view functions
   const renderSidebar = () => {
@@ -1970,19 +1948,11 @@ function App() {
 
     if (generating) {
       return (
-        <LiquidCard variant="glass" padding="lg" style={{ maxWidth: '900px', margin: '2rem auto' }} className="entrance-fade">
-          <div className="scanner-container">
-            <div className="radar-sweep">
-              <div className="radar-scan-line"></div>
-              <div className="radar-grid"></div>
-            </div>
-            <div className="scanner-text">{loaderText.title}</div>
-            <div className="scanner-subtext">{loaderText.desc}</div>
-            <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ width: 'auto', marginTop: '1.5rem', color: 'var(--danger)' }}>
-              Cancel Customization
-            </button>
-          </div>
-        </LiquidCard>
+        <GenerationProgressModal
+          isAutoFixing={isAutoFixing}
+          currentStepIndex={genStep}
+          onCancel={handleCancel}
+        />
       );
     }
 
@@ -2544,17 +2514,11 @@ function App() {
         {customizerStep === 5 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {generating && (
-              <div className="scanner-container">
-                <div className="radar-sweep">
-                  <div className="radar-scan-line"></div>
-                  <div className="radar-grid"></div>
-                </div>
-                <div className="scanner-text">{loaderText.title}</div>
-                <div className="scanner-subtext">{loaderText.desc}</div>
-                <button type="button" className="btn btn-secondary" onClick={handleCancel} style={{ width: 'auto', marginTop: '1rem', color: 'var(--danger)' }}>
-                  Cancel Customization
-                </button>
-              </div>
+              <GenerationProgressModal
+                isAutoFixing={isAutoFixing}
+                currentStepIndex={genStep}
+                onCancel={handleCancel}
+              />
             )}
 
             {error && !generating && (

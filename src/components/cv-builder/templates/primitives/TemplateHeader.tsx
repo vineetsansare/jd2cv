@@ -21,8 +21,10 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
   const accent = theme.accentColor || '#2563eb';
   const showPhoto = (theme.showPhoto !== false && basics.showAvatar) && !!basics.avatarUrl;
   const avatarShape = theme.photoShape || basics.avatarShape || 'circle';
+  const avatarBorder = theme.photoBorder || 'accent';
 
-  const avatarRadius = avatarShape === 'circle' ? '50%' : avatarShape === 'rounded' ? '12px' : '4px';
+  const avatarRadius = avatarShape === 'circle' ? '50%' : avatarShape === 'rounded' ? '12px' : avatarShape === 'squircle' ? '24%' : '4px';
+  const avatarBorderProp = avatarBorder === 'none' ? 'none' : avatarBorder === 'subtle' ? '2px solid #cbd5e1' : `2px solid ${accent}`;
 
   // Helper for icon based on network
   const getNetworkIcon = (network: string = '') => {
@@ -50,7 +52,7 @@ export const TemplateHeader: React.FC<TemplateHeaderProps> = ({
           height: '78px',
           borderRadius: avatarRadius,
           objectFit: 'cover',
-          border: `2px solid ${accent}`,
+          border: avatarBorderProp,
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
         }}
       />

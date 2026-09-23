@@ -46,10 +46,34 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     themeName: initialTemplate === 'split-sidebar-right' ? 'Slate Charcoal' : initialTemplate === 'modern-timeline' ? 'Sapphire Blue' : 'Slate Charcoal',
     showPhoto: !!candidatePhoto,
     photoUrl: candidatePhoto,
+    photoShape: 'circle',
+    photoBorder: 'accent',
     layoutDensity: targetLength === '1-page' ? 'compact' : 'standard',
     template: initialTemplate,
     showLinkIcons: true
   });
+
+  const handleThemeChange = (newConfig: CVThemeConfig) => {
+    setThemeConfig(newConfig);
+    if (editedHtml) {
+      try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(editedHtml, 'text/html');
+        const img = doc.querySelector('.cv-avatar-headshot, .modern-avatar-headshot, .sidebar-avatar-img') as HTMLImageElement | null;
+        if (img) {
+          const radius = newConfig.photoShape === 'square' ? '4px' : newConfig.photoShape === 'rounded' ? '12px' : newConfig.photoShape === 'squircle' ? '24%' : '50%';
+          const borderStyle = newConfig.photoBorder === 'none' ? 'none' : newConfig.photoBorder === 'subtle' ? '2px solid #cbd5e1' : `3px solid ${newConfig.accentColor}`;
+          img.setAttribute('data-shape', newConfig.photoShape || 'circle');
+          img.setAttribute('data-border', newConfig.photoBorder || 'accent');
+          img.style.borderRadius = radius;
+          img.style.border = borderStyle;
+          setEditedHtml(doc.body.innerHTML);
+        }
+      } catch (e) {
+        console.warn('Could not sync theme changes to editedHtml:', e);
+      }
+    }
+  };
 
   // Dynamically sync candidatePhoto whenever userProfile.avatar_url or Settings photo changes
   React.useEffect(() => {
@@ -167,11 +191,11 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     const cleanFirst = cleanFilenameToken(firstName);
     const cleanRole = cleanFilenameToken(roleTitle);
     const cleanCompany = cleanFilenameToken(company);
-    
     const filename = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
 
     // Execute isolated iframe print engine (preserves any visual direct edits)
-    printCvDocument(result.cvMarkdown, themeConfig, filename, editedHtml || undefined);
+    const customHtmlToPrint = editedHtml || (isLiveEditing && sheetRef.current ? sheetRef.current.innerHTML : undefined);
+    printCvDocument(result.cvMarkdown, themeConfig, filename, customHtmlToPrint);
   };
 
   // Helper to calculate circular stroke values
@@ -382,7 +406,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
 
             <CVThemeSelector 
               themeConfig={themeConfig} 
-              onChangeThemeConfig={setThemeConfig} 
+              onChangeThemeConfig={handleThemeChange} 
               userAvatarUrl={userProfile?.avatar_url} 
             />
 

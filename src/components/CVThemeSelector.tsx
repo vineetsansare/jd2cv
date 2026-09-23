@@ -3,11 +3,16 @@ import { Palette, User, Check, Layers, Sparkles, ExternalLink } from 'lucide-rea
 
 export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist';
 
+export type PhotoShape = 'circle' | 'rounded' | 'square' | 'squircle';
+export type PhotoBorder = 'accent' | 'subtle' | 'none';
+
 export interface CVThemeConfig {
   accentColor: string;
   themeName: string;
   showPhoto: boolean;
   photoUrl?: string;
+  photoShape?: PhotoShape;
+  photoBorder?: PhotoBorder;
   layoutDensity?: 'compact' | 'standard';
   template?: CVLayoutTemplate;
   showLinkIcons?: boolean;
@@ -55,7 +60,23 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
     onChangeThemeConfig({
       ...themeConfig,
       showPhoto: nextState,
-      photoUrl: fallbackPhoto
+      photoUrl: fallbackPhoto,
+      photoShape: themeConfig.photoShape || 'circle',
+      photoBorder: themeConfig.photoBorder || 'accent'
+    });
+  };
+
+  const handleSelectPhotoShape = (shape: PhotoShape) => {
+    onChangeThemeConfig({
+      ...themeConfig,
+      photoShape: shape
+    });
+  };
+
+  const handleSelectPhotoBorder = (border: PhotoBorder) => {
+    onChangeThemeConfig({
+      ...themeConfig,
+      photoBorder: border
     });
   };
 
@@ -248,7 +269,7 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
         </button>
       </div>
 
-      {/* Right: Candidate Photo Toggle */}
+      {/* Right: Candidate Photo Toggle & Shape/Border Customizer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
           <input
@@ -262,21 +283,96 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
         </label>
 
         {themeConfig.showPhoto && (
-          <input
-            type="text"
-            placeholder="Image URL (e.g. https://...)"
-            value={photoInput}
-            onChange={handlePhotoUrlChange}
-            style={{
-              fontSize: '0.8rem',
-              padding: '0.35rem 0.65rem',
-              borderRadius: '8px',
-              border: '1px solid var(--card-border)',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              width: '200px'
-            }}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {/* Shape Selector Group */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+              {[
+                { id: 'circle' as PhotoShape, label: 'Circle', radius: '50%' },
+                { id: 'rounded' as PhotoShape, label: 'Rounded', radius: '3px' },
+                { id: 'square' as PhotoShape, label: 'Square', radius: '0px' },
+                { id: 'squircle' as PhotoShape, label: 'Squircle', radius: '30%' }
+              ].map(s => {
+                const isSelected = (themeConfig.photoShape || 'circle') === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handleSelectPhotoShape(s.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.25rem 0.55rem',
+                      fontSize: '0.75rem',
+                      fontWeight: isSelected ? 600 : 500,
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: isSelected ? 'var(--card-bg)' : 'transparent',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                      boxShadow: isSelected ? '0 1px 4px rgba(0,0,0,0.15)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title={`Photo shape: ${s.label}`}
+                  >
+                    <span style={{ width: '8px', height: '8px', borderRadius: s.radius, background: isSelected ? themeConfig.accentColor : 'currentColor', display: 'inline-block' }} />
+                    <span>{s.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Border Selector Group */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+              {[
+                { id: 'accent' as PhotoBorder, label: 'Accent' },
+                { id: 'subtle' as PhotoBorder, label: 'Subtle' },
+                { id: 'none' as PhotoBorder, label: 'None' }
+              ].map(b => {
+                const isSelected = (themeConfig.photoBorder || 'accent') === b.id;
+                return (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => handleSelectPhotoBorder(b.id)}
+                    style={{
+                      padding: '0.25rem 0.5rem',
+                      fontSize: '0.75rem',
+                      fontWeight: isSelected ? 600 : 500,
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: isSelected ? 'var(--card-bg)' : 'transparent',
+                      color: isSelected ? 'var(--text-primary)' : 'var(--text-muted)',
+                      boxShadow: isSelected ? '0 1px 4px rgba(0,0,0,0.15)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title={`Border style: ${b.label}`}
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Photo URL Input */}
+            <input
+              type="text"
+              placeholder="Image URL (e.g. https://...)"
+              value={photoInput}
+              onChange={handlePhotoUrlChange}
+              style={{
+                fontSize: '0.78rem',
+                padding: '0.3rem 0.6rem',
+                borderRadius: '8px',
+                border: '1px solid var(--card-border)',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)',
+                width: '180px'
+              }}
+              title="Candidate headshot image source URL or base64 data"
+            />
+          </div>
         )}
       </div>
 

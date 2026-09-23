@@ -1,6 +1,7 @@
 export type LayoutDensity = 'compact' | 'standard' | 'spacious';
 export type PageFormat = 'a4' | 'letter';
-export type AvatarShape = 'circle' | 'rounded' | 'square';
+export type AvatarShape = 'circle' | 'rounded' | 'square' | 'squircle';
+export type PhotoBorder = 'accent' | 'subtle' | 'none';
 export type TextAlignment = 'left' | 'center' | 'right' | 'justify';
 export type SectionHeadingStyle = 'underline' | 'border-left' | 'banner' | 'centered' | 'minimal';
 export type HeaderAlignment = 'left' | 'center';
@@ -125,6 +126,7 @@ export interface CVThemeSettings {
   showIcons: boolean;
   showPhoto?: boolean;
   photoShape?: AvatarShape;
+  photoBorder?: PhotoBorder;
   applyAccentTo?: AccentTargets;
 }
 
