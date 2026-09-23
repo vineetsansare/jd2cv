@@ -12,6 +12,9 @@ function buildModularPrintHtml(
 
   const sidebarBg = 'linear-gradient(to right, #f8fafc 0px, #f8fafc 240px, #e2e8f0 240px, #e2e8f0 241px, #ffffff 241px, #ffffff 100%)';
 
+  const selectedFont = themeConfig?.fontFamily || 'Plus Jakarta Sans';
+  const fontFamilyValue = `'${selectedFont}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -37,20 +40,21 @@ function buildModularPrintHtml(
       background: ${isSidebar ? sidebarBg : '#ffffff'} !important;
       background-color: ${isSidebar ? '#f8fafc' : '#ffffff'} !important;
       color: #1e293b !important;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: ${fontFamilyValue} !important;
       width: 100% !important;
       min-width: 794px !important;
       height: auto !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
-    .cv-print-root {
+    .cv-print-root, .resume-preview-sheet {
       width: 100%;
       max-width: 794px;
       min-width: 794px;
       margin: 0 auto;
       padding: 0;
       background: transparent !important;
+      font-family: ${fontFamilyValue} !important;
     }
     .cv-a4-document {
       width: 100% !important;
@@ -185,6 +189,8 @@ export function printCvDocument(
   const parsedHtml = customHtml || parseMarkdownToHtml(markdown, themeConfig);
   const accentColor = themeConfig?.accentColor || (themeConfig?.template === 'classic-ats' ? '#475569' : '#2563eb');
   const isCompact = themeConfig?.layoutDensity === 'compact';
+  const selectedFont = themeConfig?.fontFamily || 'Plus Jakarta Sans';
+  const fontFamilyValue = `'${selectedFont}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif`;
 
   const iframeContent = `<!DOCTYPE html>
 <html lang="en">
@@ -211,19 +217,20 @@ export function printCvDocument(
       background: #ffffff !important;
       background-color: #ffffff !important;
       color: #111827 !important;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: ${fontFamilyValue} !important;
       width: 100% !important;
       min-width: 794px !important;
       height: auto !important;
     }
     
-    .cv-print-root {
+    .cv-print-root, .resume-preview-sheet {
       width: 100%;
       min-width: 794px;
       background: #ffffff !important;
       color: #111827 !important;
       padding: 0;
       margin: 0 auto;
+      font-family: ${fontFamilyValue} !important;
     }
 
     .cv-a4-document {
@@ -601,12 +608,6 @@ export function printCvDocument(
       font-size: 9.8pt !important;
       font-weight: 600 !important;
       color: ${accentColor} !important;
-    }
-    .timeline-link-icon {
-      display: inline-block !important;
-      font-size: 8pt !important;
-      color: ${accentColor} !important;
-      margin-left: 4px !important;
     }
     .timeline-role {
       font-size: 9.2pt !important;

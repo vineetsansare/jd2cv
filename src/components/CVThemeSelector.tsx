@@ -1,5 +1,5 @@
 import React from 'react';
-import { Palette, User, Check, Layers, Sparkles, ExternalLink } from 'lucide-react';
+import { Palette, User, Check, Layers, Sparkles, Type } from 'lucide-react';
 
 export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist';
 
@@ -15,8 +15,22 @@ export interface CVThemeConfig {
   photoBorder?: PhotoBorder;
   layoutDensity?: 'compact' | 'standard';
   template?: CVLayoutTemplate;
-  showLinkIcons?: boolean;
+  fontFamily?: string;
 }
+
+export interface CVFontOption {
+  id: string;
+  name: string;
+  category: string;
+}
+
+export const CV_FONTS: CVFontOption[] = [
+  { id: 'plus-jakarta', name: 'Plus Jakarta Sans', category: 'Modern Sans' },
+  { id: 'inter', name: 'Inter', category: 'Clean Geometric' },
+  { id: 'merriweather', name: 'Merriweather', category: 'Executive Serif' },
+  { id: 'roboto', name: 'Roboto', category: 'Corporate Sans' },
+  { id: 'jetbrains-mono', name: 'JetBrains Mono', category: 'Technical Monospace' }
+];
 
 export const ACCENT_THEMES = [
   { id: 'charcoal', name: 'Slate Charcoal', color: '#475569', bg: 'rgba(71, 85, 105, 0.15)' },
@@ -243,30 +257,35 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
         </button>
       </div>
 
-      {/* Link Icons Toggle (Allows removing link icons from final output) */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <button
-          type="button"
-          onClick={() => onChangeThemeConfig({ ...themeConfig, showLinkIcons: themeConfig.showLinkIcons === false ? true : false })}
+      {/* Font Family Selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: '0.78rem', fontWeight: 600 }}>
+          <Type size={14} style={{ color: themeConfig.accentColor }} />
+          <span>Font:</span>
+        </div>
+        <select
+          value={themeConfig.fontFamily || 'Plus Jakarta Sans'}
+          onChange={(e) => onChangeThemeConfig({ ...themeConfig, fontFamily: e.target.value })}
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
             fontSize: '0.78rem',
             fontWeight: 600,
-            padding: '0.35rem 0.65rem',
-            borderRadius: '8px',
-            border: `1px solid ${themeConfig.showLinkIcons === false ? 'var(--card-border)' : 'var(--accent-primary)'}`,
-            background: themeConfig.showLinkIcons === false ? 'var(--bg-secondary)' : 'rgba(37, 99, 235, 0.12)',
-            color: themeConfig.showLinkIcons === false ? 'var(--text-muted)' : 'var(--accent-primary)',
+            padding: '0.3rem 0.6rem',
+            borderRadius: '7px',
+            border: '1px solid var(--card-border)',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)',
             cursor: 'pointer',
-            transition: 'all 0.15s'
+            outline: 'none',
+            fontFamily: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', sans-serif` : 'inherit'
           }}
-          title={themeConfig.showLinkIcons === false ? 'Click to show company link icons' : 'Click to remove company link icons (↗) from the output'}
+          title="Choose CV typography font family"
         >
-          <ExternalLink size={13} />
-          <span>{themeConfig.showLinkIcons === false ? 'Link Icons: Off' : 'Link Icons: On'}</span>
-        </button>
+          {CV_FONTS.map(f => (
+            <option key={f.name} value={f.name}>
+              {f.name} ({f.category})
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* Right: Candidate Photo Toggle & Shape/Border Customizer */}

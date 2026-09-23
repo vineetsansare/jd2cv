@@ -50,13 +50,18 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     photoBorder: 'accent',
     layoutDensity: targetLength === '1-page' ? 'compact' : 'standard',
     template: initialTemplate,
-    showLinkIcons: true
+    fontFamily: 'Plus Jakarta Sans'
   });
 
   const handleThemeChange = (newConfig: CVThemeConfig) => {
+    const prevTemplate = themeConfig.template;
     setThemeConfig(newConfig);
     if (editedHtml) {
       try {
+        if (newConfig.template !== prevTemplate) {
+          setEditedHtml(parseMarkdownToHtml(result.cvMarkdown, newConfig));
+          return;
+        }
         const parser = new DOMParser();
         const doc = parser.parseFromString(editedHtml, 'text/html');
         const img = doc.querySelector('.cv-avatar-headshot, .modern-avatar-headshot, .sidebar-avatar-img') as HTMLImageElement | null;
@@ -67,8 +72,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           img.setAttribute('data-border', newConfig.photoBorder || 'accent');
           img.style.borderRadius = radius;
           img.style.border = borderStyle;
-          setEditedHtml(doc.body.innerHTML);
         }
+        setEditedHtml(doc.body.innerHTML);
       } catch (e) {
         console.warn('Could not sync theme changes to editedHtml:', e);
       }
@@ -426,7 +431,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <FileEdit size={16} style={{ color: '#10b981', flexShrink: 0 }} />
-                  <span><strong>Visual Direct Edit Active:</strong> Click any text, bullet point, or link icon (↗) to edit or delete directly on the page. Your visual edits are preserved in your PDF!</span>
+                  <span><strong>Visual Direct Edit Active:</strong> Click any text, heading, or bullet point to edit directly on the page. Your visual edits are preserved in your PDF!</span>
                 </div>
                 <button
                   type="button"
@@ -458,6 +463,10 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                 <div 
                   ref={sheetRef}
                   className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''} ${isLiveEditing ? 'live-editing-active' : ''}`} 
+                  style={{
+                    fontFamily: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined,
+                    ['--cv-font-family' as any]: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined
+                  }}
                   contentEditable={isLiveEditing}
                   suppressContentEditableWarning={true}
                   onBlur={(e) => {

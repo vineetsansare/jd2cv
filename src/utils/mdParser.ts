@@ -10,7 +10,7 @@ export interface CVParseOptions {
   photoBorder?: 'accent' | 'subtle' | 'none';
   layoutDensity?: 'compact' | 'standard';
   template?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist' | string;
-  showLinkIcons?: boolean;
+  fontFamily?: string;
 }
 
 export function getPhotoRadius(shape?: string): string {
@@ -100,15 +100,14 @@ function autoHighlightKeywords(html: string): string {
 }
 
 function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {}): string {
-  const showLinkIcons = options.showLinkIcons !== false;
   const sidebarBg = options.accentColor || '#1c202d';
   const showPhoto = options.showPhoto && options.photoUrl;
+  const fontFamily = options.fontFamily || 'Plus Jakarta Sans';
 
   const mailIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
   const phoneIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
   const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
   const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:5px;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
-  const linkExtIcon = `<span class="timeline-link-icon" title="External link" style="display:inline-block; vertical-align:middle; margin-left:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>`;
 
   const lines = markdown
     .replace(/&amp;/g, '&')
@@ -245,11 +244,10 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
           }
         }
 
-        const linkBadge = showLinkIcons ? linkExtIcon : '';
         mainHtml += '<div class="split-role-entry">';
         mainHtml += `<div class="split-role-header"><span class="split-role-title">${roleTitle}</span><span class="split-role-dates">${roleDates}</span></div>`;
         if (company || roleLoc) {
-          mainHtml += `<div class="split-role-company"><span class="split-company-name">${company}</span>${roleLoc ? `<span class="split-company-loc">, ${roleLoc}</span>` : ''}${linkBadge}</div>`;
+          mainHtml += `<div class="split-role-company"><span class="split-company-name">${company}</span>${roleLoc ? `<span class="split-company-loc">, ${roleLoc}</span>` : ''}</div>`;
         }
         mainHtml += '<ul class="split-bullets">';
         inBullets = true;
@@ -376,7 +374,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
     sidebarHtml += '</div>'; // close sidebar-section
   }
 
-  return `<div class="cv-styled-document split-sidebar-wrapper" style="--cv-sidebar-bg: ${sidebarBg}; --cv-text-color: #1c202d;">` +
+  return `<div class="cv-styled-document split-sidebar-wrapper" style="--cv-sidebar-bg: ${sidebarBg}; --cv-text-color: #1c202d; font-family: '${fontFamily}', sans-serif;">` +
     `<div class="split-main-col">${mainHtml}</div>` +
     `<div class="split-sidebar-col">${sidebarHtml}</div>` +
   `</div>`;
@@ -390,13 +388,13 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   }
 
   const isModern = options.template !== 'classic-ats';
-  const showLinkIcons = options.showLinkIcons !== false;
   const accentColor = options.accentColor || (isModern ? '#2563eb' : '#475569');
   const showPhoto = options.showPhoto && options.photoUrl;
   const photoShape = options.photoShape || 'circle';
   const photoBorder = options.photoBorder || 'accent';
   const photoRadius = getPhotoRadius(photoShape);
   const photoBorderStyle = getPhotoBorder(photoBorder, accentColor);
+  const fontFamily = options.fontFamily || 'Plus Jakarta Sans';
 
   const textColorMap: Record<string, string> = {
     '#475569': '#1e293b',
@@ -428,7 +426,6 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
   const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
   const globeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
-  const linkExtIcon = `<span class="timeline-link-icon" title="External link" style="display:inline-block; vertical-align:middle; margin-left:5px; cursor:pointer;"><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>`;
 
   const closeOpenElements = () => {
     if (skillsListOpen) {
@@ -589,7 +586,6 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
 
       if (isModern) {
         // Modern Left-Rail Timeline
-        const linkBadge = showLinkIcons ? linkExtIcon : '';
         processedLines.push(
           `<div class="modern-timeline-entry">` +
             `<div class="modern-timeline-left">` +
@@ -597,7 +593,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
               (location ? `<div class="timeline-location">${location}</div>` : '') +
             `</div>` +
             `<div class="modern-timeline-right">` +
-              (company ? `<div class="timeline-company-row"><span class="timeline-company">${company}</span>${linkBadge}</div>` : '') +
+              (company ? `<div class="timeline-company-row"><span class="timeline-company">${company}</span></div>` : '') +
               `<div class="timeline-role">${roleTitle}</div>`
         );
         timelineOpen = true;
@@ -629,9 +625,8 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       const location = parts[1] ? parts[1].trim() : '';
 
       if (isModern && timelineOpen) {
-        const linkBadge = showLinkIcons ? linkExtIcon : '';
         processedLines.push(
-          `<div class="timeline-company-row"><span class="timeline-company">${company}</span>${linkBadge}</div>`
+          `<div class="timeline-company-row"><span class="timeline-company">${company}</span></div>`
         );
       } else {
         processedLines.push(
@@ -762,7 +757,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
 
   const rawHtml = processedLines.join('\n').replace(/\n{2,}/g, '\n');
   const rootClass = isModern ? 'cv-styled-document modern-timeline-wrapper' : 'cv-styled-document';
-  return `<div class="${rootClass}" style="--cv-accent-color: ${accentColor}; --cv-text-color: ${bodyTextColor};">${rawHtml}</div>`;
+  return `<div class="${rootClass}" style="--cv-accent-color: ${accentColor}; --cv-text-color: ${bodyTextColor}; font-family: '${fontFamily}', sans-serif;">${rawHtml}</div>`;
 }
 
 export function stripMarkdown(markdown: string): string {

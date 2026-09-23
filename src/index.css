@@ -1,5 +1,5 @@
-/* Import Inter and Geist fonts from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500&display=swap');
+/* Import Fonts from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Geist:wght@300;400;500;600;700;800;900&family=Fira+Code:wght@400;500&family=JetBrains+Mono:wght@400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
 
 :root {
   /* Aurora Design System - Light Mode */
@@ -606,7 +606,7 @@ textarea {
   padding: 10mm 10mm;
   background: #ffffff;
   color: #111827;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: var(--cv-font-family, 'Plus Jakarta Sans', sans-serif);
   font-size: 9.5pt;
   line-height: 1.35;
   box-sizing: border-box;
@@ -2361,7 +2361,7 @@ body.is-printing-cv canvas {
    ========================================================================== */
 .resume-preview-sheet .modern-timeline-wrapper {
   color: #111827;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--cv-font-family, 'Plus Jakarta Sans', sans-serif);
   line-height: 1.35;
 }
 
@@ -2491,18 +2491,6 @@ body.is-printing-cv canvas {
   color: var(--cv-accent-color, #2563eb);
 }
 
-.resume-preview-sheet .timeline-link-icon {
-  display: inline-block;
-  font-size: 8pt;
-  color: var(--cv-accent-color, #2563eb);
-  opacity: 0.85;
-  transition: transform 0.15s ease;
-}
-
-.resume-preview-sheet .timeline-link-icon:hover {
-  transform: translate(1px, -1px);
-}
-
 .resume-preview-sheet .timeline-role {
   font-size: 9.2pt;
   font-weight: 600;
@@ -2592,7 +2580,7 @@ body.is-printing-cv canvas {
   grid-template-columns: 1fr 240px;
   min-height: 100%;
   background: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--cv-font-family, 'Plus Jakarta Sans', sans-serif);
   color: #111827;
   line-height: 1.35;
   box-sizing: border-box;
