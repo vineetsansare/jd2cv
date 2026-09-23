@@ -301,10 +301,11 @@ export function printCvDocument(
       justify-content: center;
       align-items: center;
       flex-wrap: wrap;
-      gap: 1.25rem;
+      row-gap: 0.25rem !important;
+      column-gap: 1rem !important;
       font-size: 9.5pt;
       color: #374151;
-      margin: 0 0 0.85rem 0;
+      margin: 0 0 0.75rem 0;
       padding-bottom: 0.2rem;
     }
     .contact-item {
@@ -312,9 +313,12 @@ export function printCvDocument(
       align-items: center;
       gap: 0.35rem;
     }
-    .contact-item a {
+    .contact-item a, .contact-item span {
       color: #374151;
       text-decoration: none;
+      letter-spacing: normal !important;
+      word-spacing: normal !important;
+      white-space: nowrap !important;
     }
     .contact-item svg {
       color: ${accentColor} !important;
@@ -323,22 +327,64 @@ export function printCvDocument(
 
     h2 {
       font-size: 10.5pt;
-      border-top: 1.5px solid ${accentColor} !important;
-      border-bottom: 1.5px solid ${accentColor} !important;
-      color: ${accentColor} !important;
-      padding: 3px 0 !important;
-      margin-top: 1rem !important;
-      margin-bottom: 0.5rem !important;
       text-transform: uppercase !important;
       letter-spacing: 0.06em;
-      text-align: center;
       font-weight: 700;
       break-after: avoid !important;
       page-break-after: avoid !important;
       display: block !important;
     }
-    .compact-1page h2 {
+    h2.classic-heading-double-line,
+    h2:not(.classic-heading-single-line):not(.classic-heading-filled-pill):not(.modern-section-title):not(.split-section-title) {
+      border-top: 1.5px solid ${accentColor} !important;
+      border-bottom: 1.5px solid ${accentColor} !important;
+      border-left: none !important;
+      border-right: none !important;
+      background: transparent !important;
+      color: ${accentColor} !important;
+      padding: 3px 0 !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: center;
+      border-radius: 0 !important;
+    }
+    h2.classic-heading-single-line {
+      border-top: none !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-bottom: 1.5px solid ${accentColor} !important;
+      background: transparent !important;
+      color: ${accentColor} !important;
+      padding: 0 0 3px 0 !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: left !important;
+      border-radius: 0 !important;
+    }
+    h2.classic-heading-filled-pill {
+      border: none !important;
+      background: ${accentColor} !important;
+      color: #ffffff !important;
+      padding: 4px 10px !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: left !important;
+      border-radius: 6px !important;
+    }
+    .compact-1page h2.classic-heading-double-line {
       padding: 1.5px 0 !important;
+      margin-top: 0.65rem !important;
+      margin-bottom: 0.35rem !important;
+      font-size: 9.8pt !important;
+    }
+    .compact-1page h2.classic-heading-single-line {
+      padding: 0 0 2px 0 !important;
+      margin-top: 0.65rem !important;
+      margin-bottom: 0.35rem !important;
+      font-size: 9.8pt !important;
+    }
+    .compact-1page h2.classic-heading-filled-pill {
+      padding: 2.5px 8px !important;
       margin-top: 0.65rem !important;
       margin-bottom: 0.35rem !important;
       font-size: 9.8pt !important;
@@ -450,8 +496,9 @@ export function printCvDocument(
       margin-bottom: 0.6rem;
     }
     .cv-avatar-headshot {
-      width: 112px;
-      height: 112px;
+      width: 125px;
+      height: 125px;
+      aspect-ratio: 1 / 1;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid ${accentColor};
@@ -463,12 +510,14 @@ export function printCvDocument(
       gap: 1.25rem !important;
     }
     .compact-1page .cv-avatar-headshot {
-      width: 96px !important;
-      height: 96px !important;
+      width: 104px !important;
+      height: 104px !important;
+      aspect-ratio: 1 / 1 !important;
     }
     .compact-1page .modern-avatar-headshot {
-      width: 88px !important;
+      width: 100px !important;
       height: 100px !important;
+      aspect-ratio: 1 / 1 !important;
     }
     /* Candidate Photo Shape Variants */
     .cv-avatar-headshot[data-shape="circle"], .modern-avatar-headshot[data-shape="circle"], .sidebar-avatar-img[data-shape="circle"] { border-radius: 50% !important; }
@@ -477,9 +526,10 @@ export function printCvDocument(
     .cv-avatar-headshot[data-shape="squircle"], .modern-avatar-headshot[data-shape="squircle"], .sidebar-avatar-img[data-shape="squircle"] { border-radius: 22% !important; }
 
     /* Candidate Photo Border Variants */
-    .cv-avatar-headshot[data-border="accent"], .modern-avatar-headshot[data-border="accent"], .sidebar-avatar-img[data-border="accent"] { border: 3px solid ${accentColor} !important; }
-    .cv-avatar-headshot[data-border="subtle"], .modern-avatar-headshot[data-border="subtle"], .sidebar-avatar-img[data-border="subtle"] { border: 2px solid #cbd5e1 !important; }
-    .cv-avatar-headshot[data-border="none"], .modern-avatar-headshot[data-border="none"], .sidebar-avatar-img[data-border="none"] { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important; }
+    .cv-avatar-headshot[data-border="accent"], .modern-avatar-headshot[data-border="accent"], .sidebar-avatar-img[data-border="accent"] { border: 3px solid ${accentColor}; }
+    .cv-avatar-headshot[data-border="subtle"], .modern-avatar-headshot[data-border="subtle"], .sidebar-avatar-img[data-border="subtle"] { border: 2px solid #cbd5e1; }
+    .cv-avatar-headshot[data-border="none"], .modern-avatar-headshot[data-border="none"], .sidebar-avatar-img[data-border="none"],
+    .cv-avatar-headshot[data-border-width="0"], .modern-avatar-headshot[data-border-width="0"], .sidebar-avatar-img[data-border-width="0"] { border: none !important; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important; }
 
     .cv-header-photo-info {
       flex-grow: 1;
@@ -516,12 +566,13 @@ export function printCvDocument(
       flex-shrink: 0 !important;
     }
     .modern-avatar-headshot {
-      width: 100px !important;
-      height: 115px !important;
-      border-radius: 12px !important;
+      width: 120px !important;
+      height: 120px !important;
+      aspect-ratio: 1 / 1 !important;
+      border-radius: 50% !important;
       object-fit: cover !important;
-      border: 1px solid #e5e7eb !important;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+      flex-shrink: 0 !important;
     }
     .modern-header-col {
       flex: 1 !important;

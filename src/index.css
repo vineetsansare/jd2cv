@@ -684,13 +684,15 @@ textarea {
 }
 
 .resume-preview-sheet.compact-1page .cv-avatar-headshot {
-  width: 96px !important;
-  height: 96px !important;
+  width: 104px !important;
+  height: 104px !important;
+  aspect-ratio: 1 / 1 !important;
 }
 
 .resume-preview-sheet.compact-1page .modern-avatar-headshot {
-  width: 88px !important;
+  width: 100px !important;
   height: 100px !important;
+  aspect-ratio: 1 / 1 !important;
 }
 
 .resume-preview-sheet h1, 
@@ -725,10 +727,11 @@ textarea {
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1.25rem;
+  row-gap: 0.25rem !important;
+  column-gap: 1.1rem !important;
   font-size: 9.5pt;
   color: #374151;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
   padding-bottom: 0.25rem;
 }
 
@@ -743,29 +746,90 @@ textarea {
   fill: none;
 }
 
-.resume-preview-sheet .contact-item a {
+.resume-preview-sheet .contact-item a,
+.resume-preview-sheet .contact-item span,
+.cv-styled-document .contact-item a,
+.cv-styled-document .contact-item span {
   color: #374151;
   text-decoration: none;
+  letter-spacing: normal !important;
+  word-spacing: normal !important;
+  white-space: nowrap !important;
 }
 
 .resume-preview-sheet .contact-item a:hover {
   text-decoration: underline;
 }
 
-/* Exact section divider header styling from PDF */
+/* Section divider header styling - Classic ATS variants */
 .resume-preview-sheet h2 {
   font-size: 10.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  display: block !important;
+}
+
+/* Variant 1: Double Line (Default ATS) */
+.resume-preview-sheet h2.classic-heading-double-line,
+.resume-preview-sheet h2:not(.classic-heading-single-line):not(.classic-heading-filled-pill):not(.modern-section-title):not(.split-section-title) {
   border-top: 1.5px solid var(--cv-accent-color, #111827) !important;
   border-bottom: 1.5px solid var(--cv-accent-color, #111827) !important;
+  border-left: none !important;
+  border-right: none !important;
+  background: transparent !important;
   color: var(--cv-accent-color, #111827) !important;
   padding: 3px 0 !important;
   margin-top: 1.2rem !important;
   margin-bottom: 0.6rem !important;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  text-align: center;
-  font-weight: 700;
-  display: block !important;
+  text-align: center !important;
+  border-radius: 0 !important;
+}
+
+/* Variant 2: Single Line Underneath */
+.resume-preview-sheet h2.classic-heading-single-line {
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: 1.5px solid var(--cv-accent-color, #111827) !important;
+  background: transparent !important;
+  color: var(--cv-accent-color, #111827) !important;
+  padding: 0 0 3px 0 !important;
+  margin-top: 1.2rem !important;
+  margin-bottom: 0.6rem !important;
+  text-align: left !important;
+  border-radius: 0 !important;
+}
+
+/* Variant 3: Filled Rounded Rectangle / Pill */
+.resume-preview-sheet h2.classic-heading-filled-pill {
+  border: none !important;
+  background: var(--cv-accent-color, #111827) !important;
+  color: #ffffff !important;
+  padding: 4px 10px !important;
+  margin-top: 1.2rem !important;
+  margin-bottom: 0.6rem !important;
+  text-align: left !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.resume-preview-sheet.compact-1page h2.classic-heading-double-line {
+  padding: 1.5px 0 !important;
+  margin-top: 0.8rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.resume-preview-sheet.compact-1page h2.classic-heading-single-line {
+  padding: 0 0 2px 0 !important;
+  margin-top: 0.8rem !important;
+  margin-bottom: 0.35rem !important;
+}
+
+.resume-preview-sheet.compact-1page h2.classic-heading-filled-pill {
+  padding: 2.5px 8px !important;
+  margin-top: 0.8rem !important;
+  margin-bottom: 0.35rem !important;
 }
 
 .cv-styled-document h1 {
@@ -786,8 +850,9 @@ textarea {
 }
 
 .cv-avatar-headshot {
-  width: 112px;
-  height: 112px;
+  width: 125px;
+  height: 125px;
+  aspect-ratio: 1 / 1;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--cv-accent-color, #111827);
@@ -824,18 +889,21 @@ textarea {
 .cv-avatar-headshot[data-border="accent"],
 .modern-avatar-headshot[data-border="accent"],
 .sidebar-avatar-img[data-border="accent"] {
-  border: 3px solid var(--cv-accent-color, #111827) !important;
+  border: 3px solid var(--cv-accent-color, #111827);
 }
 
 .cv-avatar-headshot[data-border="subtle"],
 .modern-avatar-headshot[data-border="subtle"],
 .sidebar-avatar-img[data-border="subtle"] {
-  border: 2px solid #cbd5e1 !important;
+  border: 2px solid #cbd5e1;
 }
 
 .cv-avatar-headshot[data-border="none"],
 .modern-avatar-headshot[data-border="none"],
-.sidebar-avatar-img[data-border="none"] {
+.sidebar-avatar-img[data-border="none"],
+.cv-avatar-headshot[data-border-width="0"],
+.modern-avatar-headshot[data-border-width="0"],
+.sidebar-avatar-img[data-border-width="0"] {
   border: none !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
 }
@@ -870,7 +938,8 @@ textarea {
   justify-content: flex-start !important;
   align-items: center !important;
   flex-wrap: wrap !important;
-  gap: 1.1rem !important;
+  row-gap: 0.25rem !important;
+  column-gap: 1rem !important;
   font-size: 9pt !important;
   color: #374151 !important;
   margin-bottom: 0 !important;
@@ -2383,12 +2452,13 @@ body.is-printing-cv canvas {
 }
 
 .resume-preview-sheet .modern-avatar-headshot {
-  width: 100px;
-  height: 115px;
-  border-radius: 12px;
-  object-fit: cover;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  width: 120px !important;
+  height: 120px !important;
+  aspect-ratio: 1 / 1 !important;
+  border-radius: 50%;
+  object-fit: cover !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0 !important;
 }
 
 .resume-preview-sheet .modern-header-col {

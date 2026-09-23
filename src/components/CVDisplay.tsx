@@ -48,6 +48,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     photoUrl: candidatePhoto,
     photoShape: 'circle',
     photoBorder: 'accent',
+    photoBorderWidth: 3,
+    classicSectionStyle: 'double-line',
     layoutDensity: targetLength === '1-page' ? 'compact' : 'standard',
     template: initialTemplate,
     fontFamily: 'Plus Jakarta Sans'
@@ -55,10 +57,11 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
 
   const handleThemeChange = (newConfig: CVThemeConfig) => {
     const prevTemplate = themeConfig.template;
+    const prevClassicStyle = themeConfig.classicSectionStyle;
     setThemeConfig(newConfig);
     if (editedHtml) {
       try {
-        if (newConfig.template !== prevTemplate) {
+        if (newConfig.template !== prevTemplate || newConfig.classicSectionStyle !== prevClassicStyle) {
           setEditedHtml(parseMarkdownToHtml(result.cvMarkdown, newConfig));
           return;
         }
@@ -67,9 +70,15 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
         const img = doc.querySelector('.cv-avatar-headshot, .modern-avatar-headshot, .sidebar-avatar-img') as HTMLImageElement | null;
         if (img) {
           const radius = newConfig.photoShape === 'square' ? '4px' : newConfig.photoShape === 'rounded' ? '12px' : newConfig.photoShape === 'squircle' ? '24%' : '50%';
-          const borderStyle = newConfig.photoBorder === 'none' ? 'none' : newConfig.photoBorder === 'subtle' ? '2px solid #cbd5e1' : `3px solid ${newConfig.accentColor}`;
+          const borderWidth = newConfig.photoBorderWidth !== undefined ? newConfig.photoBorderWidth : (newConfig.photoBorder === 'none' ? 0 : 3);
+          const borderStyle = (borderWidth === 0 || newConfig.photoBorder === 'none')
+            ? 'none'
+            : newConfig.photoBorder === 'subtle'
+              ? `${borderWidth}px solid #cbd5e1`
+              : `${borderWidth}px solid ${newConfig.accentColor}`;
           img.setAttribute('data-shape', newConfig.photoShape || 'circle');
           img.setAttribute('data-border', newConfig.photoBorder || 'accent');
+          img.setAttribute('data-border-width', String(borderWidth));
           img.style.borderRadius = radius;
           img.style.border = borderStyle;
         }

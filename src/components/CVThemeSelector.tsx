@@ -5,6 +5,7 @@ export type CVLayoutTemplate = 'modern-timeline' | 'classic-ats' | 'split-sideba
 
 export type PhotoShape = 'circle' | 'rounded' | 'square' | 'squircle';
 export type PhotoBorder = 'accent' | 'subtle' | 'none';
+export type ClassicSectionHeadingStyle = 'double-line' | 'single-line' | 'filled-pill';
 
 export interface CVThemeConfig {
   accentColor: string;
@@ -13,9 +14,11 @@ export interface CVThemeConfig {
   photoUrl?: string;
   photoShape?: PhotoShape;
   photoBorder?: PhotoBorder;
+  photoBorderWidth?: number; // 0 to 5, default 3 (0 means no ring)
   layoutDensity?: 'compact' | 'standard';
   template?: CVLayoutTemplate;
   fontFamily?: string;
+  classicSectionStyle?: ClassicSectionHeadingStyle;
 }
 
 export interface CVFontOption {
@@ -76,7 +79,8 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
       showPhoto: nextState,
       photoUrl: fallbackPhoto,
       photoShape: themeConfig.photoShape || 'circle',
-      photoBorder: themeConfig.photoBorder || 'accent'
+      photoBorder: themeConfig.photoBorder || 'accent',
+      photoBorderWidth: themeConfig.photoBorderWidth !== undefined ? themeConfig.photoBorderWidth : 3
     });
   };
 
@@ -90,7 +94,23 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
   const handleSelectPhotoBorder = (border: PhotoBorder) => {
     onChangeThemeConfig({
       ...themeConfig,
-      photoBorder: border
+      photoBorder: border,
+      photoBorderWidth: border === 'none' ? 0 : (themeConfig.photoBorderWidth || 3)
+    });
+  };
+
+  const handleSelectBorderWidth = (width: number) => {
+    onChangeThemeConfig({
+      ...themeConfig,
+      photoBorderWidth: width,
+      photoBorder: width === 0 ? 'none' : (themeConfig.photoBorder === 'none' ? 'accent' : themeConfig.photoBorder || 'accent')
+    });
+  };
+
+  const handleSelectClassicHeadingStyle = (style: ClassicSectionHeadingStyle) => {
+    onChangeThemeConfig({
+      ...themeConfig,
+      classicSectionStyle: style
     });
   };
 
@@ -288,6 +308,43 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
         </select>
       </div>
 
+      {/* Classic ATS Section Heading Style Selector */}
+      {themeConfig.template === 'classic-ats' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Header Style:</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
+            {[
+              { id: 'double-line' as ClassicSectionHeadingStyle, label: '═ Double Line ═', title: 'Double parallel lines above & below heading' },
+              { id: 'single-line' as ClassicSectionHeadingStyle, label: '⎯ Single Line', title: 'Single solid underline underneath heading' },
+              { id: 'filled-pill' as ClassicSectionHeadingStyle, label: '■ Filled Pill', title: 'Filled rounded rectangle with accent color and white text' }
+            ].map(s => {
+              const isSelected = (themeConfig.classicSectionStyle || 'double-line') === s.id;
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => handleSelectClassicHeadingStyle(s.id)}
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: isSelected ? 600 : 500,
+                    padding: '0.25rem 0.55rem',
+                    borderRadius: '6px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: isSelected ? themeConfig.accentColor : 'transparent',
+                    color: isSelected ? '#ffffff' : 'var(--text-secondary)',
+                    transition: 'all 0.15s'
+                  }}
+                  title={s.title}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Right: Candidate Photo Toggle & Shape/Border Customizer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 600 }}>
@@ -369,6 +426,39 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
                     title={`Border style: ${b.label}`}
                   >
                     {b.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Ring Width Selector Group (0px to 5px) */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--bg-secondary)', padding: '2px', borderRadius: '8px', border: '1px solid var(--card-border)', gap: '1px' }}>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', padding: '0 0.35rem', fontWeight: 600 }}>Ring:</span>
+              {[0, 1, 2, 3, 4, 5].map(w => {
+                const currentWidth = themeConfig.photoBorderWidth !== undefined 
+                  ? themeConfig.photoBorderWidth 
+                  : (themeConfig.photoBorder === 'none' ? 0 : 3);
+                const isSelected = currentWidth === w;
+                return (
+                  <button
+                    key={w}
+                    type="button"
+                    onClick={() => handleSelectBorderWidth(w)}
+                    style={{
+                      padding: '0.2rem 0.4rem',
+                      fontSize: '0.72rem',
+                      fontWeight: isSelected ? 700 : 500,
+                      borderRadius: '5px',
+                      border: 'none',
+                      background: isSelected ? 'var(--card-bg)' : 'transparent',
+                      color: isSelected ? (w === 0 ? 'var(--text-primary)' : themeConfig.accentColor) : 'var(--text-muted)',
+                      boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.15)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title={w === 0 ? 'No border ring (0px)' : `Border ring width: ${w}px`}
+                  >
+                    {w === 0 ? '0' : `${w}px`}
                   </button>
                 );
               })}

@@ -8,6 +8,8 @@ export interface CVParseOptions {
   photoUrl?: string;
   photoShape?: 'circle' | 'rounded' | 'square' | 'squircle';
   photoBorder?: 'accent' | 'subtle' | 'none';
+  photoBorderWidth?: number; // 0 to 5 (0 means no border ring)
+  classicSectionStyle?: 'double-line' | 'single-line' | 'filled-pill';
   layoutDensity?: 'compact' | 'standard';
   template?: 'modern-timeline' | 'classic-ats' | 'split-sidebar-right' | 'split-sidebar' | 'compact-executive' | 'swiss-minimalist' | string;
   fontFamily?: string;
@@ -23,12 +25,16 @@ export function getPhotoRadius(shape?: string): string {
   }
 }
 
-export function getPhotoBorder(border?: string, accent?: string): string {
+export function getPhotoBorder(border?: string, accent?: string, borderWidth?: number): string {
+  if (borderWidth === 0 || border === 'none') {
+    return 'none';
+  }
+  const width = borderWidth !== undefined ? borderWidth : 3;
   switch (border) {
-    case 'subtle': return '2px solid #cbd5e1';
+    case 'subtle': return `${width}px solid #cbd5e1`;
     case 'none': return 'none';
     case 'accent':
-    default: return `3px solid ${accent || '#111827'}`;
+    default: return `${width}px solid ${accent || '#111827'}`;
   }
 }
 
@@ -171,7 +177,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
         if (linkMatch) clean = linkMatch[1];
 
         if (clean.includes('@')) {
-          email = clean;
+          email = clean.replace(/\s+/g, '');
         } else if (clean.includes('linkedin.com')) {
           linkedin = clean.startsWith('http') ? clean : 'https://' + clean;
           linkedinDisplay = clean.includes('/in/') ? '/in/' + clean.split('/in/')[1] : clean.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/?/, '');
@@ -315,7 +321,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
   const photoShape = options.photoShape || 'circle';
   const photoBorder = options.photoBorder || 'accent';
   const photoRadius = getPhotoRadius(photoShape);
-  const photoBorderStyle = getPhotoBorder(photoBorder, options.accentColor || '#1c202d');
+  const photoBorderStyle = getPhotoBorder(photoBorder, options.accentColor || '#1c202d', options.photoBorderWidth);
 
   if (showPhoto) {
     sidebarHtml += `<div class="sidebar-avatar-wrapper"><img src="${options.photoUrl}" alt="${name}" class="sidebar-avatar-img" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>`;
@@ -409,7 +415,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   const photoShape = options.photoShape || 'circle';
   const photoBorder = options.photoBorder || 'accent';
   const photoRadius = getPhotoRadius(photoShape);
-  const photoBorderStyle = getPhotoBorder(photoBorder, accentColor);
+  const photoBorderStyle = getPhotoBorder(photoBorder, accentColor, options.photoBorderWidth);
   const fontFamily = options.fontFamily || 'Plus Jakarta Sans';
 
   const textColorMap: Record<string, string> = {
@@ -499,7 +505,8 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         }
 
         if (item.includes('@')) {
-          return `<span class="contact-item">${mailIcon}<a href="mailto:${item}">${item}</a></span>`;
+          const cleanEmail = item.replace(/\s+/g, '');
+          return `<span class="contact-item">${mailIcon}<a href="mailto:${cleanEmail}">${cleanEmail}</a></span>`;
         } else if (item.includes('linkedin.com')) {
           const displayLink = item.replace(/^(https?:\/\/)?(www\.)?/, '');
           const hrefLink = item.startsWith('http') ? item : `https://${item}`;
@@ -521,7 +528,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       if (isModern) {
         processedLines.push(
           `<div class="modern-header">` +
-            (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>` : '') +
+            (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>` : '') +
             `<div class="modern-header-col">` +
               `<h1 class="modern-name">${pendingHeaderName}</h1>` +
               (pendingSubtitle ? `<div class="modern-subtitle">${pendingSubtitle}</div>` : '') +
@@ -533,7 +540,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         if (showPhoto) {
           processedLines.push(
             `<div class="cv-header-photo-wrapper">` +
-              `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" />` +
+              `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" />` +
               `<div class="cv-header-photo-info">` +
                 `<h1>${pendingHeaderName}</h1>` +
                 (pendingSubtitle ? `<div class="subtitle">${pendingSubtitle}</div>` : '') +
@@ -567,7 +574,8 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         processedLines.push(`<h2 class="modern-section-title">${title}</h2>`);
         processedLines.push(`<div class="zigzag-divider"></div>`);
       } else {
-        processedLines.push(`<h2>${cleanUpper}</h2>`);
+        const headingStyleClass = `classic-heading-${options.classicSectionStyle || 'double-line'}`;
+        processedLines.push(`<h2 class="${headingStyleClass}">${cleanUpper}</h2>`);
       }
 
       if (cleanUpper.includes('SKILL') || cleanUpper.includes('COMPETENC')) {
