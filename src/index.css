@@ -680,12 +680,17 @@ textarea {
 
 .resume-preview-sheet.compact-1page .cv-header-photo-wrapper {
   margin-bottom: 0.35rem !important;
-  gap: 1.1rem !important;
+  gap: 1.25rem !important;
 }
 
 .resume-preview-sheet.compact-1page .cv-avatar-headshot {
-  width: 82px !important;
-  height: 82px !important;
+  width: 96px !important;
+  height: 96px !important;
+}
+
+.resume-preview-sheet.compact-1page .modern-avatar-headshot {
+  width: 88px !important;
+  height: 100px !important;
 }
 
 .resume-preview-sheet h1, 
@@ -775,14 +780,14 @@ textarea {
 .cv-header-photo-wrapper {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 0.5rem;
+  gap: 1.6rem;
+  margin-bottom: 0.6rem;
   padding-bottom: 0;
 }
 
 .cv-avatar-headshot {
-  width: 96px;
-  height: 96px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   object-fit: cover;
   border: 3px solid var(--cv-accent-color, #111827);

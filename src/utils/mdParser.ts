@@ -99,6 +99,20 @@ function autoHighlightKeywords(html: string): string {
     .replace(/(?<!<strong>[^<]*)\b(AED\s+\d+[MKmk]?\+?|\$\d+[MKmk]?\+?)\b(?![^<]*<\/strong>)/gi, '<strong>$1</strong>');
 }
 
+export function cleanHeaderItem(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/^#+\s*/, '')
+    .replace(/^[-*•]\s+/, '')
+    .replace(/^[\s*_—–-]+|[\s*_—–-]+$/g, '')
+    .replace(/\*\*/g, '')
+    .replace(/__/g, '')
+    .replace(/^\*+|\*+$/g, '')
+    .replace(/^_+|_+$/g, '')
+    .replace(/&amp;/gi, '&')
+    .trim();
+}
+
 function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {}): string {
   const sidebarBg = options.accentColor || '#1c202d';
   const showPhoto = options.showPhoto && options.photoUrl;
@@ -221,25 +235,28 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
       const line = sec.lines[j];
 
       // Role header: ### Title | Dates
-      if (line.startsWith('### ') || (line.includes('|') && !line.startsWith('*') && !line.startsWith('-') && !line.startsWith('•') && (line.includes('Present') || /\d{4}/.test(line)))) {
+      const isDateRow = line.includes('Present') || /\b(?:19|20)\d{2}\b/.test(line);
+      const isH3 = line.startsWith('### ');
+      if (isH3 || (line.includes('|') && isDateRow)) {
         if (inBullets) {
           mainHtml += '</ul></div>';
           inBullets = false;
         }
-        const clean = line.replace(/^###\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
-        const parts = clean.split('|');
-        const roleTitle = parts[0].trim();
-        const roleDates = parts[1] ? parts[1].trim() : '';
+        const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+        const parts = cleanLine.split('|');
+        const roleTitle = cleanHeaderItem(parts[0]);
+        const roleDates = cleanHeaderItem(parts[1] || '');
 
-        let company = '';
-        let roleLoc = '';
+        let company = cleanHeaderItem(parts[2] || '');
+        let roleLoc = cleanHeaderItem(parts[3] || '');
         if (j + 1 < sec.lines.length) {
           const nextLine = sec.lines[j + 1].trim();
-          if (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('#') && !nextLine.startsWith('-') && !nextLine.startsWith('•'))) {
-            const cleanNext = nextLine.replace(/^\*+|\*+$/g, '').replace(/^_+|_+$/g, '').trim();
-            const nextParts = cleanNext.split('|');
-            company = nextParts[0].trim();
-            roleLoc = nextParts[1] ? nextParts[1].trim() : '';
+          const isNextRole = nextLine.startsWith('### ') || (nextLine.includes('|') && (nextLine.includes('Present') || /\b(?:19|20)\d{2}\b/.test(nextLine)));
+          const isNextHeader = nextLine.startsWith('#');
+          if (!isNextRole && !isNextHeader && (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('-') && !nextLine.startsWith('•')))) {
+            const nextParts = nextLine.split('|');
+            if (!company) company = cleanHeaderItem(nextParts[0] || '');
+            if (!roleLoc) roleLoc = cleanHeaderItem(nextParts[1] || '');
             j++;
           }
         }
@@ -319,15 +336,14 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
       for (let k = 0; k < sec.lines.length; k++) {
         const line = sec.lines[k];
         if (line.startsWith('### ') || line.includes('|')) {
-          const clean = line.replace(/^###\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
-          const parts = clean.split('|');
-          const titleText = parts[0].trim();
-          const datesOrOrg = parts[1] ? parts[1].trim() : '';
-          const thirdPart = parts[2] ? parts[2].trim() : '';
+          const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+          const parts = cleanLine.split('|');
+          const titleText = cleanHeaderItem(parts[0] || '');
+          const datesOrOrg = cleanHeaderItem(parts[1] || '');
+          let subtitleText = cleanHeaderItem(parts[2] || '');
 
-          let subtitleText = thirdPart;
           if (k + 1 < sec.lines.length && (sec.lines[k + 1].startsWith('*') || sec.lines[k + 1].includes('|'))) {
-            subtitleText = sec.lines[k + 1].replace(/^\*+|\*+$/g, '').replace(/^_+|_+$/g, '').trim();
+            subtitleText = cleanHeaderItem(sec.lines[k + 1]);
             k++;
           }
 
@@ -337,7 +353,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
           if (subtitleText) sidebarHtml += `<div class="sidebar-entry-subtitle">${subtitleText}</div>`;
           sidebarHtml += '</div>';
         } else if (line.startsWith('-') || line.startsWith('•')) {
-          const content = line.replace(/^[-*•]\s*/, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          const content = cleanHeaderItem(line.replace(/^[-*•]\s*/, ''));
           sidebarHtml += `<div class="sidebar-bullet-item">• ${content}</div>`;
         }
       }
@@ -415,6 +431,8 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
 
   const processedLines: string[] = [];
   let inSkills = false;
+  let inEducation = false;
+  let inAwards = false;
   let skillsListOpen = false;
   let inList = false;
   let sawH1 = false;
@@ -557,29 +575,37 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       } else {
         inSkills = false;
       }
+      inEducation = cleanUpper.includes('EDUCATION') || cleanUpper.includes('DEGREE');
+      inAwards = cleanUpper.includes('AWARD') || cleanUpper.includes('RECOGNITION') || cleanUpper.includes('HONOR');
       continue;
     }
 
     // 5. Check for H3 / Role Title & Dates Row
-    // Matches: '### Title | Dates', '**Title** | Dates', or 'Title | Dates'
-    if (line.startsWith('### ') || (line.includes('|') && !line.startsWith('*') && (line.includes('Present') || /\d{4}/.test(line)))) {
+    // Matches: '### Title | Dates', '**Title** | Dates', '- **Title** | Dates', or 'Title | Dates'
+    const isDateRow = line.includes('Present') || /\b(?:19|20)\d{2}\b/.test(line);
+    const isH3 = line.startsWith('### ');
+    const isRoleHeader = isH3 || (line.includes('|') && (isDateRow || inAwards || inEducation));
+
+    if (isRoleHeader) {
       closeOpenElements();
 
-      const cleanLine = line.replace(/^###\s*/, '').replace(/^\*\*|\*\*$/g, '').trim();
-      const parts = cleanLine.split('|');
-      const roleTitle = parts[0].trim();
-      const roleDates = parts[1] ? parts[1].trim() : '';
+      const lineCleaned = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+      const parts = lineCleaned.split('|');
+      const roleTitle = cleanHeaderItem(parts[0]);
+      const roleDates = cleanHeaderItem(parts[1] || '');
+      let company = cleanHeaderItem(parts[2] || '');
+      let location = cleanHeaderItem(parts[3] || '');
 
       // Look ahead for company/location row on next line
-      let company = '';
-      let location = '';
       if (i + 1 < lines.length) {
         const nextLine = lines[i + 1].trim();
-        if (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('#') && !nextLine.startsWith('-') && !nextLine.startsWith('•'))) {
-          const cleanNext = nextLine.replace(/^\*+|\*+$/g, '').replace(/^_+|_+$/g, '').trim();
-          const nextParts = cleanNext.split('|');
-          company = nextParts[0].trim();
-          location = nextParts[1] ? nextParts[1].trim() : '';
+        const isNextRole = nextLine.startsWith('### ') || (nextLine.includes('|') && (nextLine.includes('Present') || /\b(?:19|20)\d{2}\b/.test(nextLine)));
+        const isSectionHeader = nextLine.startsWith('## ') || isSectionHeading(nextLine);
+
+        if (!isNextRole && !isSectionHeader && (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('#') && !nextLine.startsWith('-') && !nextLine.startsWith('•')))) {
+          const nextParts = nextLine.split('|');
+          if (!company) company = cleanHeaderItem(nextParts[0] || '');
+          if (!location) location = cleanHeaderItem(nextParts[1] || '');
           i++; // Consume next line
         }
       }
@@ -589,7 +615,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         processedLines.push(
           `<div class="modern-timeline-entry">` +
             `<div class="modern-timeline-left">` +
-              `<div class="timeline-date">${roleDates}</div>` +
+              (roleDates ? `<div class="timeline-date">${roleDates}</div>` : '') +
               (location ? `<div class="timeline-location">${location}</div>` : '') +
             `</div>` +
             `<div class="modern-timeline-right">` +
@@ -619,10 +645,9 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
 
     // 6. Check for standalone Company & Location Row (if not consumed above)
     if ((line.startsWith('*') && line.includes('|')) || (line.includes('|') && (line.includes('Dubai') || line.includes('UAE') || line.includes('India') || line.includes('USA') || line.includes('London')))) {
-      const cleanContent = line.replace(/^\*+|\*+$/g, '').replace(/^_+|_+$/g, '').trim();
-      const parts = cleanContent.split('|');
-      const company = parts[0].trim();
-      const location = parts[1] ? parts[1].trim() : '';
+      const parts = line.split('|');
+      const company = cleanHeaderItem(parts[0] || '');
+      const location = cleanHeaderItem(parts[1] || '');
 
       if (isModern && timelineOpen) {
         processedLines.push(

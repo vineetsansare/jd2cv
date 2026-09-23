@@ -446,17 +446,29 @@ export function printCvDocument(
     .cv-header-photo-wrapper {
       display: flex;
       align-items: center;
-      gap: 1.5rem;
-      margin-bottom: 0.5rem;
+      gap: 1.6rem;
+      margin-bottom: 0.6rem;
     }
     .cv-avatar-headshot {
-      width: 90px;
-      height: 90px;
+      width: 112px;
+      height: 112px;
       border-radius: 50%;
       object-fit: cover;
       border: 3px solid ${accentColor};
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       flex-shrink: 0;
+    }
+    .compact-1page .cv-header-photo-wrapper {
+      margin-bottom: 0.35rem !important;
+      gap: 1.25rem !important;
+    }
+    .compact-1page .cv-avatar-headshot {
+      width: 96px !important;
+      height: 96px !important;
+    }
+    .compact-1page .modern-avatar-headshot {
+      width: 88px !important;
+      height: 100px !important;
     }
     /* Candidate Photo Shape Variants */
     .cv-avatar-headshot[data-shape="circle"], .modern-avatar-headshot[data-shape="circle"], .sidebar-avatar-img[data-shape="circle"] { border-radius: 50% !important; }
