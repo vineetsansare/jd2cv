@@ -22,3 +22,8 @@ CREATE POLICY "Users can view own access tokens"
 CREATE POLICY "Users can manage own access tokens" 
     ON public.personal_access_tokens FOR ALL 
     USING (auth.uid() = user_id);
+
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.personal_access_tokens TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.personal_access_tokens TO service_role;
+

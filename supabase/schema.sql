@@ -37,6 +37,10 @@ CREATE POLICY "Users can update own profile"
     ON public.profiles FOR UPDATE 
     USING (auth.uid() = id);
 
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO service_role;
+
 -- 2. CV DOCUMENTS Table (user uploaded resumes)
 CREATE TABLE public.cv_documents (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -53,6 +57,10 @@ ALTER TABLE public.cv_documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can perform all actions on own CVs" 
     ON public.cv_documents FOR ALL 
     USING (auth.uid() = user_id);
+
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.cv_documents TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.cv_documents TO service_role;
 
 -- 3. GENERATIONS Table (CV customize logs & results)
 CREATE TABLE public.generations (
@@ -82,6 +90,10 @@ CREATE POLICY "Users can create own generations"
     ON public.generations FOR INSERT 
     WITH CHECK (auth.uid() = user_id);
 
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.generations TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.generations TO service_role;
+
 -- 4. SUBSCRIPTIONS Table (Lemon Squeezy integration)
 CREATE TABLE public.subscriptions (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -101,6 +113,10 @@ ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own subscriptions" 
     ON public.subscriptions FOR SELECT 
     USING (auth.uid() = user_id);
+
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.subscriptions TO service_role;
 
 -- 5. CREDIT TRANSACTIONS Table (Pay-As-You-Go Ledger)
 CREATE TABLE public.credit_transactions (
@@ -128,6 +144,10 @@ CREATE POLICY "Admins can view all credit transactions"
             WHERE profiles.id = auth.uid() AND profiles.is_admin = true
         )
     );
+
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.credit_transactions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.credit_transactions TO service_role;
 
 -- Stored Procedures for atomic credit operations
 CREATE OR REPLACE FUNCTION public.deduct_credits(
@@ -248,4 +268,9 @@ CREATE POLICY "Users can view own access tokens"
 CREATE POLICY "Users can manage own access tokens" 
     ON public.personal_access_tokens FOR ALL 
     USING (auth.uid() = user_id);
+
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.personal_access_tokens TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.personal_access_tokens TO service_role;
+
 

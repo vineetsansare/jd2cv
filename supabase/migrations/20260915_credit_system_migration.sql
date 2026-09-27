@@ -57,6 +57,10 @@ CREATE POLICY "Admins can view all credit transactions"
         )
     );
 
+-- Explicit Data API grants
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.credit_transactions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.credit_transactions TO service_role;
+
 -- Step 4: Atomic deduct_credits function (with FOR UPDATE row lock)
 CREATE OR REPLACE FUNCTION public.deduct_credits(
     p_user_id UUID,
