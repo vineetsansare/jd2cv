@@ -110,6 +110,194 @@ function buildModularPrintHtml(
         display: none !important;
       }
     }
+
+    /* Resilient Component Styles for All CV Templates */
+    .resume-preview-sheet {
+      font-size: 9.5pt;
+      line-height: 1.35;
+      box-sizing: border-box;
+      --cv-accent-color: ${themeConfig?.accentColor || '#475569'};
+    }
+    .resume-preview-sheet.compact-1page {
+      font-size: 9pt !important;
+      line-height: 1.28 !important;
+    }
+    h1 {
+      font-size: 22pt;
+      text-align: center;
+      margin: 0 0 0.15rem 0;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: ${themeConfig?.accentColor || '#475569'};
+    }
+    .subtitle {
+      font-size: 11.5pt;
+      font-style: italic;
+      text-align: center;
+      color: #374151;
+      margin: 0 0 0.35rem 0;
+      font-weight: 600;
+    }
+    .contact-row {
+      display: flex !important;
+      justify-content: center !important;
+      align-items: center !important;
+      flex-wrap: wrap !important;
+      row-gap: 0.25rem !important;
+      column-gap: 1rem !important;
+      font-size: 9.5pt;
+      color: #374151;
+      margin: 0 0 0.75rem 0;
+      padding-bottom: 0.2rem;
+    }
+    .contact-item {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.35rem !important;
+      white-space: nowrap !important;
+    }
+    .contact-item a, .contact-item span {
+      color: #374151;
+      text-decoration: none;
+      white-space: nowrap !important;
+    }
+    .contact-item svg {
+      color: ${themeConfig?.accentColor || '#475569'} !important;
+      vertical-align: middle;
+    }
+
+    /* Headings */
+    h2 {
+      font-size: 10.5pt;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em;
+      font-weight: 700;
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+      display: block !important;
+    }
+    h2.classic-heading-double-line,
+    h2:not(.classic-heading-single-line):not(.classic-heading-filled-pill):not(.modern-section-title):not(.split-section-title) {
+      border-top: 1.5px solid ${themeConfig?.accentColor || '#475569'} !important;
+      border-bottom: 1.5px solid ${themeConfig?.accentColor || '#475569'} !important;
+      border-left: none !important;
+      border-right: none !important;
+      background: transparent !important;
+      color: ${themeConfig?.accentColor || '#475569'} !important;
+      padding: 3px 0 !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: center;
+      border-radius: 0 !important;
+    }
+    h2.classic-heading-single-line {
+      border-top: none !important;
+      border-left: none !important;
+      border-right: none !important;
+      border-bottom: 1.5px solid ${themeConfig?.accentColor || '#475569'} !important;
+      background: transparent !important;
+      color: ${themeConfig?.accentColor || '#475569'} !important;
+      padding: 0 0 3px 0 !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: left !important;
+      border-radius: 0 !important;
+    }
+    h2.classic-heading-filled-pill {
+      border: none !important;
+      background: ${themeConfig?.accentColor || '#475569'} !important;
+      color: #ffffff !important;
+      padding: 4px 10px !important;
+      margin-top: 1rem !important;
+      margin-bottom: 0.5rem !important;
+      text-align: left !important;
+      border-radius: 6px !important;
+    }
+
+    /* Role & Company Rows */
+    .role-row, .company-row, .school-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: baseline !important;
+      width: 100% !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+    .role-row { margin-top: 0.6rem; margin-bottom: 0.15rem; }
+    .role-title { font-weight: 700; font-size: 10.5pt; color: #111827; }
+    .role-dates { font-size: 9.5pt; color: #111827; text-align: right; }
+    .company-row { margin-bottom: 0.45rem; }
+    .company-name { font-style: italic; font-size: 10pt; color: #374151; }
+    .company-location { font-size: 9.5pt; color: #374151; text-align: right; }
+
+    /* Skills */
+    .skills-list {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      column-gap: 2rem !important;
+      row-gap: 0.5rem !important;
+      list-style-type: none !important;
+      padding-left: 0 !important;
+      margin-bottom: 0.75rem !important;
+    }
+    .skills-list li { margin-bottom: 0; font-size: 9.5pt; line-height: 1.35; }
+    .skills-list strong.skill-category { color: ${themeConfig?.accentColor || '#475569'}; }
+
+    /* Avatar Headshot in Classic ATS */
+    .cv-header-photo-wrapper {
+      display: flex !important;
+      align-items: center !important;
+      gap: 1.6rem !important;
+      margin-bottom: 0.6rem !important;
+    }
+    .cv-avatar-headshot {
+      width: 125px !important;
+      height: 125px !important;
+      aspect-ratio: 1 / 1 !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      border: 3px solid ${themeConfig?.accentColor || '#475569'};
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      flex-shrink: 0 !important;
+    }
+    .cv-header-photo-info { flex-grow: 1; }
+    .cv-header-photo-info h1 { text-align: left !important; }
+    .cv-header-photo-info .subtitle { text-align: left !important; }
+    .cv-header-photo-info .contact-row { justify-content: flex-start !important; margin-bottom: 0 !important; }
+
+    /* Modern Timeline elements */
+    .modern-header {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 1.5rem !important;
+      margin-bottom: 1rem !important;
+      padding-bottom: 0.25rem !important;
+    }
+    .modern-avatar-col { flex-shrink: 0 !important; }
+    .modern-avatar-headshot {
+      width: 120px !important;
+      height: 120px !important;
+      aspect-ratio: 1 / 1 !important;
+      border-radius: 50% !important;
+      object-fit: cover !important;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+      flex-shrink: 0 !important;
+    }
+    .modern-header-col { flex: 1 !important; display: flex !important; flex-direction: column !important; }
+    .modern-header-col h1 { font-size: 22pt !important; font-weight: 700 !important; text-align: left !important; margin: 0 0 0.15rem 0 !important; color: #111827 !important; }
+    .modern-contact-grid { display: flex !important; flex-wrap: wrap !important; gap: 0.35rem 0.9rem !important; font-size: 9pt !important; color: #374151 !important; }
+    .modern-section-title { font-size: 13pt !important; font-weight: 700 !important; color: ${themeConfig?.accentColor || '#2563eb'} !important; text-transform: uppercase !important; letter-spacing: 0.04em !important; margin: 1rem 0 0.2rem 0 !important; }
+    .zigzag-divider { height: 2px !important; background: linear-gradient(90deg, ${themeConfig?.accentColor || '#2563eb'} 0%, rgba(37,99,235,0.2) 100%) !important; margin-bottom: 0.75rem !important; }
+    .modern-timeline-entry { display: flex !important; margin-bottom: 0.85rem !important; gap: 1.5rem !important; }
+    .modern-timeline-left { width: 140px !important; flex-shrink: 0 !important; text-align: right !important; }
+    .modern-timeline-right { flex: 1 !important; }
+    .timeline-date { font-weight: 600 !important; font-size: 9.5pt !important; color: #111827 !important; }
+    .timeline-location { font-size: 8.5pt !important; color: #6b7280 !important; }
+    .timeline-company-row { margin-bottom: 0.1rem !important; }
+    .timeline-company { font-weight: 700 !important; font-size: 10.5pt !important; color: #111827 !important; }
+    .timeline-role { font-size: 9.5pt !important; color: ${themeConfig?.accentColor || '#2563eb'} !important; font-weight: 600 !important; margin-bottom: 0.35rem !important; }
+    .modern-skills-container { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; margin-bottom: 0.75rem !important; }
+    .modern-skill-card { background: #f8fafc !important; border: 1px solid #e2e8f0 !important; border-radius: 8px !important; padding: 0.5rem 0.75rem !important; font-size: 8.8pt !important; line-height: 1.35 !important; }
   </style>
 </head>
 <body>

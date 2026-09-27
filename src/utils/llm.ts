@@ -481,7 +481,7 @@ async function callDirectAutoFixClient(
 Your task is to rewrite and optimize an existing CV to seamlessly and organically weave in missing keywords from the target Job Description (JD), while preserving all factual truth and the exact executive formatting structure.
 
 OUTPUT STRUCTURE RULES:
-1. HEADER:
+1. HEADER (Top of document ONLY - NEVER duplicate header, name, or contact details inside any section):
 # Candidate Name
 *Target Job Title / Specialization*
 email@domain.com | +971-55-555-5555 | City, Country | linkedin.com/in/username

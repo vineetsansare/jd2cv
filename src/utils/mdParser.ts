@@ -469,14 +469,50 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
   let pendingHeaderName = '';
   let pendingSubtitle = '';
   let pendingContactHtml = '';
+  let headerEmitted = false;
+
+  const emitCandidateHeader = () => {
+    if (headerEmitted) return;
+    headerEmitted = true;
+
+    if (isModern) {
+      processedLines.push(
+        `<div class="modern-header">` +
+          (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>` : '') +
+          `<div class="modern-header-col">` +
+            `<h1 class="modern-name">${pendingHeaderName}</h1>` +
+            (pendingSubtitle ? `<div class="modern-subtitle">${pendingSubtitle}</div>` : '') +
+            (pendingContactHtml ? `<div class="modern-contact-grid">${pendingContactHtml}</div>` : '') +
+          `</div>` +
+        `</div>`
+      );
+    } else {
+      if (showPhoto) {
+        processedLines.push(
+          `<div class="cv-header-photo-wrapper">` +
+            `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" />` +
+            `<div class="cv-header-photo-info">` +
+              `<h1>${pendingHeaderName}</h1>` +
+              (pendingSubtitle ? `<div class="subtitle">${pendingSubtitle}</div>` : '') +
+              (pendingContactHtml ? `<div class="contact-row">${pendingContactHtml}</div>` : '') +
+            `</div>` +
+          `</div>`
+        );
+      } else {
+        processedLines.push(`<h1>${pendingHeaderName}</h1>`);
+        if (pendingSubtitle) processedLines.push(`<div class="subtitle">${pendingSubtitle}</div>`);
+        if (pendingContactHtml) processedLines.push(`<div class="contact-row">${pendingContactHtml}</div>`);
+      }
+    }
+  };
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.trim();
     if (!line) continue;
 
-    // 1. Check for H1 (Name at top)
-    if (!sawH1 && (line.startsWith('# ') || (!line.startsWith('##') && !line.includes('@') && i < 3 && line.length < 50 && !isSectionHeading(line)))) {
+    // 1. Check for H1 (Name at top of document)
+    if (!sawH1 && !headerEmitted && (line.startsWith('# ') || (!line.startsWith('##') && !line.includes('@') && i < 3 && line.length < 50 && !isSectionHeading(line)))) {
       closeOpenElements();
       inSkills = false;
 
@@ -486,16 +522,23 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       continue;
     }
 
-    // 2. Subtitle check (Target Role right below H1)
-    if (sawH1 && !sawSubtitle && !line.includes('@') && !line.includes('+') && !line.startsWith('##') && !isSectionHeading(line)) {
+    // 2. Subtitle check (Target Role right below H1, strictly before sections)
+    if (sawH1 && !sawSubtitle && !headerEmitted && !line.includes('@') && !line.startsWith('##') && !isSectionHeading(line) && !/\+?\d[\d\s\-\(\)\.]{7,}\d/.test(line)) {
       const subtitle = line.replace(/^[\*\_#\s]+|[\*\_#\s]+$/g, '').trim();
       pendingSubtitle = subtitle;
       sawSubtitle = true;
       continue;
     }
 
-    // 3. Contact info row check
-    if (line.includes('@') || line.includes('linkedin.com') || (line.includes('+') && line.length < 150)) {
+    // 3. Contact info row check (STRICTLY at top of document, only before sections, never in skills/experience)
+    const isContactCandidate = !headerEmitted && i < 8 && !line.startsWith('##') && !isSectionHeading(line) && (
+      line.includes('@') || 
+      line.includes('linkedin.com') || 
+      /\+?\d[\d\s\-\(\)\.]{7,}\d/.test(line) ||
+      ((line.includes('.com') || line.includes('.io') || line.includes('.me') || line.includes('http')) && line.includes('|'))
+    );
+
+    if (isContactCandidate) {
       const rawParts = line.split(/[|•·]/).map(p => p.trim()).filter(Boolean);
       const formattedParts = rawParts.map((part) => {
         let item = part.replace(/^[\*\_\[\]]+|[\*\_\[\]]+$/g, '').trim();
@@ -511,7 +554,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
           const displayLink = item.replace(/^(https?:\/\/)?(www\.)?/, '');
           const hrefLink = item.startsWith('http') ? item : `https://${item}`;
           return `<span class="contact-item">${linkedinIcon}<a href="${hrefLink}" target="_blank" rel="noopener noreferrer">${displayLink}</a></span>`;
-        } else if (/\+?\d[\d-\s()]{6,}\d/.test(item)) {
+        } else if (/\+?\d[\d\s\-\(\)\.]{7,}\d/.test(item)) {
           return `<span class="contact-item">${phoneIcon}<span>${item}</span></span>`;
         } else if (item.includes('.com') || item.includes('.io') || item.includes('.me') || item.includes('http')) {
           const displayLink = item.replace(/^(https?:\/\/)?(www\.)?/, '');
@@ -522,44 +565,19 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         }
       });
 
-      pendingContactHtml = formattedParts.join('');
-
-      // Emit header block based on template
-      if (isModern) {
-        processedLines.push(
-          `<div class="modern-header">` +
-            (showPhoto ? `<div class="modern-avatar-col"><img src="${options.photoUrl}" alt="${pendingHeaderName}" class="modern-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>` : '') +
-            `<div class="modern-header-col">` +
-              `<h1 class="modern-name">${pendingHeaderName}</h1>` +
-              (pendingSubtitle ? `<div class="modern-subtitle">${pendingSubtitle}</div>` : '') +
-              `<div class="modern-contact-grid">${pendingContactHtml}</div>` +
-            `</div>` +
-          `</div>`
-        );
-      } else {
-        if (showPhoto) {
-          processedLines.push(
-            `<div class="cv-header-photo-wrapper">` +
-              `<img src="${options.photoUrl}" alt="${pendingHeaderName}" class="cv-avatar-headshot" data-shape="${photoShape}" data-border="${photoBorder}" data-border-width="${options.photoBorderWidth !== undefined ? options.photoBorderWidth : 3}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" />` +
-              `<div class="cv-header-photo-info">` +
-                `<h1>${pendingHeaderName}</h1>` +
-                (pendingSubtitle ? `<div class="subtitle">${pendingSubtitle}</div>` : '') +
-                `<div class="contact-row">${pendingContactHtml}</div>` +
-              `</div>` +
-            `</div>`
-          );
-        } else {
-          processedLines.push(`<h1>${pendingHeaderName}</h1>`);
-          if (pendingSubtitle) processedLines.push(`<div class="subtitle">${pendingSubtitle}</div>`);
-          processedLines.push(`<div class="contact-row">${pendingContactHtml}</div>`);
-        }
-      }
+      pendingContactHtml = formattedParts.join(' ');
+      emitCandidateHeader();
       continue;
     }
 
     // 4. Check for Section Heading (e.g. ## Executive Profile or **Professional Experience**)
     if (line.startsWith('## ') || isSectionHeading(line)) {
       closeOpenElements();
+
+      // Ensure candidate header is emitted before any section heading begins
+      if (!headerEmitted && pendingHeaderName) {
+        emitCandidateHeader();
+      }
 
       const title = toTitleCase(line);
       const cleanUpper = line
@@ -635,14 +653,14 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         // Classic ATS
         processedLines.push(
           `<div class="role-row">` +
-            `<span class="role-title">${roleTitle}</span>` +
+            `<span class="role-title">${roleTitle}</span> ` +
             (roleDates ? `<span class="role-dates">${roleDates}</span>` : '') +
           `</div>`
         );
         if (company || location) {
           processedLines.push(
             `<div class="company-row">` +
-              `<span class="company-name">${company}</span>` +
+              `<span class="company-name">${company}</span> ` +
               (location ? `<span class="company-location">${location}</span>` : '') +
             `</div>`
           );
@@ -664,7 +682,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
       } else {
         processedLines.push(
           `<div class="company-row">` +
-            `<span class="company-name">${company}</span>` +
+            `<span class="company-name">${company}</span> ` +
             (location ? `<span class="company-location">${location}</span>` : '') +
           `</div>`
         );
