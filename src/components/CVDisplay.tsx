@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Eye, FileEdit, BarChart3, Sparkles, Printer, Copy, Check, Mail, Download } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Eye, FileEdit, BarChart3, Sparkles, Printer, Copy, Check, Mail, Download, Linkedin, MessageSquare, UserPlus } from 'lucide-react';
 import type { CVGenerationResult, TargetLength } from '../utils/llm';
+import { generateFallbackLinkedInOutreach } from '../utils/llm';
 import { parseMarkdownToHtml, stripMarkdown } from '../utils/mdParser';
 import { LiquidCard } from './ui/LiquidCard';
 import { CVThemeSelector } from './CVThemeSelector';
@@ -22,7 +23,7 @@ interface CVDisplayProps {
   extractedPhotoUrl?: string;
 }
 
-type TabType = 'preview' | 'editor' | 'ats' | 'tweaks' | 'cover';
+type TabType = 'preview' | 'editor' | 'ats' | 'tweaks' | 'cover' | 'linkedin';
 
 export const CVDisplay: React.FC<CVDisplayProps> = ({ 
   result, 
@@ -36,7 +37,33 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   extractedPhotoUrl
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('preview');
-  const [copied, setCopied] = useState<'markdown' | 'text' | 'cover' | null>(null);
+  const [copied, setCopied] = useState<'markdown' | 'text' | 'cover' | 'li-message' | 'li-connect' | null>(null);
+
+  // Fallback LinkedIn messages in case result doesn't have them
+  const fallbackOutreach = useMemo(() => {
+    return generateFallbackLinkedInOutreach(result.cvMarkdown, jobDescription);
+  }, [result.cvMarkdown, jobDescription]);
+
+  const [linkedInMsg, setLinkedInMsg] = useState<string>(
+    result.linkedInMessage || fallbackOutreach.message
+  );
+  const [linkedInConn, setLinkedInConn] = useState<string>(
+    result.linkedInConnection || fallbackOutreach.connectionRequest
+  );
+
+  useEffect(() => {
+    if (result.linkedInMessage) {
+      setLinkedInMsg(result.linkedInMessage);
+    } else {
+      setLinkedInMsg(fallbackOutreach.message);
+    }
+
+    if (result.linkedInConnection) {
+      setLinkedInConn(result.linkedInConnection);
+    } else {
+      setLinkedInConn(fallbackOutreach.connectionRequest);
+    }
+  }, [result.linkedInMessage, result.linkedInConnection, fallbackOutreach]);
   
   // Prioritize user profile avatar from Settings > localStorage > extracted document photo fallback
   const localAvatar = typeof window !== 'undefined' ? (localStorage.getItem('user_avatar_url') || '') : '';
@@ -150,6 +177,18 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   const handleCopyCoverLetter = () => {
     navigator.clipboard.writeText(result.coverLetter || '');
     setCopied('cover');
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleCopyLinkedInMessage = () => {
+    navigator.clipboard.writeText(linkedInMsg || '');
+    setCopied('li-message');
+    setTimeout(() => setCopied(null), 2000);
+  };
+
+  const handleCopyLinkedInConnection = () => {
+    navigator.clipboard.writeText(linkedInConn || '');
+    setCopied('li-connect');
     setTimeout(() => setCopied(null), 2000);
   };
 
@@ -288,6 +327,15 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               <Mail size={16} /> Cover Letter
             </span>
           </button>
+          <button
+            type="button"
+            className={`tab ${activeTab === 'linkedin' ? 'active' : ''}`}
+            onClick={() => handleTabChange('linkedin')}
+          >
+            <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
+              <Linkedin size={16} /> LinkedIn
+            </span>
+          </button>
         </div>
 
         <div className="flex-row-gap" style={{ gap: '0.5rem', marginLeft: 'auto' }}>
@@ -302,6 +350,29 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               {copied === 'cover' ? <Check size={14} /> : <Copy size={14} />}
               <span>{copied === 'cover' ? 'Copied Letter' : 'Copy Cover Letter'}</span>
             </button>
+          ) : activeTab === 'linkedin' ? (
+            <div className="flex-row-gap" style={{ gap: '0.4rem' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCopyLinkedInMessage}
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'auto' }}
+                title="Copy LinkedIn Message"
+              >
+                {copied === 'li-message' ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copied === 'li-message' ? 'Copied Message' : 'Copy Message'}</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleCopyLinkedInConnection}
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', width: 'auto' }}
+                title="Copy Connection Request Note (<300 chars)"
+              >
+                {copied === 'li-connect' ? <Check size={14} /> : <Copy size={14} />}
+                <span>{copied === 'li-connect' ? 'Copied Note' : 'Copy Note (<300)'}</span>
+              </button>
+            </div>
           ) : (
             <>
               <button
@@ -639,6 +710,102 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
             </p>
             <div className="cover-letter-sheet">
               {result.coverLetter || 'No cover letter was generated. Try customising your resume again to generate a cover letter.'}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'linkedin' && (
+          <div className="pane entrance-fade">
+            <div className="flex-row-between" style={{ alignItems: 'baseline', marginBottom: '0.25rem' }}>
+              <div>
+                <h3 style={{ color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Linkedin size={20} className="text-accent-primary" /> LinkedIn Outreach & Connection
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginTop: '0.35rem', marginBottom: 0 }}>
+                  High-converting outreach messages tailored to the job description to contact the job poster, recruiter, or hiring team directly.
+                </p>
+              </div>
+            </div>
+
+            <div className="linkedin-outreach-container">
+              {/* Sub-section 1: LinkedIn Message to Job Poster */}
+              <div className="linkedin-card">
+                <div className="linkedin-card-header">
+                  <div className="linkedin-card-title-group">
+                    <span className="linkedin-badge message-badge">
+                      <MessageSquare size={14} /> Direct Message / InMail
+                    </span>
+                    <h4 className="linkedin-card-title">LinkedIn Message to Job Poster</h4>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleCopyLinkedInMessage}
+                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}
+                    title="Copy message to clipboard"
+                  >
+                    {copied === 'li-message' ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copied === 'li-message' ? 'Copied Message!' : 'Copy Message'}</span>
+                  </button>
+                </div>
+                <p className="linkedin-card-desc">
+                  Send this tailored message when reaching out to the job poster or hiring manager via LinkedIn Messaging or InMail.
+                </p>
+                <div className="linkedin-textbox-wrapper">
+                  <textarea
+                    className="linkedin-textbox"
+                    rows={8}
+                    value={linkedInMsg}
+                    onChange={(e) => setLinkedInMsg(e.target.value)}
+                    placeholder="Generating tailored LinkedIn message..."
+                  />
+                </div>
+              </div>
+
+              {/* Sub-section 2: LinkedIn Connection Request for Job Poster (< 300 chars) */}
+              <div className="linkedin-card">
+                <div className="linkedin-card-header">
+                  <div className="linkedin-card-title-group">
+                    <span className="linkedin-badge connect-badge">
+                      <UserPlus size={14} /> Invitation Note
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                      <h4 className="linkedin-card-title">LinkedIn Connection Request</h4>
+                      <span className={`char-counter-pill ${linkedInConn.length > 300 ? 'char-over-limit' : 'char-within-limit'}`}>
+                        {linkedInConn.length} / 300 chars
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleCopyLinkedInConnection}
+                    style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}
+                    title="Copy connection note to clipboard"
+                  >
+                    {copied === 'li-connect' ? <Check size={14} /> : <Copy size={14} />}
+                    <span>{copied === 'li-connect' ? 'Copied Note!' : 'Copy Note'}</span>
+                  </button>
+                </div>
+                <p className="linkedin-card-desc">
+                  Add this personalized note when clicking <strong>Connect &gt; Add a note</strong> on LinkedIn. Strictly under 300 characters.
+                </p>
+                <div className="linkedin-textbox-wrapper">
+                  <textarea
+                    className={`linkedin-textbox ${linkedInConn.length > 300 ? 'border-danger' : ''}`}
+                    rows={4}
+                    value={linkedInConn}
+                    onChange={(e) => setLinkedInConn(e.target.value)}
+                    maxLength={350}
+                    placeholder="Generating tailored connection note..."
+                  />
+                </div>
+                {linkedInConn.length > 300 && (
+                  <div className="char-warning-msg">
+                    ⚠️ Exceeds LinkedIn's 300-character limit by {linkedInConn.length - 300} characters. Please shorten slightly before sending.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

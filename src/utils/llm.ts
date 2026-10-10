@@ -21,6 +21,8 @@ export interface CVGenerationResult {
   atsAnalysis: ATSAnalysis;
   humanFriendlyChanges: string[];
   coverLetter: string;
+  linkedInMessage?: string;
+  linkedInConnection?: string;
   remainingCredits?: number;
 }
 
@@ -90,6 +92,8 @@ export interface StructuredCVResult {
   atsAnalysis: ATSAnalysis;
   humanFriendlyChanges: string[];
   coverLetter: string;
+  linkedInMessage?: string;
+  linkedInConnection?: string;
   remainingCredits?: number;
 }
 
@@ -429,8 +433,11 @@ For every job role use EXACT format:
 5. ${lengthConstraint}
 6. ATS COMPLIANCE SCORING: Calculate realistic match score (0-100), identify matched keywords, missing keywords, strengths, weaknesses, and action items.
 7. CUSTOM COVER LETTER: Write a short, punchy 3-paragraph executive cover letter (under 150 words total) targeted to the hiring team in the JD.
+8. LINKEDIN OUTREACH:
+   - "linkedInMessage": A concise, tailored direct message or InMail (under 130 words) to the hiring manager or job poster introducing yourself, referencing 1-2 core achievements, and expressing direct interest in the role.
+   - "linkedInConnection": A personalized LinkedIn connection request note for the job poster. CRITICAL REQUIREMENT: This note MUST be strictly under 300 characters total (including all spaces and punctuation) to comply with LinkedIn's hard limit.
 
-Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string}`;
+Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "atsAnalysis": {"matchedKeywords":[], "missingKeywords":[], "strengths":[], "weaknesses":[], "actionItems":[]}, "humanFriendlyChanges":[], "coverLetter": string, "linkedInMessage": string, "linkedInConnection": string}`;
 
   const userPrompt = `TARGET JOB DESCRIPTION:\n${jobDescription}\n\nCANDIDATE CAREER HISTORY:\n${contextCVs.map((cv, idx) => `[Profile #${idx + 1}: ${cv.name}]\n${cv.text}`).join('\n\n')}\n\n${aspirations ? `USER ASPIRATIONS: ${aspirations}\n` : ''}`;
 
@@ -455,7 +462,16 @@ Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "a
       throw new Error(err.error?.message || `OpenAI API Error: ${resp.statusText}`);
     }
     const data = await resp.json();
-    return JSON.parse(data.choices[0].message.content);
+    const raw = JSON.parse(data.choices[0].message.content);
+    return {
+      cvMarkdown: raw.cvMarkdown || raw.markdown || '',
+      atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : 85,
+      atsAnalysis: raw.atsAnalysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
+      humanFriendlyChanges: raw.humanFriendlyChanges || [],
+      coverLetter: raw.coverLetter || '',
+      linkedInMessage: raw.linkedInMessage || '',
+      linkedInConnection: raw.linkedInConnection ? raw.linkedInConnection.slice(0, 298) : ''
+    };
   }
 
   // Execute with Resilient Gemini Auto-Failover Cascade
@@ -463,7 +479,16 @@ Return valid JSON matching schema: {"cvMarkdown": string, "atsScore": number, "a
     { role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}\n\nReturn JSON matching schema.` }] }
   ];
 
-  return await callGeminiWithFailover(apiKey, contents);
+  const raw = await callGeminiWithFailover(apiKey, contents);
+  return {
+    cvMarkdown: raw.cvMarkdown || raw.markdown || '',
+    atsScore: typeof raw.atsScore === 'number' ? raw.atsScore : 85,
+    atsAnalysis: raw.atsAnalysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
+    humanFriendlyChanges: raw.humanFriendlyChanges || [],
+    coverLetter: raw.coverLetter || '',
+    linkedInMessage: raw.linkedInMessage || '',
+    linkedInConnection: raw.linkedInConnection ? raw.linkedInConnection.slice(0, 298) : ''
+  };
 }
 
 async function callDirectAutoFixClient(
@@ -1092,3 +1117,59 @@ export async function revokeAgentToken(id: string): Promise<void> {
   }
 }
 
+/**
+ * Generates smart fallback LinkedIn outreach copy when viewing historical CVs
+ * or when the LLM did not return LinkedIn fields.
+ */
+export function generateFallbackLinkedInOutreach(
+  cvMarkdown: string,
+  jobDescription?: string
+): { message: string; connectionRequest: string } {
+  const lines = (cvMarkdown || '').split('\n').map(l => l.trim()).filter(Boolean);
+  let candidateName = 'Candidate';
+  let candidateTitle = '';
+
+  for (const line of lines) {
+    if (line.startsWith('# ') && candidateName === 'Candidate') {
+      candidateName = line.replace(/^#\s+/, '').trim();
+    } else if (
+      (line.startsWith('## ') || line.startsWith('*')) &&
+      !candidateTitle &&
+      !line.toUpperCase().includes('PROFILE') &&
+      !line.toUpperCase().includes('EXPERIENCE') &&
+      !line.toUpperCase().includes('EDUCATION') &&
+      !line.toUpperCase().includes('SKILLS')
+    ) {
+      candidateTitle = line.replace(/^[#\*_\s]+|[#\*_\s]+$/g, '').trim();
+    }
+  }
+
+  let targetRole = candidateTitle || 'the role';
+  if (jobDescription) {
+    const jdLines = jobDescription.split('\n').map(l => l.trim()).filter(Boolean);
+    const firstJdLine = jdLines[0] || '';
+    if (firstJdLine.length > 3 && firstJdLine.length < 50 && !firstJdLine.includes('http')) {
+      targetRole = firstJdLine.replace(/^(Job Title|Position|Role|Title):\s*/i, '');
+    }
+  }
+
+  const message = `Hi [Hiring Team / Job Poster],
+
+I noticed the ${targetRole} opportunity and wanted to reach out directly. With my background in ${candidateTitle || 'delivering high-impact technical and business solutions'}, my experience aligns very closely with your team's goals.
+
+I would love the opportunity to briefly connect and discuss how my expertise can deliver immediate value to this position. Looking forward to speaking!
+
+Best regards,
+${candidateName}`;
+
+  // Build a personalized note strictly under 300 characters
+  let connectionRequest = `Hi! I saw your ${targetRole} role and wanted to connect. With my experience in ${candidateTitle || 'this space'}, I'd love to follow your team's work and stay in touch!`;
+  if (connectionRequest.length > 290) {
+    connectionRequest = `Hi! I saw the ${targetRole} opening and wanted to connect. With my background, I'm very interested in your team's work and would love to stay in touch.`;
+  }
+  if (connectionRequest.length > 290) {
+    connectionRequest = `Hi! I saw the opening on your team and wanted to connect. I'd love to stay in touch and follow your team's journey!`;
+  }
+
+  return { message, connectionRequest };
+}

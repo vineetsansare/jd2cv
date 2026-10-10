@@ -182,7 +182,9 @@ async function callGemini(config: LLMCallConfig, systemPrompt: string, userPromp
             required: ['matchedKeywords', 'missingKeywords', 'strengths', 'weaknesses', 'actionItems']
           },
           humanFriendlyChanges: { type: 'ARRAY', items: { type: 'STRING' } },
-          coverLetter: { type: 'STRING' }
+          coverLetter: { type: 'STRING' },
+          linkedInMessage: { type: 'STRING' },
+          linkedInConnection: { type: 'STRING' }
         },
         required: ['cvMarkdown', 'atsScore', 'atsAnalysis', 'humanFriendlyChanges', 'coverLetter']
       }
@@ -305,6 +307,14 @@ async function callAnthropic(config: LLMCallConfig, systemPrompt: string, userPr
               coverLetter: {
                 type: 'string',
                 description: 'The customized cover letter targeted to the JD.'
+              },
+              linkedInMessage: {
+                type: 'string',
+                description: 'A direct message or InMail to the job poster.'
+              },
+              linkedInConnection: {
+                type: 'string',
+                description: 'A personalized connection request note under 300 characters.'
               }
             },
             required: ['cvMarkdown', 'atsScore', 'atsAnalysis', 'humanFriendlyChanges', 'coverLetter']

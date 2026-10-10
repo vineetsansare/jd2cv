@@ -14,4 +14,6 @@ export interface CVGenerationResult {
   atsAnalysis: ATSAnalysis;
   humanFriendlyChanges: string[];
   coverLetter: string;
+  linkedInMessage?: string;
+  linkedInConnection?: string;
 }

@@ -529,7 +529,9 @@ function App() {
             atsScore: genData.ats_score || 85,
             atsAnalysis: genData.ats_analysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
             humanFriendlyChanges: genData.human_changes || [],
-            coverLetter: genData.cover_letter || ''
+            coverLetter: genData.cover_letter || '',
+            linkedInMessage: genData.ats_analysis?.linkedInMessage || '',
+            linkedInConnection: genData.ats_analysis?.linkedInConnection || ''
           });
           if (genData.job_description) {
             setJobDescription(genData.job_description);
@@ -819,7 +821,11 @@ function App() {
           cv_markdown: cvResult.cvMarkdown,
           cover_letter: cvResult.coverLetter || '',
           ats_score: cvResult.atsScore || 0,
-          ats_analysis: cvResult.atsAnalysis || {},
+          ats_analysis: {
+            ...(cvResult.atsAnalysis || {}),
+            linkedInMessage: cvResult.linkedInMessage || '',
+            linkedInConnection: cvResult.linkedInConnection || ''
+          },
           human_changes: cvResult.humanFriendlyChanges || [],
           provider_used: provider,
           model_used: model
@@ -2645,7 +2651,9 @@ function App() {
                         atsScore: gen.ats_score || 85,
                         atsAnalysis: gen.ats_analysis || { matchedKeywords: [], missingKeywords: [], strengths: [], weaknesses: [], actionItems: [] },
                         humanFriendlyChanges: gen.human_changes || [],
-                        coverLetter: gen.cover_letter || ''
+                        coverLetter: gen.cover_letter || '',
+                        linkedInMessage: gen.ats_analysis?.linkedInMessage || '',
+                        linkedInConnection: gen.ats_analysis?.linkedInConnection || ''
                       });
                       if (gen.job_description) {
                         setJobDescription(gen.job_description);
