@@ -120,14 +120,39 @@ export function cleanHeaderItem(text: string): string {
 }
 
 function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {}): string {
-  const sidebarBg = options.accentColor || '#1c202d';
+  const sidebarBg = options.accentColor || '#1c2d42';
   const showPhoto = options.showPhoto && options.photoUrl;
   const fontFamily = options.fontFamily || 'Plus Jakarta Sans';
 
-  const mailIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
-  const phoneIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
-  const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:4px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
-  const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; margin-right:5px;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
+  const mailIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+  const phoneIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+  const pinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>`;
+  const linkedinIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect width="4" height="12" x="2" y="9"/><circle cx="4" cy="4" r="2"/></svg>`;
+  const globeIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
+
+  const getSectionIconSvg = (title: string, isSidebar: boolean): string => {
+    const strokeColor = isSidebar ? '#ffffff' : '#1e293b';
+    const upper = title.toUpperCase();
+    if (upper.includes('PROFILE') || upper.includes('SUMMARY') || upper.includes('ABOUT')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+    }
+    if (upper.includes('EXPERIENCE') || upper.includes('EMPLOYMENT') || upper.includes('CAREER') || upper.includes('WORK')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`;
+    }
+    if (upper.includes('EDUCATION') || upper.includes('DEGREE') || upper.includes('ACADEMIC')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/></svg>`;
+    }
+    if (upper.includes('SKILL') || upper.includes('COMPETENC') || upper.includes('EXPERTISE')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>`;
+    }
+    if (upper.includes('LANG')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
+    }
+    if (upper.includes('AWARD') || upper.includes('HONOR') || upper.includes('RECOGNITION')) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>`;
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${strokeColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:middle; flex-shrink:0;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`;
+  };
 
   const lines = markdown
     .replace(/&amp;/g, '&')
@@ -143,6 +168,8 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
   let location = '';
   let linkedin = '';
   let linkedinDisplay = '';
+  let website = '';
+  let websiteDisplay = '';
 
   interface CVSectionItem {
     title: string;
@@ -156,7 +183,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
     const line = raw.trim();
     if (!line) continue;
 
-    // 1. Candidate Name (H1 or first non-empty line)
+    // 1. Candidate Name (H1 or first line)
     if (!name && (line.startsWith('# ') || (!line.startsWith('##') && !line.includes('@') && i < 3 && line.length < 50 && !isSectionHeading(line)))) {
       name = line.replace(/^#+\s*/, '').replace(/\*+/g, '').trim();
       continue;
@@ -169,7 +196,7 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
     }
 
     // 3. Contact Info row
-    if (!currentSection && (line.includes('@') || line.includes('+') || line.includes('linkedin.com'))) {
+    if (!currentSection && (line.includes('@') || line.includes('+') || line.includes('linkedin.com') || line.includes('.com') || line.includes('.me') || line.includes('.io'))) {
       const parts = line.split(/[|•·]/).map(p => p.trim()).filter(Boolean);
       for (const part of parts) {
         let clean = part.replace(/^[*_[\]]+|[*_[\]]+$/g, '').trim();
@@ -180,9 +207,12 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
           email = clean.replace(/\s+/g, '');
         } else if (clean.includes('linkedin.com')) {
           linkedin = clean.startsWith('http') ? clean : 'https://' + clean;
-          linkedinDisplay = clean.includes('/in/') ? '/in/' + clean.split('/in/')[1] : clean.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/?/, '');
+          linkedinDisplay = clean.includes('/in/') ? clean.split('/in/')[1] : clean.replace(/^(https?:\/\/)?(www\.)?linkedin\.com\/?/, '');
         } else if (/\+?\d[\d-\s()]{6,}\d/.test(clean)) {
           phone = clean;
+        } else if (clean.includes('.com') || clean.includes('.io') || clean.includes('.me') || clean.includes('http')) {
+          website = clean.startsWith('http') ? clean : 'https://' + clean;
+          websiteDisplay = clean.replace(/^(https?:\/\/)?(www\.)?/, '').replace(/\/$/, '');
         } else {
           location = clean;
         }
@@ -208,187 +238,146 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
     }
   }
 
+  // Sidebar sections: Profile, Languages, Awards, Certifications, Volunteer, Interests
   const isSidebarSection = (title: string): boolean => {
-    return /(?:EDUCATION|AWARD|RECOGNITION|HONOR|SKILL|COMPETENC|LANGUAGE|FRAMEWORK|ARCHITECTURE|VERSIONING|CICD|CI\s*\/\s*CD|DEVOPS|TOOL|CERTIF|HOBB|EXPERTISE)/i.test(title);
+    return /(?:PROFILE|SUMMARY|ABOUT|LANGUAGE|AWARD|RECOGNITION|HONOR|CERTIF|LICENSE|VOLUNTEER|INTEREST|HOBB)/i.test(title);
   };
 
-  const mainSections = sections.filter(s => !isSidebarSection(s.title));
   const sidebarSections = sections.filter(s => isSidebarSection(s.title));
+  const mainSections = sections.filter(s => !isSidebarSection(s.title));
 
-  // ── Build Main Column HTML ──────────────────────────────────────────
-  let mainHtml = '';
-  mainHtml += '<div class="split-header">';
-  mainHtml += `<h1 class="split-name">${name}</h1>`;
-  if (subtitle) {
-    mainHtml += `<div class="split-subtitle">${subtitle}</div>`;
-  }
-
-  const contactParts: string[] = [];
-  if (location) contactParts.push(`<span class="split-contact-item">${pinIcon}${location}</span>`);
-  if (email) contactParts.push(`<span class="split-contact-item">${mailIcon}<a href="mailto:${email}">${email}</a></span>`);
-  if (phone) contactParts.push(`<span class="split-contact-item">${phoneIcon}${phone}</span>`);
-  if (contactParts.length > 0) {
-    mainHtml += `<div class="split-contact-row">${contactParts.join('<span class="split-contact-sep">•</span>')}</div>`;
-  }
-  mainHtml += '</div>';
-
-  for (const sec of mainSections) {
-    mainHtml += '<div class="split-section">';
-    mainHtml += `<div class="split-section-header"><h2 class="split-section-title">${sec.title}</h2><div class="split-section-rule"></div></div>`;
-
-    let inBullets = false;
-    for (let j = 0; j < sec.lines.length; j++) {
-      const line = sec.lines[j];
-
-      // Role header: ### Title | Dates
-      const isDateRow = line.includes('Present') || /\b(?:19|20)\d{2}\b/.test(line);
-      const isH3 = line.startsWith('### ');
-      if (isH3 || (line.includes('|') && isDateRow)) {
-        if (inBullets) {
-          mainHtml += '</ul></div>';
-          inBullets = false;
-        }
-        const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
-        const parts = cleanLine.split('|');
-        const roleTitle = cleanHeaderItem(parts[0]);
-        const roleDates = cleanHeaderItem(parts[1] || '');
-
-        let company = cleanHeaderItem(parts[2] || '');
-        let roleLoc = cleanHeaderItem(parts[3] || '');
-        if (j + 1 < sec.lines.length) {
-          const nextLine = sec.lines[j + 1].trim();
-          const isNextRole = nextLine.startsWith('### ') || (nextLine.includes('|') && (nextLine.includes('Present') || /\b(?:19|20)\d{2}\b/.test(nextLine)));
-          const isNextHeader = nextLine.startsWith('#');
-          if (!isNextRole && !isNextHeader && (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('-') && !nextLine.startsWith('•')))) {
-            const nextParts = nextLine.split('|');
-            if (!company) company = cleanHeaderItem(nextParts[0] || '');
-            if (!roleLoc) roleLoc = cleanHeaderItem(nextParts[1] || '');
-            j++;
-          }
-        }
-
-        mainHtml += '<div class="split-role-entry">';
-        mainHtml += `<div class="split-role-header"><span class="split-role-title">${roleTitle}</span><span class="split-role-dates">${roleDates}</span></div>`;
-        if (company || roleLoc) {
-          mainHtml += `<div class="split-role-company"><span class="split-company-name">${company}</span>${roleLoc ? `<span class="split-company-loc">, ${roleLoc}</span>` : ''}</div>`;
-        }
-        mainHtml += '<ul class="split-bullets">';
-        inBullets = true;
-        continue;
-      }
-
-      // Bullet item
-      const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
-      if (bulletMatch) {
-        if (!inBullets) {
-          mainHtml += '<ul class="split-bullets">';
-          inBullets = true;
-        }
-        const formatted = autoHighlightKeywords(
-          bulletMatch[1]
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-        );
-        mainHtml += `<li>${formatted}</li>`;
-        continue;
-      }
-
-      if (inBullets) {
-        mainHtml += '</ul></div>';
-        inBullets = false;
-      }
-
-      // Standard paragraph
-      const formattedP = autoHighlightKeywords(
-        line
-          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/\*(.*?)\*/g, '<em>$1</em>')
-          .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
-      );
-      mainHtml += `<p class="split-paragraph">${formattedP}</p>`;
-    }
-
-    if (inBullets) {
-      mainHtml += '</ul></div>';
-      inBullets = false;
-    }
-    mainHtml += '</div>'; // close split-section
-  }
-
-  // ── Build Sidebar Column HTML ───────────────────────────────────────
+  // ── Build Left Sidebar HTML ─────────────────────────────────────────
   let sidebarHtml = '';
+
+  // 1. Candidate Header (Name & Subtitle)
+  sidebarHtml += '<div class="sidebar-header">';
+  sidebarHtml += `<h1 class="split-name">${name}</h1>`;
+  if (subtitle) {
+    sidebarHtml += `<div class="split-subtitle">${subtitle}</div>`;
+  }
+  sidebarHtml += '</div>';
+
+  // 2. Avatar Photo
   const photoShape = options.photoShape || 'circle';
-  const photoBorder = options.photoBorder || 'accent';
+  const photoBorder = options.photoBorder || 'subtle';
   const photoRadius = getPhotoRadius(photoShape);
-  const photoBorderStyle = getPhotoBorder(photoBorder, options.accentColor || '#1c202d', options.photoBorderWidth);
+  const photoBorderStyle = getPhotoBorder(photoBorder, '#ffffff', options.photoBorderWidth);
 
   if (showPhoto) {
     sidebarHtml += `<div class="sidebar-avatar-wrapper"><img src="${options.photoUrl}" alt="${name}" class="sidebar-avatar-img" data-shape="${photoShape}" data-border="${photoBorder}" style="border-radius:${photoRadius} !important; border:${photoBorderStyle} !important; object-fit:cover;" /></div>`;
   }
 
-  if (linkedin) {
-    sidebarHtml += `<div class="sidebar-linkedin-wrapper"><a href="${linkedin}" target="_blank" rel="noopener noreferrer" class="sidebar-linkedin-btn">${linkedinIcon}<span>${linkedinDisplay || 'LinkedIn'}</span></a></div>`;
+  // 3. Contact Info List
+  const contactItems: string[] = [];
+  if (email) contactItems.push(`<div class="split-contact-item">${mailIcon}<a href="mailto:${email}">${email}</a></div>`);
+  if (phone) contactItems.push(`<div class="split-contact-item">${phoneIcon}<span>${phone}</span></div>`);
+  if (location) contactItems.push(`<div class="split-contact-item">${pinIcon}<span>${location}</span></div>`);
+  if (linkedin) contactItems.push(`<div class="split-contact-item">${linkedinIcon}<a href="${linkedin}" target="_blank" rel="noopener noreferrer">${linkedinDisplay || 'linkedin'}</a></div>`);
+  if (website) contactItems.push(`<div class="split-contact-item">${globeIcon}<a href="${website}" target="_blank" rel="noopener noreferrer">${websiteDisplay || website}</a></div>`);
+
+  if (contactItems.length > 0) {
+    sidebarHtml += `<div class="sidebar-contact-list">${contactItems.join('')}</div>`;
   }
 
+  // 4. Sidebar Sections (Profile, Languages, Awards, etc.)
   for (const sec of sidebarSections) {
     sidebarHtml += '<div class="sidebar-section">';
-    sidebarHtml += `<div class="sidebar-section-header"><div class="sidebar-section-title">${sec.title}</div><div class="sidebar-section-rule"></div></div>`;
+    sidebarHtml += `<div class="sidebar-section-pill">${getSectionIconSvg(sec.title, true)}<span class="sidebar-section-title">${sec.title}</span></div>`;
 
-    const isEducation = /EDUCATION|DEGREE/i.test(sec.title);
-    const isAwards = /AWARD|RECOGNITION|HONOR/i.test(sec.title);
+    const isProfile = /PROFILE|SUMMARY|ABOUT/i.test(sec.title);
+    const isLanguages = /LANG/i.test(sec.title);
+    const isAwards = /AWARD|HONOR|RECOGNITION/i.test(sec.title);
 
-    if (isEducation || isAwards) {
+    if (isProfile) {
+      for (const line of sec.lines) {
+        if (!line.trim()) continue;
+        const formattedP = autoHighlightKeywords(
+          line
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        );
+        sidebarHtml += `<p class="sidebar-profile-text">${formattedP}</p>`;
+      }
+    } else if (isLanguages) {
+      for (const line of sec.lines) {
+        if (!line.trim()) continue;
+        const clean = line.replace(/^[-*•]\s+/, '').trim();
+        let langName = clean;
+        let level = 5;
+
+        // Check for rating dots or proficiency
+        const parenMatch = clean.match(/^(.*?)\s*\((.*?)\)$/) || clean.match(/^(.*?)\s*[:—–-]\s*(.*)$/);
+        if (parenMatch) {
+          langName = parenMatch[1].replace(/\*\*/g, '').trim();
+          const levelStr = parenMatch[2].toLowerCase();
+          if (levelStr.includes('native') || levelStr.includes('bilingual') || levelStr.includes('c2') || levelStr.includes('5')) {
+            level = 5;
+          } else if (levelStr.includes('fluent') || levelStr.includes('advanced') || levelStr.includes('c1') || levelStr.includes('4')) {
+            level = 4;
+          } else if (levelStr.includes('intermediate') || levelStr.includes('conversational') || levelStr.includes('b2') || levelStr.includes('b1') || levelStr.includes('3')) {
+            level = 3;
+          } else if (levelStr.includes('basic') || levelStr.includes('elementary') || levelStr.includes('a2') || levelStr.includes('2')) {
+            level = 2;
+          } else if (levelStr.includes('beginner') || levelStr.includes('a1') || levelStr.includes('1')) {
+            level = 1;
+          }
+        }
+
+        sidebarHtml += `<div class="sidebar-language-item">` +
+          `<span class="sidebar-language-name">${langName}</span>` +
+          `<span class="sidebar-language-dots">` +
+            `<span class="sidebar-dot ${level >= 1 ? 'filled' : 'empty'}"></span>` +
+            `<span class="sidebar-dot ${level >= 2 ? 'filled' : 'empty'}"></span>` +
+            `<span class="sidebar-dot ${level >= 3 ? 'filled' : 'empty'}"></span>` +
+            `<span class="sidebar-dot ${level >= 4 ? 'filled' : 'empty'}"></span>` +
+            `<span class="sidebar-dot ${level >= 5 ? 'filled' : 'empty'}"></span>` +
+          `</span>` +
+        `</div>`;
+      }
+    } else if (isAwards) {
       for (let k = 0; k < sec.lines.length; k++) {
         const line = sec.lines[k];
-        if (line.startsWith('### ') || line.includes('|')) {
-          const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+        if (!line.trim()) continue;
+        const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+        
+        // Parse Title — Org, Year or Title | Year
+        let awardTitle = cleanLine;
+        let awardOrg = '';
+
+        if (cleanLine.includes('|')) {
           const parts = cleanLine.split('|');
-          const titleText = cleanHeaderItem(parts[0] || '');
-          const datesOrOrg = cleanHeaderItem(parts[1] || '');
-          let subtitleText = cleanHeaderItem(parts[2] || '');
-
-          if (k + 1 < sec.lines.length && (sec.lines[k + 1].startsWith('*') || sec.lines[k + 1].includes('|'))) {
-            subtitleText = cleanHeaderItem(sec.lines[k + 1]);
-            k++;
+          awardTitle = cleanHeaderItem(parts[0]);
+          awardOrg = cleanHeaderItem(parts[1]);
+        } else if (cleanLine.includes('—') || cleanLine.includes('–')) {
+          const parts = cleanLine.split(/[—–]/);
+          awardTitle = cleanHeaderItem(parts[0]);
+          awardOrg = cleanHeaderItem(parts[1]);
+        } else if (cleanLine.startsWith('**') && cleanLine.includes('**')) {
+          const boldMatch = cleanLine.match(/^\*\*(.*?)\*\*(.*)$/);
+          if (boldMatch) {
+            awardTitle = boldMatch[1].trim();
+            awardOrg = cleanHeaderItem(boldMatch[2].replace(/^[\s:—–-]+/, ''));
           }
-
-          sidebarHtml += '<div class="sidebar-entry">';
-          if (datesOrOrg) sidebarHtml += `<div class="sidebar-entry-dates">${datesOrOrg}</div>`;
-          sidebarHtml += `<div class="sidebar-entry-title">${titleText}</div>`;
-          if (subtitleText) sidebarHtml += `<div class="sidebar-entry-subtitle">${subtitleText}</div>`;
-          sidebarHtml += '</div>';
-        } else if (line.startsWith('-') || line.startsWith('•')) {
-          const content = cleanHeaderItem(line.replace(/^[-*•]\s*/, ''));
-          sidebarHtml += `<div class="sidebar-bullet-item">• ${content}</div>`;
+        } else if (k + 1 < sec.lines.length && (sec.lines[k + 1].startsWith('*') || sec.lines[k + 1].startsWith('_'))) {
+          awardOrg = cleanHeaderItem(sec.lines[k + 1]);
+          k++;
         }
+
+        sidebarHtml += `<div class="sidebar-award-item">` +
+          `<div class="sidebar-award-title">${awardTitle}</div>` +
+          (awardOrg ? `<div class="sidebar-award-org">${awardOrg}</div>` : '') +
+        `</div>`;
       }
     } else {
-      // Grouped pill badges (Skills, Languages, Frameworks, Architecture, DevOps)
+      // General sidebar items (bullets or paragraphs)
       for (const line of sec.lines) {
-        const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
-        const textToParse = bulletMatch ? bulletMatch[1].trim() : line;
-
-        const catMatch = textToParse.match(/^\*\*(.*?)\*\*[\s:—–-]+(.*)$/) || textToParse.match(/^(.*?)[\s:—–-]+(.*)$/);
-        if (catMatch && catMatch[1].length < 40) {
-          const categoryName = catMatch[1].replace(/\*\*/g, '').trim();
-          const itemsRaw = catMatch[2].replace(/\*\*/g, '').trim();
-          const badges = itemsRaw.split(/[,•|·]/).map(b => b.trim()).filter(Boolean);
-
-          sidebarHtml += '<div class="sidebar-category-group">';
-          sidebarHtml += `<div class="sidebar-category-name">${categoryName}</div>`;
-          sidebarHtml += '<div class="sidebar-pill-cluster">';
-          for (const b of badges) {
-            sidebarHtml += `<span class="sidebar-pill-badge">${b}</span>`;
-          }
-          sidebarHtml += '</div></div>';
+        if (!line.trim()) continue;
+        if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
+          const content = cleanHeaderItem(line.replace(/^[-*•]\s*/, ''));
+          sidebarHtml += `<div class="sidebar-bullet-item">• ${content}</div>`;
         } else {
-          const badges = textToParse.replace(/\*\*/g, '').split(/[,•|·]/).map(b => b.trim()).filter(Boolean);
-          sidebarHtml += '<div class="sidebar-pill-cluster">';
-          for (const b of badges) {
-            sidebarHtml += `<span class="sidebar-pill-badge">${b}</span>`;
-          }
-          sidebarHtml += '</div>';
+          sidebarHtml += `<p class="sidebar-profile-text">${line}</p>`;
         }
       }
     }
@@ -396,9 +385,154 @@ function renderSplitSidebarRight(markdown: string, options: CVParseOptions = {})
     sidebarHtml += '</div>'; // close sidebar-section
   }
 
-  return `<div class="cv-styled-document split-sidebar-wrapper" style="--cv-sidebar-bg: ${sidebarBg}; --cv-text-color: #1c202d; font-family: '${fontFamily}', sans-serif;">` +
-    `<div class="split-main-col">${mainHtml}</div>` +
+  // ── Build Right Main Column HTML ────────────────────────────────────
+  let mainHtml = '';
+
+  for (const sec of mainSections) {
+    mainHtml += '<div class="split-section">';
+    mainHtml += `<div class="main-section-pill">${getSectionIconSvg(sec.title, false)}<h2 class="split-section-title">${sec.title}</h2></div>`;
+
+    const isEducation = /EDUCATION|DEGREE|ACADEMIC/i.test(sec.title);
+    const isSkills = /SKILL|COMPETENC/i.test(sec.title);
+
+    if (isEducation) {
+      for (let k = 0; k < sec.lines.length; k++) {
+        const line = sec.lines[k];
+        if (!line.trim()) continue;
+
+        if (line.startsWith('### ') || line.includes('|') || line.includes('Present') || /\b(?:19|20)\d{2}\b/.test(line)) {
+          const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+          const parts = cleanLine.split('|');
+          let degree = cleanHeaderItem(parts[0] || '');
+          let dates = cleanHeaderItem(parts[1] || '');
+          let school = cleanHeaderItem(parts[2] || '');
+          let loc = cleanHeaderItem(parts[3] || '');
+
+          if (k + 1 < sec.lines.length) {
+            const nextLine = sec.lines[k + 1].trim();
+            if (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('###') && !nextLine.startsWith('-'))) {
+              const nextParts = nextLine.split('|');
+              if (!school) school = cleanHeaderItem(nextParts[0] || '');
+              if (!loc) loc = cleanHeaderItem(nextParts[1] || '');
+              k++;
+            }
+          }
+
+          mainHtml += '<div class="split-edu-entry">';
+          mainHtml += `<div class="split-degree-name">${degree}</div>`;
+          if (school) mainHtml += `<div class="split-school-name">${school}</div>`;
+          if (dates || loc) mainHtml += `<div class="split-edu-dates">${dates}${loc ? ` | ${loc}` : ''}</div>`;
+          mainHtml += '</div>';
+        } else if (line.startsWith('-') || line.startsWith('•')) {
+          const content = cleanHeaderItem(line.replace(/^[-*•]\s*/, ''));
+          mainHtml += `<div class="split-bullets li">${content}</div>`;
+        }
+      }
+    } else if (isSkills) {
+      mainHtml += '<ul class="split-bullets split-skills-list">';
+      for (const line of sec.lines) {
+        if (!line.trim()) continue;
+        const cleanBullet = line.replace(/^[-*•]\s+/, '').trim();
+        const formatted = autoHighlightKeywords(
+          cleanBullet
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        );
+        mainHtml += `<li>${formatted}</li>`;
+      }
+      mainHtml += '</ul>';
+    } else {
+      // Work Experience or General Sections
+      let inBullets = false;
+      for (let j = 0; j < sec.lines.length; j++) {
+        const line = sec.lines[j];
+        if (!line.trim()) continue;
+
+        // Role header: ### Title | Dates or Company header
+        const isDateRow = line.includes('Present') || /\b(?:19|20)\d{2}\b/.test(line);
+        const isH3 = line.startsWith('### ');
+        if (isH3 || (line.includes('|') && isDateRow)) {
+          if (inBullets) {
+            mainHtml += '</ul></div>';
+            inBullets = false;
+          }
+          const cleanLine = line.replace(/^###\s*/, '').replace(/^[-*•]\s+/, '').trim();
+          const parts = cleanLine.split('|');
+          const roleTitle = cleanHeaderItem(parts[0]);
+          const roleDates = cleanHeaderItem(parts[1] || '');
+
+          let company = cleanHeaderItem(parts[2] || '');
+          let roleLoc = cleanHeaderItem(parts[3] || '');
+          if (j + 1 < sec.lines.length) {
+            const nextLine = sec.lines[j + 1].trim();
+            const isNextRole = nextLine.startsWith('### ') || (nextLine.includes('|') && (nextLine.includes('Present') || /\b(?:19|20)\d{2}\b/.test(nextLine)));
+            const isNextHeader = nextLine.startsWith('#');
+            if (!isNextRole && !isNextHeader && (nextLine.startsWith('*') || (nextLine.includes('|') && !nextLine.startsWith('-') && !nextLine.startsWith('•')))) {
+              const nextParts = nextLine.split('|');
+              if (!company) company = cleanHeaderItem(nextParts[0] || '');
+              if (!roleLoc) roleLoc = cleanHeaderItem(nextParts[1] || '');
+              j++;
+            }
+          }
+
+          mainHtml += '<div class="split-role-entry">';
+          if (company) {
+            mainHtml += `<div class="split-company-name">${company}</div>`;
+          }
+          mainHtml += `<div class="split-role-title">${roleTitle}</div>`;
+          if (roleDates || roleLoc) {
+            mainHtml += `<div class="split-role-dates">${roleDates}${roleLoc ? ` | ${roleLoc}` : ''}</div>`;
+          }
+          mainHtml += '<ul class="split-bullets">';
+          inBullets = true;
+          continue;
+        }
+
+        // Bullet item
+        const bulletMatch = line.match(/^[-*•]\s+(.*)$/);
+        if (bulletMatch) {
+          if (!inBullets) {
+            mainHtml += '<ul class="split-bullets">';
+            inBullets = true;
+          }
+          const formatted = autoHighlightKeywords(
+            bulletMatch[1]
+              .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+          );
+          mainHtml += `<li>${formatted}</li>`;
+          continue;
+        }
+
+        if (inBullets) {
+          mainHtml += '</ul></div>';
+          inBullets = false;
+        }
+
+        // Standard paragraph
+        const formattedP = autoHighlightKeywords(
+          line
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+        );
+        mainHtml += `<p class="split-paragraph">${formattedP}</p>`;
+      }
+
+      if (inBullets) {
+        mainHtml += '</ul></div>';
+        inBullets = false;
+      }
+    }
+
+    mainHtml += '</div>'; // close split-section
+  }
+
+  return `<div class="cv-styled-document split-sidebar-wrapper" style="--cv-sidebar-bg: ${sidebarBg}; --cv-text-color: #111827; font-family: var(--cv-font-family, '${fontFamily}', sans-serif);">` +
     `<div class="split-sidebar-col">${sidebarHtml}</div>` +
+    `<div class="split-main-col">${mainHtml}</div>` +
   `</div>`;
 }
 
@@ -589,7 +723,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
         .toUpperCase();
 
       if (isModern) {
-        processedLines.push(`<h2 class="modern-section-title">${title}</h2>`);
+        processedLines.push(`<h2 class="modern-section-title" style="color: ${accentColor} !important;">${title}</h2>`);
         processedLines.push(`<div class="zigzag-divider"></div>`);
       } else {
         const headingStyleClass = `classic-heading-${options.classicSectionStyle || 'double-line'}`;
@@ -808,7 +942,7 @@ export function parseMarkdownToHtml(markdown: string, options: CVParseOptions = 
 
   const rawHtml = processedLines.join('\n').replace(/\n{2,}/g, '\n');
   const rootClass = isModern ? 'cv-styled-document modern-timeline-wrapper' : 'cv-styled-document';
-  return `<div class="${rootClass}" style="--cv-accent-color: ${accentColor}; --cv-text-color: ${bodyTextColor}; font-family: '${fontFamily}', sans-serif;">${rawHtml}</div>`;
+  return `<div class="${rootClass}" style="--cv-accent-color: ${accentColor}; --cv-text-color: ${bodyTextColor}; font-family: var(--cv-font-family, '${fontFamily}', sans-serif);">${rawHtml}</div>`;
 }
 
 export function stripMarkdown(markdown: string): string {

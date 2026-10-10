@@ -56,6 +56,12 @@ function buildModularPrintHtml(
       background: transparent !important;
       font-family: ${fontFamilyValue} !important;
     }
+    .cv-print-root, .resume-preview-sheet,
+    .resume-preview-sheet h1, .resume-preview-sheet h2, .resume-preview-sheet h3,
+    .resume-preview-sheet p, .resume-preview-sheet span, .resume-preview-sheet div,
+    .resume-preview-sheet li, .resume-preview-sheet a, .resume-preview-sheet strong, .resume-preview-sheet em {
+      font-family: ${fontFamilyValue} !important;
+    }
     .cv-a4-document {
       width: 100% !important;
       max-width: 794px !important;
@@ -392,7 +398,7 @@ export function printCvDocument(
   <style>
     @page {
       size: A4 portrait;
-      margin: 10mm 10mm;
+      margin: ${themeConfig?.template === 'split-sidebar-right' ? '0' : '10mm 10mm'};
     }
     *, *:before, *:after {
       box-sizing: border-box !important;
@@ -402,7 +408,9 @@ export function printCvDocument(
     html, body {
       margin: 0 !important;
       padding: 0 !important;
-      background: #ffffff !important;
+      background: ${themeConfig?.template === 'split-sidebar-right' 
+        ? `linear-gradient(to right, ${themeConfig?.accentColor || '#1c2d42'} 0, ${themeConfig?.accentColor || '#1c2d42'} 265px, #ffffff 265px, #ffffff 100%)` 
+        : '#ffffff'} !important;
       background-color: #ffffff !important;
       color: #111827 !important;
       font-family: ${fontFamilyValue} !important;
@@ -418,6 +426,12 @@ export function printCvDocument(
       color: #111827 !important;
       padding: 0;
       margin: 0 auto;
+      font-family: ${fontFamilyValue} !important;
+    }
+    .cv-print-root, .resume-preview-sheet,
+    .resume-preview-sheet h1, .resume-preview-sheet h2, .resume-preview-sheet h3,
+    .resume-preview-sheet p, .resume-preview-sheet span, .resume-preview-sheet div,
+    .resume-preview-sheet li, .resume-preview-sheet a, .resume-preview-sheet strong, .resume-preview-sheet em {
       font-family: ${fontFamilyValue} !important;
     }
 
@@ -812,7 +826,7 @@ export function printCvDocument(
       border: none !important;
       border-top: none !important;
       border-bottom: none !important;
-      color: #111827 !important;
+      color: ${accentColor} !important;
       margin-top: 1.15rem !important;
       margin-bottom: 0.5rem !important;
       letter-spacing: -0.01em !important;
@@ -858,7 +872,7 @@ export function printCvDocument(
     .timeline-company {
       font-size: 9.8pt !important;
       font-weight: 600 !important;
-      color: ${accentColor} !important;
+      color: #111827 !important;
     }
     .timeline-role {
       font-size: 9.2pt !important;
@@ -874,7 +888,7 @@ export function printCvDocument(
     .timeline-school {
       font-size: 9pt !important;
       font-weight: 600 !important;
-      color: ${accentColor} !important;
+      color: #111827 !important;
     }
     .zigzag-divider {
       width: 100% !important;
@@ -932,281 +946,207 @@ export function printCvDocument(
     }
 
     /* ==========================================================================
-       Split-Sidebar-Right Layout Print Styles
+       Dark Sidebar Layout Print Styles (Matching Pixel-Perfect Reference)
        ========================================================================== */
     .split-sidebar-wrapper {
       display: grid !important;
-      grid-template-columns: 1fr 240px !important;
-      min-height: 100% !important;
+      grid-template-columns: 265px 1fr !important;
+      width: 794px !important;
+      min-height: 1122px !important;
+      margin: 0 auto !important;
+      padding: 0 !important;
       background: #ffffff !important;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+      font-family: ${fontFamilyValue} !important;
       color: #111827 !important;
       line-height: 1.35 !important;
       box-sizing: border-box !important;
     }
 
-    .split-main-col {
-      padding: ${themeConfig?.template === 'split-sidebar-right' ? '12mm 10mm 12mm 14mm' : '1.75rem 1.5rem 1.75rem 1.75rem'} !important;
-      background: #ffffff !important;
+    /* Left Dark Sidebar Column */
+    .split-sidebar-col {
+      background: ${themeConfig?.accentColor || '#1c2d42'} !important;
+      color: #ffffff !important;
+      padding: ${isCompact ? '8mm 6mm' : '12mm 8mm'} !important;
       display: flex !important;
       flex-direction: column !important;
+      box-sizing: border-box !important;
+      min-height: 100% !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
-    .split-header {
+    .sidebar-header {
       margin-bottom: 1.15rem !important;
+      break-inside: avoid !important;
     }
 
     .split-name {
-      font-size: 19pt !important;
+      font-size: 21pt !important;
       font-weight: 800 !important;
-      letter-spacing: 0.20em !important;
-      text-transform: uppercase !important;
-      color: #1c202d !important;
-      margin: 0 0 0.25rem 0 !important;
+      letter-spacing: -0.01em !important;
+      color: #ffffff !important;
+      margin: 0 0 0.35rem 0 !important;
       line-height: 1.15 !important;
       text-align: left !important;
     }
 
     .split-subtitle {
-      font-size: 9.8pt !important;
-      font-weight: 600 !important;
-      letter-spacing: 0.15em !important;
-      text-transform: uppercase !important;
-      color: #64748b !important;
-      margin-bottom: 0.55rem !important;
-      text-align: left !important;
-    }
-
-    .split-contact-row {
-      display: flex !important;
-      flex-wrap: wrap !important;
-      align-items: center !important;
-      gap: 0.45rem 0.85rem !important;
-      font-size: 8.5pt !important;
-      color: #475569 !important;
-      justify-content: flex-start !important;
-    }
-
-    .split-contact-item {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.25rem !important;
-    }
-
-    .split-contact-item a {
-      color: #475569 !important;
-      text-decoration: none !important;
-    }
-
-    .split-contact-sep {
-      color: #cbd5e1 !important;
-      font-size: 8pt !important;
-    }
-
-    .split-section {
-      margin-bottom: 1.15rem !important;
-    }
-
-    .split-section-header {
-      display: flex !important;
-      align-items: center !important;
-      gap: 0.75rem !important;
-      margin-top: 0.5rem !important;
-      margin-bottom: 0.65rem !important;
-      break-after: avoid !important;
-      page-break-after: avoid !important;
-    }
-
-    .split-section-title {
       font-size: 11pt !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.18em !important;
-      text-transform: uppercase !important;
-      color: #1c202d !important;
-      margin: 0 !important;
-      white-space: nowrap !important;
-      border: none !important;
-      padding: 0 !important;
+      font-weight: 400 !important;
+      color: rgba(255, 255, 255, 0.92) !important;
+      line-height: 1.3 !important;
+      margin-bottom: 0.5rem !important;
       text-align: left !important;
-    }
-
-    .split-section-rule {
-      flex: 1 !important;
-      height: 1px !important;
-      background: #cbd5e1 !important;
-    }
-
-    .split-paragraph {
-      font-size: 9pt !important;
-      line-height: 1.42 !important;
-      color: #334155 !important;
-      margin: 0 0 0.5rem 0 !important;
-      text-align: justify !important;
-    }
-
-    .split-paragraph strong {
-      color: #0f172a !important;
-      font-weight: 700 !important;
-    }
-
-    .split-role-entry {
-      margin-bottom: 0.85rem !important;
-      break-inside: avoid !important;
-      page-break-inside: avoid !important;
-    }
-
-    .split-role-header {
-      display: flex !important;
-      justify-content: space-between !important;
-      align-items: baseline !important;
-      margin-bottom: 0.15rem !important;
-    }
-
-    .split-role-title {
-      font-size: 9.8pt !important;
-      font-weight: 700 !important;
-      color: #0f172a !important;
-    }
-
-    .split-role-dates {
-      font-size: 8.8pt !important;
-      font-weight: 600 !important;
-      color: #64748b !important;
-      white-space: nowrap !important;
-    }
-
-    .split-role-company {
-      font-size: 9pt !important;
-      font-weight: 500 !important;
-      color: #475569 !important;
-      margin-bottom: 0.35rem !important;
-      display: flex !important;
-      align-items: center !important;
-      flex-wrap: wrap !important;
-      gap: 0.25rem !important;
-    }
-
-    .split-company-name {
-      font-weight: 600 !important;
-      color: #334155 !important;
-    }
-
-    .split-company-loc {
-      color: #64748b !important;
-    }
-
-    .split-bullets {
-      margin: 0 0 0.5rem 0 !important;
-      padding-left: 1.15rem !important;
-    }
-
-    .split-bullets li {
-      font-size: 8.8pt !important;
-      line-height: 1.4 !important;
-      color: #334155 !important;
-      margin-bottom: 0.25rem !important;
-      text-align: justify !important;
-    }
-
-    .split-bullets li strong {
-      color: #0f172a !important;
-      font-weight: 700 !important;
-    }
-
-    .split-sidebar-col {
-      background: #1c202d !important;
-      color: #ffffff !important;
-      padding: ${themeConfig?.template === 'split-sidebar-right' ? '12mm 8mm' : '1.75rem 1.15rem'} !important;
-      display: flex !important;
-      flex-direction: column !important;
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
     }
 
     .sidebar-avatar-wrapper {
       display: flex !important;
       justify-content: center !important;
-      margin-bottom: 1rem !important;
+      margin-bottom: 1.25rem !important;
+      break-inside: avoid !important;
     }
 
     .sidebar-avatar-img {
-      width: 96px !important;
-      height: 96px !important;
+      width: 105px !important;
+      height: 105px !important;
       border-radius: 50% !important;
       object-fit: cover !important;
-      border: 3px solid rgba(255, 255, 255, 0.4) !important;
+      border: 3px solid rgba(255, 255, 255, 0.45) !important;
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25) !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
-    .sidebar-linkedin-wrapper {
+    .sidebar-contact-list {
       display: flex !important;
-      justify-content: center !important;
-      margin-bottom: 1.25rem !important;
+      flex-direction: column !important;
+      gap: 0.55rem !important;
+      margin-bottom: 1.45rem !important;
+      break-inside: avoid !important;
     }
 
-    .sidebar-linkedin-btn {
-      display: inline-flex !important;
-      align-items: center !important;
-      background: rgba(255, 255, 255, 0.12) !important;
-      border: 1px solid rgba(255, 255, 255, 0.25) !important;
-      border-radius: 6px !important;
-      padding: 0.3rem 0.65rem !important;
-      font-size: 8pt !important;
-      font-weight: 600 !important;
+    .sidebar-contact-list .split-contact-item {
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 0.5rem !important;
+      font-size: 8.8pt !important;
+      color: rgba(255, 255, 255, 0.95) !important;
+      line-height: 1.35 !important;
+      word-break: break-word !important;
+    }
+
+    .sidebar-contact-list .split-contact-item a {
       color: #ffffff !important;
       text-decoration: none !important;
-      -webkit-print-color-adjust: exact !important;
     }
 
+    .sidebar-contact-list .split-contact-item svg {
+      width: 12px !important;
+      height: 12px !important;
+      stroke: #ffffff !important;
+      margin-top: 2px !important;
+      flex-shrink: 0 !important;
+    }
+
+    /* Sidebar Section */
     .sidebar-section {
-      margin-bottom: 1.25rem !important;
+      margin-bottom: 1.35rem !important;
       break-inside: avoid !important;
       page-break-inside: avoid !important;
     }
 
-    .sidebar-section-header {
-      margin-bottom: 0.65rem !important;
+    .sidebar-section-pill {
+      background: rgba(255, 255, 255, 0.12) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-radius: 6px !important;
+      padding: 5px 12px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.45rem !important;
+      margin-bottom: 0.75rem !important;
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
     .sidebar-section-title {
       font-size: 9.5pt !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.18em !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.12em !important;
       text-transform: uppercase !important;
       color: #ffffff !important;
-      margin-bottom: 0.35rem !important;
-      text-align: left !important;
+      margin: 0 !important;
       border: none !important;
       padding: 0 !important;
     }
 
-    .sidebar-section-rule {
-      height: 1px !important;
-      background: rgba(255, 255, 255, 0.2) !important;
+    .sidebar-profile-text {
+      font-size: 8.8pt !important;
+      line-height: 1.45 !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+      margin: 0 0 0.65rem 0 !important;
+      text-align: left !important;
     }
 
-    .sidebar-entry {
-      margin-bottom: 0.75rem !important;
+    .sidebar-profile-text strong {
+      color: #ffffff !important;
+      font-weight: 700 !important;
     }
 
-    .sidebar-entry-dates {
-      font-size: 8pt !important;
-      font-weight: 600 !important;
-      color: #94a3b8 !important;
-      margin-bottom: 0.15rem !important;
+    /* Languages */
+    .sidebar-language-item {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      margin-bottom: 0.5rem !important;
+      font-size: 8.8pt !important;
+      color: #ffffff !important;
+      font-weight: 500 !important;
+      break-inside: avoid !important;
     }
 
-    .sidebar-entry-title {
+    .sidebar-language-dots {
+      display: flex !important;
+      align-items: center !important;
+      gap: 5px !important;
+    }
+
+    .sidebar-dot {
+      width: 7px !important;
+      height: 7px !important;
+      border-radius: 50% !important;
+      display: inline-block !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .sidebar-dot.filled {
+      background: #f8fafc !important;
+    }
+
+    .sidebar-dot.empty {
+      background: rgba(255, 255, 255, 0.25) !important;
+    }
+
+    /* Awards */
+    .sidebar-award-item {
+      margin-bottom: 0.65rem !important;
+      break-inside: avoid !important;
+    }
+
+    .sidebar-award-title {
       font-size: 9pt !important;
       font-weight: 700 !important;
       color: #ffffff !important;
       line-height: 1.3 !important;
     }
 
-    .sidebar-entry-subtitle {
+    .sidebar-award-org {
       font-size: 8.2pt !important;
-      color: #cbd5e1 !important;
-      margin-top: 0.1rem !important;
+      color: rgba(255, 255, 255, 0.78) !important;
+      margin-top: 0.15rem !important;
     }
 
     .sidebar-bullet-item {
@@ -1216,39 +1156,137 @@ export function printCvDocument(
       line-height: 1.35 !important;
     }
 
-    .sidebar-category-group {
-      margin-bottom: 0.75rem !important;
-      break-inside: avoid !important;
-    }
-
-    .sidebar-category-name {
-      font-size: 8pt !important;
-      font-weight: 700 !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.08em !important;
-      color: #94a3b8 !important;
-      margin-bottom: 0.35rem !important;
-    }
-
-    .sidebar-pill-cluster {
+    /* Right Main Column */
+    .split-main-col {
+      padding: ${isCompact ? '8mm 8mm 8mm 8mm' : '12mm 12mm 12mm 10mm'} !important;
+      background: #ffffff !important;
       display: flex !important;
-      flex-wrap: wrap !important;
-      gap: 0.3rem 0.4rem !important;
+      flex-direction: column !important;
+      box-sizing: border-box !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .split-section {
+      margin-bottom: 1.25rem !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    .main-section-pill {
+      background: #f1f5f9 !important;
+      border-radius: 6px !important;
+      padding: 5px 14px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 0.5rem !important;
+      margin-top: 0.45rem !important;
+      margin-bottom: 0.85rem !important;
+      break-after: avoid !important;
+      page-break-after: avoid !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+
+    .split-section-title {
+      font-size: 10.5pt !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.08em !important;
+      text-transform: uppercase !important;
+      color: #1e293b !important;
+      margin: 0 !important;
+      border: none !important;
+      padding: 0 !important;
+    }
+
+    /* Work Experience Entries */
+    .split-role-entry {
+      margin-bottom: 0.95rem !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    .split-company-name {
+      font-size: 10.5pt !important;
+      font-weight: 800 !important;
+      color: #111827 !important;
+      margin-bottom: 1px !important;
+    }
+
+    .split-role-title {
+      font-size: 9.5pt !important;
+      font-weight: 500 !important;
+      color: #374151 !important;
+      margin-bottom: 1px !important;
+    }
+
+    .split-role-dates {
+      font-size: 8.8pt !important;
+      font-weight: 500 !important;
+      color: #64748b !important;
       margin-bottom: 0.35rem !important;
     }
 
-    .sidebar-pill-badge {
-      display: inline-flex !important;
-      align-items: center !important;
-      font-size: 8pt !important;
+    .split-bullets {
+      margin: 0 0 0.5rem 0 !important;
+      padding-left: 1.15rem !important;
+      list-style-type: disc !important;
+    }
+
+    .split-bullets li {
+      font-size: 8.8pt !important;
+      line-height: 1.42 !important;
+      color: #334155 !important;
+      margin-bottom: 0.25rem !important;
+      text-align: left !important;
+    }
+
+    .split-bullets li strong {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+
+    /* Education Entries */
+    .split-edu-entry {
+      margin-bottom: 0.85rem !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    .split-degree-name {
+      font-size: 10pt !important;
+      font-weight: 800 !important;
+      color: #111827 !important;
+      margin-bottom: 1px !important;
+    }
+
+    .split-school-name {
+      font-size: 9.5pt !important;
       font-weight: 500 !important;
-      color: #ffffff !important;
-      background: rgba(255, 255, 255, 0.10) !important;
-      border: 1px solid rgba(255, 255, 255, 0.35) !important;
-      border-radius: 9999px !important;
-      padding: 0.18rem 0.55rem !important;
-      letter-spacing: 0.02em !important;
-      -webkit-print-color-adjust: exact !important;
+      color: #374151 !important;
+      margin-bottom: 1px !important;
+    }
+
+    .split-edu-dates {
+      font-size: 8.8pt !important;
+      font-weight: 500 !important;
+      color: #64748b !important;
+      margin-bottom: 0.25rem !important;
+    }
+
+    /* Skills List */
+    .split-skills-list {
+      margin: 0 0 0.5rem 0 !important;
+      padding-left: 1.15rem !important;
+      list-style-type: disc !important;
+    }
+
+    .split-skills-list li {
+      font-size: 8.8pt !important;
+      line-height: 1.42 !important;
+      color: #334155 !important;
+      margin-bottom: 0.25rem !important;
     }
   </style>
 </head>
@@ -1256,7 +1294,7 @@ export function printCvDocument(
   <div class="cv-print-root">
     ${parsedHtml.includes('resume-preview-sheet') 
       ? parsedHtml 
-      : `<div class="resume-preview-sheet ${isCompact ? 'compact-1page' : ''}">${parsedHtml}</div>`}
+      : `<div class="resume-preview-sheet ${isCompact ? 'compact-1page' : ''} ${themeConfig?.template === 'split-sidebar-right' ? 'has-split-sidebar-right' : ''}">${parsedHtml}</div>`}
   </div>
 </body>
 </html>`;

@@ -6,6 +6,7 @@ import { LiquidCard } from './ui/LiquidCard';
 import { CVThemeSelector } from './CVThemeSelector';
 import type { CVThemeConfig } from './CVThemeSelector';
 import { downloadBlob } from '../utils/docxWriter';
+import { domToCvMarkdown } from '../utils/domToMarkdown';
 
 import { printCvDocument } from '../utils/printHelper';
 
@@ -42,8 +43,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
   const candidatePhoto = userProfile?.avatar_url || localAvatar || extractedPhotoUrl || '';
   
   const [themeConfig, setThemeConfig] = useState<CVThemeConfig>({
-    accentColor: initialTemplate === 'split-sidebar-right' ? '#1c202d' : initialTemplate === 'modern-timeline' ? '#2563eb' : '#475569',
-    themeName: initialTemplate === 'split-sidebar-right' ? 'Slate Charcoal' : initialTemplate === 'modern-timeline' ? 'Sapphire Blue' : 'Slate Charcoal',
+    accentColor: initialTemplate === 'split-sidebar-right' ? '#1c2d42' : initialTemplate === 'modern-timeline' ? '#2563eb' : '#475569',
+    themeName: initialTemplate === 'split-sidebar-right' ? 'Dark Slate Navy' : initialTemplate === 'modern-timeline' ? 'Sapphire Blue' : 'Slate Charcoal',
     showPhoto: !!candidatePhoto,
     photoUrl: candidatePhoto,
     photoShape: 'circle',
@@ -55,38 +56,32 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     fontFamily: 'Plus Jakarta Sans'
   });
 
-  const handleThemeChange = (newConfig: CVThemeConfig) => {
-    const prevTemplate = themeConfig.template;
-    const prevClassicStyle = themeConfig.classicSectionStyle;
-    setThemeConfig(newConfig);
-    if (editedHtml) {
-      try {
-        if (newConfig.template !== prevTemplate || newConfig.classicSectionStyle !== prevClassicStyle) {
-          setEditedHtml(parseMarkdownToHtml(result.cvMarkdown, newConfig));
-          return;
-        }
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(editedHtml, 'text/html');
-        const img = doc.querySelector('.cv-avatar-headshot, .modern-avatar-headshot, .sidebar-avatar-img') as HTMLImageElement | null;
-        if (img) {
-          const radius = newConfig.photoShape === 'square' ? '4px' : newConfig.photoShape === 'rounded' ? '12px' : newConfig.photoShape === 'squircle' ? '24%' : '50%';
-          const borderWidth = newConfig.photoBorderWidth !== undefined ? newConfig.photoBorderWidth : (newConfig.photoBorder === 'none' ? 0 : 3);
-          const borderStyle = (borderWidth === 0 || newConfig.photoBorder === 'none')
-            ? 'none'
-            : newConfig.photoBorder === 'subtle'
-              ? `${borderWidth}px solid #cbd5e1`
-              : `${borderWidth}px solid ${newConfig.accentColor}`;
-          img.setAttribute('data-shape', newConfig.photoShape || 'circle');
-          img.setAttribute('data-border', newConfig.photoBorder || 'accent');
-          img.setAttribute('data-border-width', String(borderWidth));
-          img.style.borderRadius = radius;
-          img.style.border = borderStyle;
-        }
-        setEditedHtml(doc.body.innerHTML);
-      } catch (e) {
-        console.warn('Could not sync theme changes to editedHtml:', e);
+  const [mobileScale, setMobileScale] = useState<number>(1);
+  const [isLiveEditing, setIsLiveEditing] = useState<boolean>(false);
+  const [editedHtml, setEditedHtml] = useState<string | null>(null);
+  const sheetContainerRef = React.useRef<HTMLDivElement>(null);
+  const sheetRef = React.useRef<HTMLDivElement>(null);
+
+  const syncDomToMarkdown = React.useCallback(() => {
+    if (!sheetRef.current) return;
+    try {
+      const updatedMd = domToCvMarkdown(sheetRef.current);
+      if (updatedMd && updatedMd.trim().length > 30) {
+        onUpdateMarkdown(updatedMd);
+        setEditedHtml(null);
       }
+    } catch (err) {
+      console.warn('Error syncing DOM to markdown:', err);
     }
+  }, [onUpdateMarkdown]);
+
+  const handleThemeChange = (newConfig: CVThemeConfig) => {
+    if (isLiveEditing && sheetRef.current) {
+      syncDomToMarkdown();
+      setIsLiveEditing(false);
+    }
+    setEditedHtml(null);
+    setThemeConfig(newConfig);
   };
 
   // Dynamically sync candidatePhoto whenever userProfile.avatar_url or Settings photo changes
@@ -99,12 +94,6 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
       }));
     }
   }, [candidatePhoto]);
-
-  const [mobileScale, setMobileScale] = useState<number>(1);
-  const [isLiveEditing, setIsLiveEditing] = useState<boolean>(false);
-  const [editedHtml, setEditedHtml] = useState<string | null>(null);
-  const sheetContainerRef = React.useRef<HTMLDivElement>(null);
-  const sheetRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setEditedHtml(null);
@@ -129,13 +118,29 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     return () => window.removeEventListener('resize', updateScale);
   }, []);
 
+  const handleTabChange = (tab: TabType) => {
+    if (isLiveEditing && sheetRef.current) {
+      syncDomToMarkdown();
+      setIsLiveEditing(false);
+    }
+    setActiveTab(tab);
+  };
+
   const handleCopyMarkdown = () => {
+    if (isLiveEditing && sheetRef.current) {
+      syncDomToMarkdown();
+      setIsLiveEditing(false);
+    }
     navigator.clipboard.writeText(result.cvMarkdown);
     setCopied('markdown');
     setTimeout(() => setCopied(null), 2000);
   };
 
   const handleCopyPlainText = () => {
+    if (isLiveEditing && sheetRef.current) {
+      syncDomToMarkdown();
+      setIsLiveEditing(false);
+    }
     const plainText = stripMarkdown(result.cvMarkdown);
     navigator.clipboard.writeText(plainText);
     setCopied('text');
@@ -207,9 +212,13 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
     const cleanCompany = cleanFilenameToken(company);
     const filename = `${cleanFirst}-${cleanRole}-${cleanCompany}`;
 
-    // Execute isolated iframe print engine (preserves any visual direct edits)
-    const customHtmlToPrint = editedHtml || (isLiveEditing && sheetRef.current ? sheetRef.current.innerHTML : undefined);
-    printCvDocument(result.cvMarkdown, themeConfig, filename, customHtmlToPrint);
+    if (isLiveEditing && sheetRef.current) {
+      syncDomToMarkdown();
+      setIsLiveEditing(false);
+    }
+
+    // Execute isolated iframe print engine using synced markdown
+    printCvDocument(result.cvMarkdown, themeConfig, filename);
   };
 
   // Helper to calculate circular stroke values
@@ -237,7 +246,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           <button
             type="button"
             className={`tab ${activeTab === 'preview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('preview')}
+            onClick={() => handleTabChange('preview')}
           >
             <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
               <Eye size={16} /> Preview
@@ -246,7 +255,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           <button
             type="button"
             className={`tab ${activeTab === 'editor' ? 'active' : ''}`}
-            onClick={() => setActiveTab('editor')}
+            onClick={() => handleTabChange('editor')}
           >
             <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
               <FileEdit size={16} /> Edit Markdown
@@ -255,7 +264,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           <button
             type="button"
             className={`tab ${activeTab === 'ats' ? 'active' : ''}`}
-            onClick={() => setActiveTab('ats')}
+            onClick={() => handleTabChange('ats')}
           >
             <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
               <BarChart3 size={16} /> ATS Analysis ({result.atsScore}%)
@@ -264,7 +273,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           <button
             type="button"
             className={`tab ${activeTab === 'tweaks' ? 'active' : ''}`}
-            onClick={() => setActiveTab('tweaks')}
+            onClick={() => handleTabChange('tweaks')}
           >
             <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
               <Sparkles size={16} /> Human Adjustments
@@ -273,7 +282,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
           <button
             type="button"
             className={`tab ${activeTab === 'cover' ? 'active' : ''}`}
-            onClick={() => setActiveTab('cover')}
+            onClick={() => handleTabChange('cover')}
           >
             <span className="flex-row-gap" style={{ gap: '0.4rem' }}>
               <Mail size={16} /> Cover Letter
@@ -322,7 +331,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                 className={`btn ${isLiveEditing ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => {
                   if (isLiveEditing && sheetRef.current) {
-                    setEditedHtml(sheetRef.current.innerHTML);
+                    syncDomToMarkdown();
                   }
                   setIsLiveEditing(!isLiveEditing);
                 }}
@@ -448,7 +457,7 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                   style={{ padding: '0.3rem 0.75rem', fontSize: '0.78rem', background: '#10b981', borderColor: '#10b981' }}
                   onClick={() => {
                     if (sheetRef.current) {
-                      setEditedHtml(sheetRef.current.innerHTML);
+                      syncDomToMarkdown();
                     }
                     setIsLiveEditing(false);
                   }}
@@ -471,15 +480,18 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
               >
                 <div 
                   ref={sheetRef}
-                  className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''} ${isLiveEditing ? 'live-editing-active' : ''}`} 
+                  className={`resume-preview-sheet ${themeConfig.layoutDensity === 'compact' ? 'compact-1page' : ''} ${themeConfig.template === 'split-sidebar-right' ? 'has-split-sidebar-right' : ''} ${isLiveEditing ? 'live-editing-active' : ''}`} 
                   style={{
                     fontFamily: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined,
-                    ['--cv-font-family' as any]: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined
+                    ['--cv-font-family' as any]: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined,
+                    ['--cv-accent-color' as any]: themeConfig.accentColor
                   }}
                   contentEditable={isLiveEditing}
                   suppressContentEditableWarning={true}
-                  onBlur={(e) => {
-                    setEditedHtml(e.currentTarget.innerHTML);
+                  onBlur={() => {
+                    if (isLiveEditing && sheetRef.current) {
+                      syncDomToMarkdown();
+                    }
                   }}
                   dangerouslySetInnerHTML={{ __html: editedHtml || parseMarkdownToHtml(result.cvMarkdown, themeConfig) }}
                 />

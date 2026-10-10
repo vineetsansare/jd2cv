@@ -36,10 +36,16 @@ export const CV_FONTS: CVFontOption[] = [
 ];
 
 export const ACCENT_THEMES = [
+  { id: 'dark-slate', name: 'Dark Slate Navy', color: '#1c2d42', bg: 'rgba(28, 45, 66, 0.15)' },
+  { id: 'navy', name: 'Executive Navy', color: '#1e3a8a', bg: 'rgba(30, 58, 138, 0.15)' },
+  { id: 'burgundy', name: 'Deep Burgundy', color: '#831843', bg: 'rgba(131, 24, 67, 0.15)' },
+  { id: 'forest', name: 'Forest Green', color: '#14532d', bg: 'rgba(20, 83, 45, 0.15)' },
+  { id: 'bronze', name: 'Warm Bronze', color: '#78350f', bg: 'rgba(120, 53, 15, 0.15)' },
   { id: 'charcoal', name: 'Slate Charcoal', color: '#475569', bg: 'rgba(71, 85, 105, 0.15)' },
-  { id: 'violet', name: 'Executive Violet', color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.15)' },
   { id: 'blue', name: 'Sapphire Blue', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.15)' },
   { id: 'teal', name: 'Emerald Teal', color: '#059669', bg: 'rgba(5, 150, 105, 0.15)' },
+  { id: 'bordeaux', name: 'Royal Bordeaux', color: '#701a75', bg: 'rgba(112, 26, 117, 0.15)' },
+  { id: 'violet', name: 'Executive Violet', color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.15)' },
   { id: 'rose', name: 'Creative Rose', color: '#e11d48', bg: 'rgba(225, 29, 72, 0.15)' }
 ];
 
@@ -153,7 +159,7 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
           <span>CV Accent Theme:</span>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
           {ACCENT_THEMES.map((theme) => {
             const isSelected = themeConfig.accentColor === theme.color;
             return (
@@ -163,8 +169,8 @@ export const CVThemeSelector: React.FC<CVThemeSelectorProps> = ({
                 onClick={() => handleSelectColor(theme.color, theme.name)}
                 title={theme.name}
                 style={{
-                  width: '28px',
-                  height: '28px',
+                  width: '26px',
+                  height: '26px',
                   borderRadius: '50%',
                   background: theme.color,
                   border: isSelected ? '2px solid #ffffff' : '2px solid transparent',
