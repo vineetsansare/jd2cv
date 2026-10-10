@@ -421,7 +421,9 @@ export function printCvDocument(
     .cv-print-root, .resume-preview-sheet {
       width: 100%;
       min-width: 794px;
-      background: ${themeConfig?.template === 'split-sidebar-right' ? 'transparent' : '#ffffff'} !important;
+      background: ${themeConfig?.template === 'split-sidebar-right' 
+        ? `linear-gradient(to right, ${themeConfig?.accentColor || '#1c2d42'} 0, ${themeConfig?.accentColor || '#1c2d42'} 265px, #ffffff 265px, #ffffff 100%) repeat-y !important` 
+        : '#ffffff !important'};
       color: #111827 !important;
       padding: 0;
       margin: 0 auto;
@@ -948,10 +950,10 @@ export function printCvDocument(
        Dark Sidebar Layout Print Styles (Matching Pixel-Perfect Reference)
        ========================================================================== */
     .split-sidebar-wrapper {
-      display: grid !important;
-      grid-template-columns: 265px 1fr !important;
-      width: 794px !important;
-      min-height: 1122px !important;
+      display: block !important;
+      position: relative !important;
+      width: 100% !important;
+      max-width: 794px !important;
       margin: 0 auto !important;
       padding: 0 !important;
       background: transparent !important;
@@ -961,15 +963,21 @@ export function printCvDocument(
       box-sizing: border-box !important;
     }
 
+    .split-sidebar-wrapper::after {
+      content: "" !important;
+      display: table !important;
+      clear: both !important;
+    }
+
     /* Left Dark Sidebar Column */
     .split-sidebar-col {
-      background: ${themeConfig?.accentColor || '#1c2d42'} !important;
+      width: 265px !important;
+      float: left !important;
+      background: transparent !important;
       color: #ffffff !important;
-      padding: ${isCompact ? '8mm 6mm' : '12mm 8mm'} !important;
-      display: flex !important;
-      flex-direction: column !important;
+      padding: ${isCompact ? '8mm 6mm' : '10mm 7mm'} !important;
       box-sizing: border-box !important;
-      min-height: 100% !important;
+      display: block !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -977,6 +985,7 @@ export function printCvDocument(
     .sidebar-header {
       margin-bottom: 1.15rem !important;
       break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .split-name {
@@ -1003,6 +1012,7 @@ export function printCvDocument(
       justify-content: center !important;
       margin-bottom: 1.25rem !important;
       break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .sidebar-avatar-img {
@@ -1022,6 +1032,7 @@ export function printCvDocument(
       gap: 0.55rem !important;
       margin-bottom: 1.45rem !important;
       break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .sidebar-contact-list .split-contact-item {
@@ -1032,6 +1043,8 @@ export function printCvDocument(
       color: rgba(255, 255, 255, 0.95) !important;
       line-height: 1.35 !important;
       word-break: break-word !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .sidebar-contact-list .split-contact-item a {
@@ -1066,6 +1079,8 @@ export function printCvDocument(
       margin-bottom: 0.75rem !important;
       break-after: avoid !important;
       page-break-after: avoid !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
     }
@@ -1104,6 +1119,7 @@ export function printCvDocument(
       color: #ffffff !important;
       font-weight: 500 !important;
       break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .sidebar-language-dots {
@@ -1133,6 +1149,7 @@ export function printCvDocument(
     .sidebar-award-item {
       margin-bottom: 0.65rem !important;
       break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .sidebar-award-title {
@@ -1153,14 +1170,18 @@ export function printCvDocument(
       color: #e2e8f0 !important;
       margin-bottom: 0.35rem !important;
       line-height: 1.35 !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     /* Right Main Column */
     .split-main-col {
-      padding: ${isCompact ? '8mm 8mm 8mm 8mm' : '12mm 12mm 12mm 10mm'} !important;
+      margin-left: 265px !important;
+      width: calc(100% - 265px) !important;
+      min-height: 100% !important;
+      padding: ${isCompact ? '8mm 8mm 8mm 8mm' : '10mm 10mm 10mm 10mm'} !important;
       background: #ffffff !important;
-      display: flex !important;
-      flex-direction: column !important;
+      display: block !important;
       box-sizing: border-box !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
@@ -1168,8 +1189,8 @@ export function printCvDocument(
 
     .split-section {
       margin-bottom: 1.25rem !important;
-      break-inside: avoid !important;
-      page-break-inside: avoid !important;
+      break-inside: auto !important;
+      page-break-inside: auto !important;
     }
 
     .main-section-pill {
@@ -1180,12 +1201,19 @@ export function printCvDocument(
       align-items: center !important;
       justify-content: center !important;
       gap: 0.5rem !important;
-      margin-top: 0.45rem !important;
+      margin-top: 0.75rem !important;
       margin-bottom: 0.85rem !important;
       break-after: avoid !important;
       page-break-after: avoid !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+    }
+
+    .split-main-col > .split-section:first-child .main-section-pill,
+    .split-main-col > .main-section-pill:first-child {
+      margin-top: 0 !important;
     }
 
     .split-section-title {
@@ -1239,6 +1267,8 @@ export function printCvDocument(
       color: #334155 !important;
       margin-bottom: 0.25rem !important;
       text-align: left !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .split-bullets li strong {
@@ -1279,6 +1309,8 @@ export function printCvDocument(
       margin: 0 0 0.5rem 0 !important;
       padding-left: 1.15rem !important;
       list-style-type: disc !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
 
     .split-skills-list li {
@@ -1286,6 +1318,8 @@ export function printCvDocument(
       line-height: 1.42 !important;
       color: #334155 !important;
       margin-bottom: 0.25rem !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
     }
   </style>
 </head>

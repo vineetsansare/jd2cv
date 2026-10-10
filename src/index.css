@@ -1670,6 +1670,82 @@ body.is-printing-cv canvas {
     line-height: 1.35 !important;
   }
 
+  body:has(.has-split-sidebar-right) {
+    background: linear-gradient(to right, var(--cv-sidebar-bg, #1c2d42) 0, var(--cv-sidebar-bg, #1c2d42) 265px, #ffffff 265px, #ffffff 100%) repeat-y !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right {
+    background: transparent !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-sidebar-wrapper {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    max-width: 794px !important;
+    margin: 0 auto !important;
+    background: transparent !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-sidebar-wrapper::after {
+    content: "" !important;
+    display: table !important;
+    clear: both !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-sidebar-col {
+    width: 265px !important;
+    float: left !important;
+    background: transparent !important;
+    color: #ffffff !important;
+    padding: 10mm 7mm !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-main-col {
+    margin-left: 265px !important;
+    width: calc(100% - 265px) !important;
+    min-height: 100% !important;
+    padding: 10mm 10mm 10mm 10mm !important;
+    background: #ffffff !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-section {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-role-entry,
+  .resume-preview-sheet.has-split-sidebar-right .split-edu-entry,
+  .resume-preview-sheet.has-split-sidebar-right .sidebar-award-item,
+  .resume-preview-sheet.has-split-sidebar-right .sidebar-language-item,
+  .resume-preview-sheet.has-split-sidebar-right .sidebar-header,
+  .resume-preview-sheet.has-split-sidebar-right .sidebar-contact-list,
+  .resume-preview-sheet.has-split-sidebar-right .split-bullets li {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .main-section-pill,
+  .resume-preview-sheet.has-split-sidebar-right .sidebar-section-pill {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .resume-preview-sheet.has-split-sidebar-right .split-main-col > .split-section:first-child .main-section-pill,
+  .resume-preview-sheet.has-split-sidebar-right .split-main-col > .main-section-pill:first-child {
+    margin-top: 0 !important;
+  }
+
   .resume-preview-sheet .contact-row {
     display: flex !important;
     justify-content: center !important;
@@ -3024,6 +3100,11 @@ body.is-printing-cv canvas {
   gap: 0.5rem;
   margin-top: 0.45rem;
   margin-bottom: 0.85rem;
+}
+
+.resume-preview-sheet .split-main-col > .split-section:first-child .main-section-pill,
+.resume-preview-sheet .split-main-col > .main-section-pill:first-child {
+  margin-top: 0 !important;
 }
 
 .resume-preview-sheet .split-section-title {

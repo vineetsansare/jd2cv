@@ -555,7 +555,8 @@ export const CVDisplay: React.FC<CVDisplayProps> = ({
                   style={{
                     fontFamily: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined,
                     ['--cv-font-family' as any]: themeConfig.fontFamily ? `'${themeConfig.fontFamily}', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif` : undefined,
-                    ['--cv-accent-color' as any]: themeConfig.accentColor
+                    ['--cv-accent-color' as any]: themeConfig.accentColor,
+                    ['--cv-sidebar-bg' as any]: themeConfig.accentColor || '#1c2d42'
                   }}
                   contentEditable={isLiveEditing}
                   suppressContentEditableWarning={true}
