@@ -97,7 +97,24 @@ export interface StructuredCVResult {
   remainingCredits?: number;
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+export function getBackendUrl(): string {
+  const envUrl = import.meta.env.VITE_BACKEND_URL;
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  if (isLocalhost) {
+    return (envUrl && envUrl.includes('localhost')) ? envUrl : 'http://localhost:3001';
+  }
+
+  // In production / mobile (toolsby.vineetsansare.com or any non-localhost host)
+  if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+    return envUrl.replace(/\/+$/, '');
+  }
+
+  return 'https://jd2cv.onrender.com';
+}
+
+const BACKEND_URL = getBackendUrl();
 const SYSTEM_GEMINI_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
 
 async function callGeminiWithFailover(apiKey: string, contents: any[], signal?: AbortSignal): Promise<any> {
@@ -290,6 +307,13 @@ export async function generateCustomizedCV(
     } catch (err: any) {
       if (err.name === 'AbortError' || err.limitReached) throw err;
       console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
+      if (!config.apiKey && !SYSTEM_GEMINI_KEY) {
+        throw new Error(
+          err.name === 'TypeError' || err.message?.includes('fetch')
+            ? 'The AI engine is currently waking up or experiencing high traffic. Please tap "Generate Optimized CV" again in a few seconds.'
+            : (err.message || 'AI engine is temporarily unavailable. Please try again.')
+        );
+      }
     }
   }
 
@@ -353,6 +377,13 @@ export async function autoFixCV(
     } catch (err: any) {
       if (err.name === 'AbortError' || err.limitReached) throw err;
       console.warn('Backend proxy unreachable, attempting direct client fallback:', err);
+      if (!config.apiKey && !SYSTEM_GEMINI_KEY) {
+        throw new Error(
+          err.name === 'TypeError' || err.message?.includes('fetch')
+            ? 'The AI engine is currently waking up or experiencing high traffic. Please try again in a few seconds.'
+            : (err.message || 'AI engine is temporarily unavailable. Please try again.')
+        );
+      }
     }
   }
 
@@ -376,7 +407,7 @@ async function callDirectLLMClient(
 ): Promise<CVGenerationResult> {
   const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
-    throw new Error('API_KEY_REQUIRED');
+    throw new Error('Cloud AI engine is currently waking up or experiencing high traffic. Please tap "Generate Optimized CV" again in a few moments.');
   }
 
   let lengthConstraint = "";
@@ -499,7 +530,7 @@ async function callDirectAutoFixClient(
 ): Promise<CVGenerationResult> {
   const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
-    throw new Error('API_KEY_REQUIRED');
+    throw new Error('Cloud AI engine is currently waking up or experiencing high traffic. Please tap "Auto-Fix" again in a few moments.');
   }
 
   const systemPrompt = `You are a World-Class Executive Resume Architect & ATS Optimization Specialist.
@@ -704,7 +735,7 @@ export async function generateStructuredCV(
 
   const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
-    throw new Error('API_KEY_REQUIRED');
+    throw new Error('Cloud AI engine is currently waking up or experiencing high traffic. Please tap "Generate Optimized CV" again in a few moments.');
   }
 
   // ── Unified Structured Extraction & Optimization (High-Speed) ─────────
@@ -917,7 +948,7 @@ export async function optimizeDocxParagraphs(
 
   const apiKey = config.apiKey || SYSTEM_GEMINI_KEY;
   if (!apiKey) {
-    throw new Error('API_KEY_REQUIRED');
+    throw new Error('Cloud AI engine is currently waking up or experiencing high traffic. Please tap "Generate Optimized CV" again in a few moments.');
   }
 
   const prompt = `You are a World-Class Executive Resume Architect & ATS Optimization Specialist.
@@ -1059,7 +1090,7 @@ export async function getAgentTokens(): Promise<AgentTokenRecord[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
 
-  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  const targetUrl = BACKEND_URL;
   if (!targetUrl) return [];
 
   const response = await fetch(`${targetUrl}/api/agent/tokens`, {
@@ -1077,7 +1108,7 @@ export async function createAgentToken(name: string): Promise<CreatedTokenRespon
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('User not authenticated');
 
-  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  const targetUrl = BACKEND_URL;
   if (!targetUrl) throw new Error('Backend URL is not configured');
 
   const response = await fetch(`${targetUrl}/api/agent/tokens`, {
@@ -1101,7 +1132,7 @@ export async function revokeAgentToken(id: string): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('User not authenticated');
 
-  const targetUrl = BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3001' : '');
+  const targetUrl = BACKEND_URL;
   if (!targetUrl) throw new Error('Backend URL is not configured');
 
   const response = await fetch(`${targetUrl}/api/agent/tokens/${id}`, {

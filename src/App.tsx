@@ -7,7 +7,7 @@ import { ContactUsPanel } from './components/ContactUsPanel';
 import { AdminPortal } from './components/AdminPortal';
 import { LegalModal } from './components/LegalModal';
 import type { LegalDocType } from './components/LegalModal';
-import { generateCustomizedCV, autoFixCV, generateStructuredCV, cvStateToMarkdown, optimizeDocxParagraphs, createCreditCheckout, completeCreditPurchase } from './utils/llm';
+import { generateCustomizedCV, autoFixCV, generateStructuredCV, cvStateToMarkdown, optimizeDocxParagraphs, createCreditCheckout, completeCreditPurchase, getBackendUrl } from './utils/llm';
 import type { LLMConfig, CVGenerationResult, TargetLength, LayoutMode } from './utils/llm';
 import { parsePdf } from './utils/pdfParser';
 import { parseDocx, extractDocxText } from './utils/docxParser';
@@ -255,7 +255,7 @@ function App() {
     if (localStorage.getItem(storageKey)) return;
 
     try {
-      const proxyUrl = import.meta.env.VITE_PROXY_URL || import.meta.env.VITE_BACKEND_URL || 'http://localhost:3002';
+      const proxyUrl = getBackendUrl();
       await fetch(`${proxyUrl}/api/email/welcome`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2319,27 +2319,48 @@ function App() {
                   borderRadius: '10px'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span>{error}</span>
+                    <AlertCircle size={16} className="text-red-400 shrink-0" />
+                    <span>
+                      {error === 'API_KEY_REQUIRED'
+                        ? 'Cloud AI service is temporarily waking up. Please tap "Retry Generation" below.'
+                        : error}
+                    </span>
                   </div>
-                  {(error === 'API_KEY_REQUIRED' || error.toLowerCase().includes('api key') || error.toLowerCase().includes('settings') || error.toLowerCase().includes('load failed')) && (
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
                     <button
                       type="button"
-                      onClick={() => setActiveTab('settings')}
-                      className="btn btn-secondary"
+                      onClick={handleGenerate}
+                      className="btn btn-primary"
                       style={{
-                        alignSelf: 'flex-start',
                         padding: '0.35rem 0.85rem',
                         fontSize: '0.8rem',
                         fontWeight: 600,
-                        background: 'rgba(255, 255, 255, 0.08)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '0.35rem'
                       }}
                     >
-                      <span>Go to Settings →</span>
+                      <span>Retry Generation ↺</span>
                     </button>
-                  )}
+                    {(error.toLowerCase().includes('settings')) && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('settings')}
+                        className="btn btn-secondary"
+                        style={{
+                          padding: '0.35rem 0.85rem',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          background: 'rgba(255, 255, 255, 0.08)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <span>Go to Settings →</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 

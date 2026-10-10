@@ -26,6 +26,7 @@ import {
   Zap
 } from 'lucide-react';
 import { supabase } from '../utils/supabase';
+import { getBackendUrl } from '../utils/llm';
 
 interface AdminPortalProps {
   userProfile?: {
@@ -151,7 +152,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ session, onReturnToApp
   const [tickets, setTickets] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
 
-  const proxyUrl = import.meta.env.VITE_BACKEND_URL || (typeof window !== 'undefined' && window.location.hostname.includes('localhost') ? 'http://localhost:3002' : '');
+  const proxyUrl = getBackendUrl();
 
   const getAdminToken = () => {
     return sessionStorage.getItem(ADMIN_SESSION_KEY) || localStorage.getItem(ADMIN_SESSION_KEY) || '';
