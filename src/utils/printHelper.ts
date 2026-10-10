@@ -409,9 +409,8 @@ export function printCvDocument(
       margin: 0 !important;
       padding: 0 !important;
       background: ${themeConfig?.template === 'split-sidebar-right' 
-        ? `linear-gradient(to right, ${themeConfig?.accentColor || '#1c2d42'} 0, ${themeConfig?.accentColor || '#1c2d42'} 265px, #ffffff 265px, #ffffff 100%)` 
-        : '#ffffff'} !important;
-      background-color: #ffffff !important;
+        ? `linear-gradient(to right, ${themeConfig?.accentColor || '#1c2d42'} 0, ${themeConfig?.accentColor || '#1c2d42'} 265px, #ffffff 265px, #ffffff 100%) !important` 
+        : '#ffffff !important'};
       color: #111827 !important;
       font-family: ${fontFamilyValue} !important;
       width: 100% !important;
@@ -422,7 +421,7 @@ export function printCvDocument(
     .cv-print-root, .resume-preview-sheet {
       width: 100%;
       min-width: 794px;
-      background: #ffffff !important;
+      background: ${themeConfig?.template === 'split-sidebar-right' ? 'transparent' : '#ffffff'} !important;
       color: #111827 !important;
       padding: 0;
       margin: 0 auto;
@@ -955,7 +954,7 @@ export function printCvDocument(
       min-height: 1122px !important;
       margin: 0 auto !important;
       padding: 0 !important;
-      background: #ffffff !important;
+      background: transparent !important;
       font-family: ${fontFamilyValue} !important;
       color: #111827 !important;
       line-height: 1.35 !important;

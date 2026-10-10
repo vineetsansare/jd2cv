@@ -140,10 +140,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   const isPro = userProfile?.plan === 'pro';
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }} className="entrance-fade">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '880px', margin: '0 auto', width: '100%' }} className="entrance-fade">
       
-      {/* Column 1: Profile & Billing */}
-      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: 'fit-content' }}>
+      {/* Section 1: Profile & Billing */}
+      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0 }}>
           <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Profile & Credits</h3>
         </div>
@@ -318,7 +318,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         )}
       </div>
 
-      {/* Column 2: AI Engine Architecture */}
+      {/* Section 2: AI Engine Architecture */}
       <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0 }}>
           <div className="flex-row-gap">
@@ -420,8 +420,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </div>
 
-      {/* Column 3: AI Connectors & Agent Keys (Full Width Card) */}
-      <div className="glass-card" style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {/* Section 3: AI Connectors & Agent Keys */}
+      <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div className="glass-card-header" style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '0.75rem', marginBottom: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="flex-row-gap">
             <Bot size={20} className="text-accent-primary" />
